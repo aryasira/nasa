@@ -1,0 +1,16 @@
+# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# Seed list of named features for cause lines. Owner: Agent C. Agent A turns this into app/public/data/features.json.
+# Source: USGS/IAU Gazetteer of Planetary Nomenclature, feature pages opened 14 Nov 2026.
+# lon_e is east-positive 0-360 (converted from the Gazetteer's +-180 where needed). radius_km = diameter / 2.
+# Names NOT in this list are informal ("Connecting Ridge", "Malapert massif" as a loose term, "Peak near Shackleton").
+features:
+  - { id: malapert,        name: "Malapert",           type: crater, name_status: iau, gazetteer_id: 3603,  lat: -85.00, lon_e: 11.40,  radius_km: 36.19 }
+  - { id: mons_malapert,   name: "Mons Malapert",      type: mons,   name_status: iau, gazetteer_id: 16338, lat: -85.98, lon_e: 358.33, radius_km: 33.5 }
+  - { id: mons_mouton,     name: "Mons Mouton",        type: mons,   name_status: iau, gazetteer_id: 16070, lat: -84.60, lon_e: 31.00,  radius_km: 65.0 }
+  - { id: shackleton,      name: "Shackleton",         type: crater, name_status: iau, gazetteer_id: 5450,  lat: -89.67, lon_e: 129.78, radius_km: 10.46 }
+  - { id: de_gerlache,     name: "de Gerlache",        type: crater, name_status: iau, gazetteer_id: 1439,  lat: -88.48, lon_e: 271.66, radius_km: 16.36 }
+  - { id: nobile,          name: "Nobile",             type: crater, name_status: iau, gazetteer_id: 4321,  lat: -85.28, lon_e: 53.27,  radius_km: 39.64 }
+  - { id: mons_latreille,  name: "Mons Latreille",     type: mons,   name_status: iau, gazetteer_id: 15996, lat: 18.47,  lon_e: 61.92,  radius_km: 3.2 }
+  - { id: shioli,          name: "Shioli",             type: crater, name_status: iau, gazetteer_id: 15851, lat: -13.33, lon_e: 25.23,  radius_km: 0.135 }
+  - { id: statio_shiv_shakti, name: "Statio Shiv Shakti", type: statio, name_status: iau, gazetteer_id: 16272, lat: -69.37, lon_e: 32.32, radius_km: null }
+source: { org: "USGS Gazetteer of Planetary Nomenclature", url: "https://planetarynames.wr.usgs.gov/Feature/<gazetteer_id>" }
