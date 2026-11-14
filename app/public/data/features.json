@@ -1,0 +1,95 @@
+{
+ "schema_version": 1,
+ "meta": {
+  "ai_generated": true,
+  "generated_by": "pipeline/make_horizons.py",
+  "git_sha": "84dcbb44cf9258cef22c071c1b503fee921c8569",
+  "mock": false
+ },
+ "features": [
+  {
+   "id": "connecting_ridge_peak",
+   "name": "Connecting Ridge",
+   "name_status": "informal",
+   "gazetteer_id": null,
+   "type": "ridge",
+   "lat": -89.438909,
+   "lon_e": 222.85643,
+   "radius_km": 4.0,
+   "source": {
+    "org": "NASA GSFC PGDA product 78 (point = highest pixel of the site DEM, computed by pipeline/horizon_lib.py)",
+    "url": "https://pgda.gsfc.nasa.gov/products/78"
+   }
+  },
+  {
+   "id": "shackleton_rim_peak",
+   "name": "Shackleton rim",
+   "name_status": "informal",
+   "gazetteer_id": null,
+   "type": "rim",
+   "lat": -89.780403,
+   "lon_e": 203.803049,
+   "radius_km": 4.0,
+   "source": {
+    "org": "NASA GSFC PGDA product 78 (point = highest pixel of the site DEM, computed by pipeline/horizon_lib.py)",
+    "url": "https://pgda.gsfc.nasa.gov/products/78"
+   }
+  },
+  {
+   "id": "peak_near_shackleton",
+   "name": "Peak near Shackleton",
+   "name_status": "informal",
+   "gazetteer_id": null,
+   "type": "massif",
+   "lat": -88.80815,
+   "lon_e": 123.717548,
+   "radius_km": 4.0,
+   "source": {
+    "org": "NASA GSFC PGDA product 78 (point = highest pixel of the site DEM, computed by pipeline/horizon_lib.py)",
+    "url": "https://pgda.gsfc.nasa.gov/products/78"
+   }
+  },
+  {
+   "id": "de_gerlache_rim_peak",
+   "name": "de Gerlache rim",
+   "name_status": "informal",
+   "gazetteer_id": null,
+   "type": "rim",
+   "lat": -88.663939,
+   "lon_e": 291.611678,
+   "radius_km": 4.0,
+   "source": {
+    "org": "NASA GSFC PGDA product 78 (point = highest pixel of the site DEM, computed by pipeline/horizon_lib.py)",
+    "url": "https://pgda.gsfc.nasa.gov/products/78"
+   }
+  },
+  {
+   "id": "leibnitz_beta_plateau",
+   "name": "Leibnitz beta plateau",
+   "name_status": "informal",
+   "gazetteer_id": null,
+   "type": "massif",
+   "lat": -85.404619,
+   "lon_e": 31.707317,
+   "radius_km": 4.0,
+   "source": {
+    "org": "NASA GSFC PGDA product 78 (point = highest pixel of the site DEM, computed by pipeline/horizon_lib.py)",
+    "url": "https://pgda.gsfc.nasa.gov/products/78"
+   }
+  },
+  {
+   "id": "malapert_massif_peak",
+   "name": "Malapert massif",
+   "name_status": "informal",
+   "gazetteer_id": null,
+   "type": "massif",
+   "lat": -85.987678,
+   "lon_e": 2.068132,
+   "radius_km": 4.0,
+   "source": {
+    "org": "NASA GSFC PGDA product 78 (point = highest pixel of the site DEM, computed by pipeline/horizon_lib.py)",
+    "url": "https://pgda.gsfc.nasa.gov/products/78"
+   }
+  }
+ ]
+}
