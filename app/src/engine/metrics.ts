@@ -35,8 +35,9 @@ function bodyVisible(ephem: Ephem, f: SiteFrame, h: ArrayLike<number>, t: number
     : isVisible(discFraction(o.earthEl, o.earthR, horizonAt(h, o.earthAz)), mode);
 }
 
-export function scanWindow(ephem: Ephem, f: SiteFrame, h: ArrayLike<number>, tStart: number, tEnd: number, mode: Mode): Scan {
-  const n = Math.round((tEnd - tStart) / STEP_S);
+export function scanWindow(ephem: Ephem, f: SiteFrame, h: ArrayLike<number>, tStart: number, tEnd: number, mode: Mode, stepS = STEP_S): Scan {
+  // stepS other than STEP_S is for long-run shares only; metrics and cause lines assume STEP_S.
+  const n = Math.floor((tEnd - tStart) / stepS + 0.5);
   const m = n + 1;
   const s: Scan = {
     tStart, tEnd, n,
@@ -45,7 +46,7 @@ export function scanWindow(ephem: Ephem, f: SiteFrame, h: ArrayLike<number>, tSt
     sunAz: new Float32Array(m), sunEl: new Float32Array(m), earthAz: new Float32Array(m), earthEl: new Float32Array(m),
   };
   for (let k = 0; k < m; k++) {
-    const o = observe(ephem, f, tStart + STEP_S * k);
+    const o = observe(ephem, f, Math.min(tStart + stepS * k, tEnd));
     s.sunVis[k] = +isVisible(discFraction(o.sunEl, o.sunR, horizonAt(h, o.sunAz)), mode);
     s.earthVis[k] = +isVisible(discFraction(o.earthEl, o.earthR, horizonAt(h, o.earthAz)), mode);
     s.sunVisSphere[k] = +isVisible(discFraction(o.sunEl, o.sunR, SPHERE_HORIZON_DEG), mode);

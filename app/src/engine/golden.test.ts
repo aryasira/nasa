@@ -8,7 +8,7 @@ import type { FeaturesFile, FixturesFile, HorizonFile, SitesFile } from '@contra
 import { Ephem, parseUtc } from './ephem';
 import { observe, siteFrame } from './geometry';
 import { discFraction, horizonAt } from './visibility';
-import { windowMetrics } from './metrics';
+import { scanWindow, windowMetrics } from './metrics';
 import { causeLines, visibleHours } from './causes';
 import { slipOptions } from './slip';
 
@@ -126,6 +126,15 @@ describe.skipIf(!existsSync(root + REAL + '/ephem.bin'))('real data', () => {
         for (const l of lines) if (l.kind === 'terrain') expect(l.az_deg).toBeGreaterThanOrEqual(0);
       }
     }
+  });
+
+  it('Connecting Ridge long-run sunlight is close to the published 92.27% (Gläser 2014)', () => {
+    const sc = scanWindow(r.ephem, siteFrame(r.site('connecting_ridge')), r.hz('connecting_ridge').elev_deg, r.ephem.t0, r.ephem.tLast, 'limb', 3600);
+    let n = 0;
+    for (let k = 0; k < sc.n; k++) n += sc.sunVis[k];
+    const pct = (100 * n) / sc.n;
+    expect(pct).toBeGreaterThan(89);
+    expect(pct).toBeLessThan(95);
   });
 
   it('slip options: baseline first, deltas consistent', () => {

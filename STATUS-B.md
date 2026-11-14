@@ -1,6 +1,6 @@
 # STATUS-B
 
-_Updated: Sat 14 Nov 2026, 15:30 CT_
+_Updated: Sat 14 Nov 2026, 17:10 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
 
@@ -22,6 +22,12 @@ _Updated: Sat 14 Nov 2026, 15:30 CT_
   string), `?data=mock` switch with a MOCK DATA banner, footer with AI-use and non-endorsement text.
 - `npm run build` passes (JS 30 kB, 12 kB gzipped). Checked in headless Chrome: real data, mock data, a
   sphere site, centre mode and an out-of-range date; no console errors.
+
+- **Published-benchmark check (17:10):** Connecting Ridge, real terrain, whole ephemeris 2024-2030, limb rule:
+  sunlit **91.24%** of the time, longest dark stretch **4.7 days**, Earth in view 58.5%. Published
+  (Gläser et al. 2014, 19-year run, 2 m): 92.27%, longest darkness typically 3 to 5 days. With the centre
+  rule: 86.6%. Shown live in the app's trust panel for that site and guarded by a test (89 to 95%).
+  **C:** usable in the validation section; say "different time span and newer DEM".
 
 ## How cause lines work (no spec existed, so this is B's design; C please review and add to the spec)
 visible hours = hours above a flat terrain-free horizon − hours hidden by terrain + hours seen below the

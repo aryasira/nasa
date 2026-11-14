@@ -102,6 +102,24 @@ function residuals(d: Data) {
   return n ? { n, az, el, sites: bySite.size } : null;
 }
 
+/** Long-run sunlit share on the loaded terrain, to compare with a published figure. Hourly samples over the whole ephemeris. */
+const BENCH: Record<string, { pct: string; cite: string }> = {
+  connecting_ridge: { pct: '92.27%', cite: 'Gläser et al. 2014, Icarus 243, 2 m above ground, 19-year run' },
+};
+const benchCache = new Map<string, { pct: number; years: number }>();
+function longRunSunlit(d: Data, site: Site, mode: Mode): { pct: number; years: number } {
+  const key = `${site.id}|${mode}`;
+  let r = benchCache.get(key);
+  if (!r) {
+    const sc = scanWindow(d.ephem, siteFrame(site), d.horizons.get(site.id)!.elev_deg, d.ephem.t0, d.ephem.tLast, mode, 3600);
+    let n = 0;
+    for (let k = 0; k < sc.n; k++) n += sc.sunVis[k];
+    r = { pct: (100 * n) / sc.n, years: (d.ephem.tLast - d.ephem.t0) / (365.25 * DAY) };
+    benchCache.set(key, r);
+  }
+  return r;
+}
+
 function controls(d: Data, s: State): string {
   const groups: Record<string, Site[]> = {};
   for (const x of d.sites) (groups[x.kind] ??= []).push(x);
@@ -202,6 +220,7 @@ function render(d: Data, s: State) {
     results = `<div class="error" role="alert">${esc((e as Error).message)} Ephemeris covers ${when(fmtUtc(d.ephem.t0))} to ${when(fmtUtc(d.ephem.tLast))}.</div>`;
   }
   const res = residuals(d);
+  const bench = !d.mock && BENCH[site.id] ? { ...BENCH[site.id], ...longRunSunlit(d, site, s.mode) } : null;
   const altUsed = site.elev_m == null ? ' (catalogue elevation not published; 0 m used for the site vector)' : '';
   app.innerHTML = `
   <header class="top"><h1>Slip Impact Brief</h1>
@@ -220,6 +239,7 @@ function render(d: Data, s: State) {
       ${site.landing_utc ? `<dt>Landed</dt><dd class="mono">${when(site.landing_utc)}</dd>` : ''}</dl></section>
     <section aria-labelledby="h-val"><h2 id="h-val">How far to trust this</h2><dl>
       <dt>Checked against</dt><dd>${res ? `NASA JPL Horizons, ${res.n} Sun and Earth positions at ${res.sites} landing sites, recomputed in your browser just now: largest gap <span class="mono">${res.az.toFixed(4)}°</span> in azimuth and <span class="mono">${res.el.toFixed(4)}°</span> in elevation.` : 'No Horizons fixtures loaded for this data set.'}</dd>
+      ${bench ? `<dt>Published benchmark</dt><dd>Sunlit <span class="mono">${bench.pct.toFixed(1)}%</span> of the time here over ${bench.years.toFixed(0)} years (2024–2030, ${s.mode === 'limb' ? 'any part of the disc' : 'half the disc'}), computed just now. Published: ${esc(BENCH[site.id].pct)} (${esc(bench.cite)}). A different time span and a newer terrain model, so a close match is the test, not an exact one.</dd>` : ''}
       <dt>Ephemeris</dt><dd>${esc(d.header.spice_version)}, frame ${esc(d.header.frame)}, hourly, ${esc(d.header.kernels.join(', '))}</dd>
       <dt>Earth</dt><dd>Seen from the site, not from the Moon's centre (the difference reaches about 0.28°, hours of Earthrise time near the poles).</dd>
       <dt>Not modelled</dt><dd>Lander tilt and attitude, solar-panel pointing, thermal limits, radio link budget, relay satellites. "In view" means line of sight only.</dd></dl></section>
