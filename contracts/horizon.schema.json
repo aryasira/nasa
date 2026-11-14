@@ -1,0 +1,36 @@
+{
+  "$comment": "AI-ASSISTED. schema_version 1. Validates app/public/data/horizon/<site_id>.json. Arrays have length 360/az_step_deg (720 at 0.5 deg); index i is azimuth i*az_step_deg clockwise from north.",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "horizon.schema.json",
+  "type": "object",
+  "required": ["schema_version", "site_id", "mast_m", "az_step_deg", "elev_deg", "elev_lo_deg", "elev_hi_deg", "occluder", "dem", "meta"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "site_id": { "type": "string" },
+    "mast_m": { "type": "number", "minimum": 0 },
+    "az_step_deg": { "const": 0.5 },
+    "elev_deg": { "$ref": "#/$defs/arr720" },
+    "elev_lo_deg": { "$ref": "#/$defs/arr720", "description": "horizon with terrain lowered by DEM sigma" },
+    "elev_hi_deg": { "$ref": "#/$defs/arr720", "description": "horizon with terrain raised by DEM sigma" },
+    "occluder": {
+      "type": "object",
+      "required": ["dist_m", "lat", "lon_e", "feature_id"],
+      "properties": {
+        "dist_m": { "$ref": "#/$defs/arr720n" },
+        "lat": { "$ref": "#/$defs/arr720n" },
+        "lon_e": { "$ref": "#/$defs/arr720n" },
+        "feature_id": { "type": "array", "minItems": 720, "maxItems": 720, "items": { "type": ["string", "null"] } }
+      }
+    },
+    "dem": {
+      "type": "object",
+      "required": ["product", "res_m"],
+      "properties": { "product": { "type": "string" }, "res_m": { "type": ["number", "null"] }, "sigma_m": { "type": ["number", "null"] }, "max_range_km": { "type": ["number", "null"] } }
+    },
+    "meta": { "$ref": "sites.schema.json#/$defs/meta" }
+  },
+  "$defs": {
+    "arr720": { "type": "array", "minItems": 720, "maxItems": 720, "items": { "type": "number" } },
+    "arr720n": { "type": "array", "minItems": 720, "maxItems": 720, "items": { "type": ["number", "null"] } }
+  }
+}

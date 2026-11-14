@@ -1,0 +1,27 @@
+{
+  "$comment": "AI-ASSISTED. schema_version 1. Validates app/public/data/fixtures.json (JPL Horizons truth values).",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fixtures.schema.json",
+  "type": "object",
+  "required": ["schema_version", "fixtures", "meta"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "fixtures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["site_id", "utc", "body", "horizons_az", "horizons_el", "tol_deg", "query_url"],
+        "properties": {
+          "site_id": { "type": "string" },
+          "utc": { "type": "string" },
+          "body": { "enum": ["sun", "earth"] },
+          "horizons_az": { "type": "number" },
+          "horizons_el": { "type": "number" },
+          "tol_deg": { "type": "number" },
+          "query_url": { "type": "string" }
+        }
+      }
+    },
+    "meta": { "$ref": "sites.schema.json#/$defs/meta" }
+  }
+}

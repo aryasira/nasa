@@ -1,0 +1,29 @@
+{
+  "$comment": "AI-ASSISTED. schema_version 1. Validates app/public/data/features.json (named terrain for cause lines).",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "features.schema.json",
+  "type": "object",
+  "required": ["schema_version", "features", "meta"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "name_status", "lat", "lon_e", "source"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "name": { "type": "string" },
+          "name_status": { "enum": ["iau", "informal"] },
+          "gazetteer_id": { "type": ["integer", "null"] },
+          "type": { "type": "string", "description": "e.g. crater, mons, massif, ridge, rim" },
+          "lat": { "type": "number" },
+          "lon_e": { "type": "number" },
+          "radius_km": { "type": ["number", "null"] },
+          "source": { "type": "object", "required": ["org", "url"] }
+        }
+      }
+    },
+    "meta": { "$ref": "sites.schema.json#/$defs/meta" }
+  }
+}

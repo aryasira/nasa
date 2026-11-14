@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "ai_generated": true,
+    "generated_by": "tools/make_mocks.py",
+    "git_sha": "mock",
+    "mock": true
+  },
+  "features": [
+    {
+      "id": "mock_ridge",
+      "name": "Mock Ridge (synthetic)",
+      "name_status": "informal",
+      "gazetteer_id": null,
+      "type": "ridge",
+      "lat": -80.4,
+      "lon_e": 1.4,
+      "radius_km": 10,
+      "source": {
+        "org": "MOCK",
+        "url": "mock://"
+      }
+    }
+  ]
+}

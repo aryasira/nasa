@@ -1,0 +1,53 @@
+{
+  "$comment": "AI-ASSISTED. schema_version 1. Validates app/public/data/sites.json.",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sites.schema.json",
+  "type": "object",
+  "required": ["schema_version", "sites", "meta"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "sites": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "kind", "lat", "lon_e", "elev_m", "frame", "source", "name_status", "terrain"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "name": { "type": "string" },
+          "kind": { "enum": ["landed", "planned", "candidate"] },
+          "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+          "lon_e": { "type": "number", "minimum": 0, "exclusiveMaximum": 360 },
+          "elev_m": { "type": ["number", "null"] },
+          "frame": { "const": "MOON_ME" },
+          "landing_utc": { "type": ["string", "null"] },
+          "source": {
+            "type": "object",
+            "required": ["org", "url"],
+            "properties": { "org": { "type": "string" }, "url": { "type": "string" }, "quote": { "type": "string" } }
+          },
+          "alternates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["lat", "lon_e", "source"],
+              "properties": { "lat": { "type": "number" }, "lon_e": { "type": "number" }, "elev_m": { "type": ["number", "null"] }, "source": { "type": "object" } }
+            }
+          },
+          "name_status": { "enum": ["iau", "informal"] },
+          "gazetteer_id": { "type": ["integer", "null"] },
+          "terrain": { "enum": ["lola", "sphere"] },
+          "story": { "type": "string" },
+          "validation_use": { "enum": ["numeric", "qualitative", "none"] }
+        }
+      }
+    },
+    "meta": { "$ref": "#/$defs/meta" }
+  },
+  "$defs": {
+    "meta": {
+      "type": "object",
+      "required": ["ai_generated"],
+      "properties": { "ai_generated": { "const": true }, "generated_by": { "type": "string" }, "git_sha": { "type": "string" }, "mock": { "type": "boolean" } }
+    }
+  }
+}
