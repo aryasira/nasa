@@ -28,7 +28,7 @@
       "lon_e": 29.1957,
       "elev_m": null,
       "frame": "MOON_ME",
-      "landing_utc": "2025-03-06T17:30:00Z",
+      "landing_utc": "2025-03-06T17:28:50Z",
       "source": {
         "org": "LROC",
         "url": "https://lroc.im-ldi.com/images/1408"
@@ -165,13 +165,14 @@
       "id": "connecting_ridge",
       "name": "Connecting Ridge (Shackleton\u2013de Gerlache)",
       "kind": "candidate",
-      "lat": -89.45,
-      "lon_e": 222.0,
+      "lat": -89.4399,
+      "lon_e": 222.8524,
       "elev_m": null,
       "frame": "MOON_ME",
       "source": {
         "org": "Gl\u00e4ser et al. 2014, Icarus 243:78-90",
-        "url": "TODO"
+        "url": "https://elib.dlr.de/94240",
+        "quote": "smallest accumulated percentage in darkness is 7.73% and occurs at 89.4399\u00b0S, 222.8524\u00b0E"
       },
       "name_status": "informal",
       "terrain": "lola",
