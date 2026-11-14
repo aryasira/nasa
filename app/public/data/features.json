@@ -3,33 +3,145 @@
  "meta": {
   "ai_generated": true,
   "generated_by": "pipeline/make_horizons.py",
-  "git_sha": "84dcbb44cf9258cef22c071c1b503fee921c8569",
+  "git_sha": "e6ea8d86dc6766b498987f5f1b7f3c8561a029d6",
   "mock": false
  },
  "features": [
   {
-   "id": "connecting_ridge_peak",
+   "id": "malapert",
+   "name": "Malapert",
+   "name_status": "iau",
+   "gazetteer_id": 3603,
+   "type": "crater",
+   "lat": -85.0,
+   "lon_e": 11.4,
+   "radius_km": 36.19,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/3603"
+   }
+  },
+  {
+   "id": "mons_malapert",
+   "name": "Mons Malapert",
+   "name_status": "iau",
+   "gazetteer_id": 16338,
+   "type": "mons",
+   "lat": -85.98,
+   "lon_e": 358.33,
+   "radius_km": 33.5,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/16338"
+   }
+  },
+  {
+   "id": "mons_mouton",
+   "name": "Mons Mouton",
+   "name_status": "iau",
+   "gazetteer_id": 16070,
+   "type": "mons",
+   "lat": -84.6,
+   "lon_e": 31.0,
+   "radius_km": 65.0,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/16070"
+   }
+  },
+  {
+   "id": "shackleton",
+   "name": "Shackleton",
+   "name_status": "iau",
+   "gazetteer_id": 5450,
+   "type": "crater",
+   "lat": -89.67,
+   "lon_e": 129.78,
+   "radius_km": 10.46,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/5450"
+   }
+  },
+  {
+   "id": "de_gerlache",
+   "name": "de Gerlache",
+   "name_status": "iau",
+   "gazetteer_id": 1439,
+   "type": "crater",
+   "lat": -88.48,
+   "lon_e": 271.66,
+   "radius_km": 16.36,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/1439"
+   }
+  },
+  {
+   "id": "nobile",
+   "name": "Nobile",
+   "name_status": "iau",
+   "gazetteer_id": 4321,
+   "type": "crater",
+   "lat": -85.28,
+   "lon_e": 53.27,
+   "radius_km": 39.64,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/4321"
+   }
+  },
+  {
+   "id": "mons_latreille",
+   "name": "Mons Latreille",
+   "name_status": "iau",
+   "gazetteer_id": 15996,
+   "type": "mons",
+   "lat": 18.47,
+   "lon_e": 61.92,
+   "radius_km": 3.2,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/15996"
+   }
+  },
+  {
+   "id": "shioli",
+   "name": "Shioli",
+   "name_status": "iau",
+   "gazetteer_id": 15851,
+   "type": "crater",
+   "lat": -13.33,
+   "lon_e": 25.23,
+   "radius_km": 0.135,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/15851"
+   }
+  },
+  {
+   "id": "statio_shiv_shakti",
+   "name": "Statio Shiv Shakti",
+   "name_status": "iau",
+   "gazetteer_id": 16272,
+   "type": "statio",
+   "lat": -69.37,
+   "lon_e": 32.32,
+   "radius_km": null,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/16272"
+   }
+  },
+  {
+   "id": "connecting_ridge_summit",
    "name": "Connecting Ridge",
-   "name_status": "informal",
-   "gazetteer_id": null,
    "type": "ridge",
    "lat": -89.438909,
    "lon_e": 222.85643,
    "radius_km": 4.0,
-   "source": {
-    "org": "NASA GSFC PGDA product 78 (point = highest pixel of the site DEM, computed by pipeline/horizon_lib.py)",
-    "url": "https://pgda.gsfc.nasa.gov/products/78"
-   }
-  },
-  {
-   "id": "shackleton_rim_peak",
-   "name": "Shackleton rim",
    "name_status": "informal",
    "gazetteer_id": null,
-   "type": "rim",
-   "lat": -89.780403,
-   "lon_e": 203.803049,
-   "radius_km": 4.0,
    "source": {
     "org": "NASA GSFC PGDA product 78 (point = highest pixel of the site DEM, computed by pipeline/horizon_lib.py)",
     "url": "https://pgda.gsfc.nasa.gov/products/78"
@@ -38,54 +150,12 @@
   {
    "id": "peak_near_shackleton",
    "name": "Peak near Shackleton",
-   "name_status": "informal",
-   "gazetteer_id": null,
    "type": "massif",
    "lat": -88.80815,
    "lon_e": 123.717548,
    "radius_km": 4.0,
-   "source": {
-    "org": "NASA GSFC PGDA product 78 (point = highest pixel of the site DEM, computed by pipeline/horizon_lib.py)",
-    "url": "https://pgda.gsfc.nasa.gov/products/78"
-   }
-  },
-  {
-   "id": "de_gerlache_rim_peak",
-   "name": "de Gerlache rim",
    "name_status": "informal",
    "gazetteer_id": null,
-   "type": "rim",
-   "lat": -88.663939,
-   "lon_e": 291.611678,
-   "radius_km": 4.0,
-   "source": {
-    "org": "NASA GSFC PGDA product 78 (point = highest pixel of the site DEM, computed by pipeline/horizon_lib.py)",
-    "url": "https://pgda.gsfc.nasa.gov/products/78"
-   }
-  },
-  {
-   "id": "leibnitz_beta_plateau",
-   "name": "Leibnitz beta plateau",
-   "name_status": "informal",
-   "gazetteer_id": null,
-   "type": "massif",
-   "lat": -85.404619,
-   "lon_e": 31.707317,
-   "radius_km": 4.0,
-   "source": {
-    "org": "NASA GSFC PGDA product 78 (point = highest pixel of the site DEM, computed by pipeline/horizon_lib.py)",
-    "url": "https://pgda.gsfc.nasa.gov/products/78"
-   }
-  },
-  {
-   "id": "malapert_massif_peak",
-   "name": "Malapert massif",
-   "name_status": "informal",
-   "gazetteer_id": null,
-   "type": "massif",
-   "lat": -85.987678,
-   "lon_e": 2.068132,
-   "radius_km": 4.0,
    "source": {
     "org": "NASA GSFC PGDA product 78 (point = highest pixel of the site DEM, computed by pipeline/horizon_lib.py)",
     "url": "https://pgda.gsfc.nasa.gov/products/78"

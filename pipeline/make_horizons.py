@@ -44,55 +44,77 @@ PLAN = {
     "chandrayaan3": ["LDEM_60S_240MPP_ADJ.TIF"],
     "connecting_ridge": ["Site01_final_adj_5mpp_surf.tif", "LDEM_80S_80MPP_ADJ.TIF"],
 }
-# data-src/sites.yaml holds a placeholder for this site (TODO(A)). Until
-# Agent C updates it, the horizon is computed at the point below and the
-# point is written into the output as site_used. See STATUS-A.md.
-OVERRIDE = {
-    "connecting_ridge": {"lat": -89.438909, "lon_e": 222.85643,
-                         "why": "highest pixel of the PGDA 78 Site01 5 m DEM"},
-}
+# Set a point here only if the catalogue must be overridden; the point is
+# then written into the output as site_used.differs_from_catalog = true.
+OVERRIDE = {}
 MAST_M = 2.0
 MAX_RANGE_KM = 220.0
 PGDA78 = {"org": "NASA GSFC PGDA product 78 (point = highest pixel of the site DEM, "
                  "computed by pipeline/horizon_lib.py)",
           "url": "https://pgda.gsfc.nasa.gov/products/78"}
-# Informal names only. IAU names with Gazetteer IDs are added in a later pass.
-FEATURES = [
-    ("connecting_ridge_peak", "Connecting Ridge", "ridge", -89.438909, 222.85643),
-    ("shackleton_rim_peak", "Shackleton rim", "rim", -89.780403, 203.803049),
-    ("peak_near_shackleton", "Peak near Shackleton", "massif", -88.80815, 123.717548),
-    ("de_gerlache_rim_peak", "de Gerlache rim", "rim", -88.663939, 291.611678),
-    ("leibnitz_beta_plateau", "Leibnitz beta plateau", "massif", -85.404619, 31.707317),
-    ("malapert_massif_peak", "Malapert massif", "massif", -85.987678, 2.068132),
+# Informal names for two summits no IAU feature covers. Everything else comes
+# from data-src/features-seed.yaml (IAU names with Gazetteer IDs, owner C).
+INFORMAL = [
+    {"id": "connecting_ridge_summit", "name": "Connecting Ridge", "type": "ridge",
+     "lat": -89.438909, "lon_e": 222.85643, "radius_km": 4.0},
+    {"id": "peak_near_shackleton", "name": "Peak near Shackleton", "type": "massif",
+     "lat": -88.80815, "lon_e": 123.717548, "radius_km": 4.0},
 ]
-FEATURE_RADIUS_KM = 4.0
+# An occluder matches a feature when it lies within RADIUS_MARGIN x radius_km
+# of the feature centre. The margin lets a crater's raised rim, which sits at
+# about one radius, carry the crater's name.
+RADIUS_MARGIN = 1.1
+SEED = C.ROOT / "data-src" / "features-seed.yaml"
 
 
-def features_doc():
-    return {"schema_version": 1, "meta": C.meta("pipeline/make_horizons.py"), "features": [
-        {"id": fid, "name": name, "name_status": "informal", "gazetteer_id": None,
-         "type": kind, "lat": lat, "lon_e": lon, "radius_km": FEATURE_RADIUS_KM,
-         "source": PGDA78} for fid, name, kind, lat, lon in FEATURES]}
+def load_features():
+    """IAU features from Agent C's seed file plus the informal summits."""
+    feats = []
+    if SEED.exists():
+        import yaml
+        seed = yaml.safe_load(SEED.read_text(encoding="utf-8"))
+        org = seed.get("source", {}).get("org", "USGS Gazetteer of Planetary Nomenclature")
+        for f in seed["features"]:
+            gid = f.get("gazetteer_id")
+            if f.get("name_status") == "iau" and not gid:
+                raise SystemExit(f"feature {f['id']}: name_status iau needs a gazetteer_id")
+            feats.append({"id": f["id"], "name": f["name"], "name_status": f["name_status"],
+                          "gazetteer_id": gid, "type": f.get("type", ""),
+                          "lat": f["lat"], "lon_e": f["lon_e"], "radius_km": f.get("radius_km"),
+                          "source": {"org": org, "url": f"https://planetarynames.wr.usgs.gov/Feature/{gid}"}})
+    for f in INFORMAL:
+        feats.append(dict(f, name_status="informal", gazetteer_id=None, source=PGDA78))
+    return feats
 
 
-def match_features(lat, lon):
-    """Feature id for each occluder cell, or None. Great-circle distance."""
+def features_doc(feats=None):
+    return {"schema_version": 1, "meta": C.meta("pipeline/make_horizons.py"),
+            "features": load_features() if feats is None else feats}
+
+
+def match_features(lat, lon, feats):
+    """Feature id for each occluder cell, or None.
+
+    A cell matches every feature whose centre is within RADIUS_MARGIN x
+    radius_km (great-circle). Of those, the smallest feature wins, so a
+    summit inside a large mons keeps its own name."""
     out = [None] * len(lat)
     ok = np.isfinite(lat)
-    if not ok.any():
+    usable = [f for f in feats if f.get("radius_km")]
+    if not ok.any() or not usable:
         return out
     la, lo = np.radians(lat[ok]), np.radians(lon[ok])
-    best = np.full(ok.sum(), np.inf)
-    best_id = np.full(ok.sum(), -1)
-    for k, (_, _, _, flat, flon) in enumerate(FEATURES):
-        fa, fo = np.radians(flat), np.radians(flon)
+    best_r = np.full(ok.sum(), np.inf)
+    best_k = np.full(ok.sum(), -1)
+    for k, f in enumerate(usable):
+        fa, fo = np.radians(f["lat"]), np.radians(f["lon_e"])
         cosd = np.sin(la) * np.sin(fa) + np.cos(la) * np.cos(fa) * np.cos(lo - fo)
         d = C.MOON_R_KM * np.arccos(np.clip(cosd, -1, 1))
-        closer = d < best
-        best[closer], best_id[closer] = d[closer], k
+        hit = (d <= RADIUS_MARGIN * f["radius_km"]) & (f["radius_km"] < best_r)
+        best_r[hit], best_k[hit] = f["radius_km"], k
     for j, i in enumerate(np.flatnonzero(ok)):
-        if best[j] <= FEATURE_RADIUS_KM:
-            out[i] = FEATURES[best_id[j]][0]
+        if best_k[j] >= 0:
+            out[i] = usable[best_k[j]]["id"]
     return out
 
 
@@ -120,7 +142,7 @@ def sphere_doc(site):
             "meta": C.meta("pipeline/make_horizons.py")}
 
 
-def lola_doc(site, dirs):
+def lola_doc(site, dirs, feats):
     from horizon_lib import horizon     # needs rasterio, pyproj, scipy
 
     names = PLAN[site["id"]]
@@ -129,7 +151,7 @@ def lola_doc(site, dirs):
     t = time.time()
     h = horizon(point["lat"], point["lon_e"], paths, mast_m=MAST_M,
                 max_range_km=MAX_RANGE_KM, sigma_m=None)
-    feature_id = match_features(h["occ_lat"], h["occ_lon_e"])
+    feature_id = match_features(h["occ_lat"], h["occ_lon_e"], feats)
     used = [d["file"] for d in h["dems"]]
     doc = {
         "schema_version": 1, "site_id": site["id"], "mast_m": MAST_M, "az_step_deg": 0.5,
@@ -156,6 +178,7 @@ def lola_doc(site, dirs):
         "elev_max_at_az_deg": float(h["az_deg"][int(e.argmax())]),
         "null_occluder_share": round(float(np.mean(~np.isfinite(h["occ_dist_m"]))), 3),
         "named_share": round(sum(f is not None for f in feature_id) / 720.0, 3),
+        "names_seen": sorted({f for f in feature_id if f}),
         "coverage_min_km": round(float(h["coverage_km"].min()), 1),
         "occluder_dist_km_median": (None if not np.isfinite(h["occ_dist_m"]).any()
                                     else round(float(np.nanmedian(h["occ_dist_m"])) / 1000, 2)),
@@ -172,7 +195,10 @@ def main():
     args = ap.parse_args()
     dirs = args.dem_dir + ([os.environ["LOLA_DEM_DIR"]] if os.environ.get("LOLA_DEM_DIR") else []) + [C.CACHE]
 
-    C.write_json(C.DATA / "features.json", features_doc(), indent=1)
+    feats = load_features()
+    C.write_json(C.DATA / "features.json", features_doc(feats), indent=1)
+    print(f"features.json: {len(feats)} features, "
+          f"{sum(f['name_status'] == 'iau' for f in feats)} with IAU Gazetteer IDs")
     reports = (C.read_report("horizons.json") or {"sites": {}})["sites"]
     failed = []
     for site in C.load_sites():
@@ -181,7 +207,7 @@ def main():
         out = C.DATA / "horizon" / f"{site['id']}.json"
         if site["terrain"] == "lola":
             try:
-                doc, rep = lola_doc(site, dirs)
+                doc, rep = lola_doc(site, dirs, feats)
             except Exception as err:                # keep going with other sites
                 failed.append(f"{site['id']}: {type(err).__name__}: {err}")
                 print(f"FAILED {failed[-1]}")
@@ -190,8 +216,8 @@ def main():
             print(f"{site['id']:17s} elev {rep['elev_min_deg']:6.2f}..{rep['elev_max_deg']:5.2f} deg, "
                   f"peak at az {rep['elev_max_at_az_deg']:5.1f}, site {rep['site_used']['elev_dem_m']:8.1f} m "
                   f"(catalogue {rep['site_used']['elev_catalog_m']}), null occluders "
-                  f"{rep['null_occluder_share'] * 100:3.0f}%, named {rep['named_share'] * 100:3.0f}%, "
-                  f"coverage min {rep['coverage_min_km']:6.1f} km, {rep['seconds']} s")
+                  f"{rep['null_occluder_share'] * 100:3.0f}%, named {rep['named_share'] * 100:3.0f}% "
+                  f"{rep['names_seen']}, coverage min {rep['coverage_min_km']:6.1f} km, {rep['seconds']} s")
         else:
             doc = sphere_doc(site)
             reports[site["id"]] = {"site_id": site["id"], "sphere": True}

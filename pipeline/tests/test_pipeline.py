@@ -129,15 +129,42 @@ def test_horizon_files_meet_the_contract(tmp_path, monkeypatch):
     monkeypatch.setattr(mh, "PLAN", {"t": ["a.tif"]})
     monkeypatch.setattr(mh, "OVERRIDE", {})
     monkeypatch.setattr(mh, "MAX_RANGE_KM", 5.5)
-    monkeypatch.setattr(mh, "FEATURES", [("test_peak", "Test peak", "massif", plat, plon % 360)])
+    src = {"org": "TEST", "url": "test://"}
+    feats = [{"id": "big_mons", "name": "Big Mons", "name_status": "iau", "gazetteer_id": 1, "type": "mons",
+              "lat": plat, "lon_e": plon % 360, "radius_km": 50.0, "source": src},
+             {"id": "test_peak", "name": "Test peak", "name_status": "informal", "gazetteer_id": None,
+              "type": "massif", "lat": plat, "lon_e": plon % 360, "radius_km": 2.0, "source": src},
+             {"id": "no_radius", "name": "Statio", "name_status": "iau", "gazetteer_id": 2, "type": "statio",
+              "lat": plat, "lon_e": plon % 360, "radius_km": None, "source": src}]
     site = {"id": "t", "lat": LAT, "lon_e": LON, "elev_m": None, "terrain": "lola"}
-    doc, rep = mh.lola_doc(site, [tmp_path])
+    doc, rep = mh.lola_doc(site, [tmp_path], feats)
     check(doc, "horizon.schema.json")
     check(mh.sphere_doc({"id": "s"}), "horizon.schema.json")
-    check(mh.features_doc(), "features.schema.json")
+    check(mh.features_doc(feats), "features.schema.json")
     i = int(np.argmax(doc["elev_deg"]))
-    assert doc["occluder"]["feature_id"][i] == "test_peak" and rep["named_share"] > 0
+    # the smallest feature that contains the occluder wins
+    assert doc["occluder"]["feature_id"][i] == "test_peak"
+    assert set(rep["names_seen"]) == {"big_mons", "test_peak"}
+    assert doc["site_used"]["differs_from_catalog"] is False
     assert doc["meta"]["ai_generated"] is True and doc["dem"]["sigma_m"] is None
+
+
+def test_real_feature_list_is_valid_and_sourced():
+    feats = mh.load_features()
+    ids = [f["id"] for f in feats]
+    assert len(ids) == len(set(ids))
+    for f in feats:
+        if f["name_status"] == "iau":
+            assert isinstance(f["gazetteer_id"], int) and str(f["gazetteer_id"]) in f["source"]["url"]
+        else:
+            assert f["gazetteer_id"] is None
+    if mh.SEED.exists():
+        assert {"mons_malapert", "mons_mouton", "shackleton"} <= set(ids)
+    # the PGDA Malapert summit used earlier falls inside IAU Mons Malapert
+    got = mh.match_features(np.array([-85.987678, -89.438909, 10.0]), np.array([2.068132, 222.85643, 10.0]), feats)
+    assert got[1] == "connecting_ridge_summit" and got[2] is None
+    if mh.SEED.exists():
+        assert got[0] == "mons_malapert"
 
 
 # ---------------- ephemeris writer ----------------
