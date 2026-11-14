@@ -1,0 +1,226 @@
+{
+ "sites": {
+  "im1": {
+   "site_id": "im1",
+   "site_used": {
+    "lat": -80.13,
+    "lon_e": 1.44,
+    "elev_dem_m": 2591.95,
+    "elev_dem_from": "LDEM_80S_80MPP_ADJ.TIF",
+    "elev_catalog_m": 2579,
+    "differs_from_catalog": false
+   },
+   "dems": [
+    {
+     "file": "LDEM_80S_80MPP_ADJ.TIF",
+     "bytes": 189158392,
+     "width": 7600,
+     "height": 7600,
+     "native_res_m": 80.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 80.0
+    },
+    {
+     "file": "LDEM_60S_240MPP_ADJ.TIF",
+     "bytes": 218961039,
+     "width": 7760,
+     "height": 7760,
+     "native_res_m": 240.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 240.0
+    }
+   ],
+   "skipped": [],
+   "elev_min_deg": -0.244,
+   "elev_max_deg": 11.053,
+   "elev_max_at_az_deg": 152.0,
+   "null_occluder_share": 0.0,
+   "named_share": 0.0,
+   "names_seen": [],
+   "coverage_min_km": 216.8,
+   "occluder_dist_km_median": 1.2,
+   "seconds": 1.3
+  },
+  "im2": {
+   "site_id": "im2",
+   "site_used": {
+    "lat": -84.7906,
+    "lon_e": 29.1957,
+    "elev_dem_m": 5321.5,
+    "elev_dem_from": "LDEM_80S_80MPP_ADJ.TIF",
+    "elev_catalog_m": null,
+    "differs_from_catalog": false
+   },
+   "dems": [
+    {
+     "file": "LDEM_80S_80MPP_ADJ.TIF",
+     "bytes": 189158392,
+     "width": 7600,
+     "height": 7600,
+     "native_res_m": 80.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 80.0
+    },
+    {
+     "file": "LDEM_60S_240MPP_ADJ.TIF",
+     "bytes": 218961039,
+     "width": 7760,
+     "height": 7760,
+     "native_res_m": 240.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 240.0
+    }
+   ],
+   "skipped": [],
+   "elev_min_deg": -1.47,
+   "elev_max_deg": 4.063,
+   "elev_max_at_az_deg": 117.5,
+   "null_occluder_share": 0.0,
+   "named_share": 1.0,
+   "names_seen": [
+    "malapert",
+    "mons_mouton",
+    "nobile"
+   ],
+   "coverage_min_km": 218.5,
+   "occluder_dist_km_median": 12.88,
+   "seconds": 1.7
+  },
+  "slim": {
+   "site_id": "slim",
+   "sphere": true
+  },
+  "chandrayaan3": {
+   "site_id": "chandrayaan3",
+   "site_used": {
+    "lat": -69.3741,
+    "lon_e": 32.32,
+    "elev_dem_m": 529.72,
+    "elev_dem_from": "LDEM_60S_240MPP_ADJ.TIF",
+    "elev_catalog_m": 532,
+    "differs_from_catalog": false
+   },
+   "dems": [
+    {
+     "file": "LDEM_60S_240MPP_ADJ.TIF",
+     "bytes": 218961039,
+     "width": 7760,
+     "height": 7760,
+     "native_res_m": 240.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 240.0
+    }
+   ],
+   "skipped": [],
+   "elev_min_deg": 0.379,
+   "elev_max_deg": 2.451,
+   "elev_max_at_az_deg": 350.0,
+   "null_occluder_share": 0.0,
+   "named_share": 0.0,
+   "names_seen": [],
+   "coverage_min_km": 210.2,
+   "occluder_dist_km_median": 22.32,
+   "seconds": 0.4
+  },
+  "change6": {
+   "site_id": "change6",
+   "sphere": true
+  },
+  "apollo11": {
+   "site_id": "apollo11",
+   "sphere": true
+  },
+  "apollo12": {
+   "site_id": "apollo12",
+   "sphere": true
+  },
+  "blueghost1": {
+   "site_id": "blueghost1",
+   "sphere": true
+  },
+  "connecting_ridge": {
+   "site_id": "connecting_ridge",
+   "site_used": {
+    "lat": -89.4399,
+    "lon_e": 222.8524,
+    "elev_dem_m": 1958.58,
+    "elev_dem_from": "Site01_final_adj_5mpp_surf.tif",
+    "elev_catalog_m": null,
+    "differs_from_catalog": false
+   },
+   "dems": [
+    {
+     "file": "Site01_final_adj_5mpp_surf.tif",
+     "bytes": 40980810,
+     "width": 3200,
+     "height": 3200,
+     "native_res_m": 5.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 5.0
+    },
+    {
+     "file": "LDEM_80S_80MPP_ADJ.TIF",
+     "bytes": 189158392,
+     "width": 7600,
+     "height": 7600,
+     "native_res_m": 80.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 80.0
+    }
+   ],
+   "skipped": [],
+   "elev_min_deg": -2.744,
+   "elev_max_deg": -0.516,
+   "elev_max_at_az_deg": 184.5,
+   "null_occluder_share": 0.0,
+   "named_share": 0.821,
+   "names_seen": [
+    "connecting_ridge_summit",
+    "de_gerlache",
+    "mons_malapert",
+    "mons_mouton"
+   ],
+   "coverage_min_km": 218.9,
+   "occluder_dist_km_median": 0.35,
+   "seconds": 2.2
+  }
+ },
+ "mast_m": 2.0,
+ "max_range_km": 220.0,
+ "sigma_note": "pending: lo = hi = elev"
+}

@@ -1,6 +1,6 @@
 # STATUS-A
 
-_Updated: Sat 14 Nov 2026, 14:57 CT_
+_Updated: Sat 14 Nov 2026, 15:10 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
 
@@ -26,22 +26,40 @@ _Updated: Sat 14 Nov 2026, 14:57 CT_
 - Real files committed now: flat 0 deg horizons for the five `terrain: sphere` sites and `features.json`.
 - Branch `a/data` is pushed.
 
+- **First full run is in** (pipeline commit bd11f8f, run on the human's machine, outputs committed):
+  - `ephem.bin` (61368 hourly rows, 1718304 bytes) and `ephem.header.json`, built with CSPICE_N0067.
+    All five kernels downloaded; URL, bytes and SHA-256 are in `pipeline/reports/kernels.json`.
+  - `fixtures.json`: 140 JPL Horizons fixtures (7 numeric sites x 10 epochs x Sun and Earth).
+  - Residual check: **PASS, all 140 fixtures within 0.01 deg**. Largest elevation gap about
+    0.0007 deg (Sun) and 0.00014 deg (Earth). Earth parallax applied: up to 0.2767 deg.
+    Table in `pipeline/reports/residuals.json` and `docs/science.md`.
+  - LOLA horizons with occluder attribution: `im1`, `im2`, `chandrayaan3`, `connecting_ridge`.
+    | site | min..max elev (deg) | peak az (deg) | DEM height (m) | azimuths with a named occluder |
+    |---|---|---|---|---|
+    | im1 | -0.24 .. 11.05 | 152.0 | 2591.9 | 0% |
+    | im2 | -1.47 .. 4.06 | 117.5 | 5321.5 | 100% |
+    | chandrayaan3 | 0.38 .. 2.45 | 350.0 | 529.7 | 0% |
+    | connecting_ridge | -2.74 .. -0.52 | 184.5 | 1958.6 | 82% |
+  - `docs/horizons-flags.md` (verbatim legend from a live Horizons reply) and `docs/science.md`.
+  - Tests: 28 passing (`python -m pytest -q tests pipeline/tests`).
+
 ## In progress
-- First real run on the human's laptop (kernels, ephem.bin, Horizons fixtures, residual check,
-  LOLA horizons for im1, im2, chandrayaan3, connecting_ridge).
+- Uncertainty bands from the DEM error maps (currently lo = hi = elev, `sigma_m: null`).
 
 ## Next
-- Commit the real outputs once the run comes back. Target: before the 17:00 merge for
-  `ephem.bin` + fixtures; 21:00 for the residual table and the IM-1 horizon.
-- Uncertainty bands from the DEM error maps (currently lo = hi = elev, `sigma_m: null`).
+- Sun 09:00: bands for all four LOLA horizons. Sun 13:00: validation report.
+- Finer near-field terrain for `im1` if a PGDA 5 m tile covers it (its peak occluder is 400 m away
+  on the 80 m grid, so the 11.05 deg peak is sensitive to grid size).
 
 ## Blocked / needs other agent
 - **Human:** this cloud workspace gets HTTP 403 from naif.jpl.nasa.gov, ssd.jpl.nasa.gov,
   pgda.gsfc.nasa.gov and imbrium.mit.edu. Every download and every Horizons query must run
   on a local machine: `pip install -r pipeline/requirements.txt`, then `python pipeline/run_all.py`.
-- **Human:** three kernel URLs in `get_kernels.py` could not be checked from here
-  (`lsk/naif0012.tls`, `pck/pck00011.tpc`, `pck/moon_pa_de440_200625.bpc`). The script stops with
-  the folder to look in if one is wrong.
+- **C (sites.yaml elevations, from the DEMs):** `im2` 5321.5 m (80S 80 m grid);
+  `connecting_ridge` 1958.6 m (Site01 5 m). `im1` reads 2591.9 m on the 80 m grid against 2579 in
+  the catalogue, a 13 m gap. Fixtures for `im2` and `connecting_ridge` were requested at altitude 0 km.
+- **C (features-seed.yaml):** no seed feature lies near `im1` or `chandrayaan3`, so their occluders
+  are all unnamed. Add nearby IAU features with Gazetteer IDs if the brief should name them.
 - **C (sites.yaml, `connecting_ridge`):** the Gläser spot 2 point is used as given. For
   reference it lies about 30 m from the summit of the PGDA 78 Site01 5 m DEM
   (-89.438909, 222.85643, 1959.5 m, about 14 m from RoI 1 of Barker et al. 2021). After the
