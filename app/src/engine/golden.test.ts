@@ -138,8 +138,10 @@ describe.skipIf(!existsSync(root + REAL + '/ephem.bin'))('real data', () => {
   });
 
   it('slip options: baseline first, deltas consistent', () => {
-    const horizons = new Map(r.sites.map((s) => [s.id, r.hz(s.id)]));
-    const opts = slipOptions({ ephem: r.ephem, site: r.site('im2'), horizons, sites: r.sites, features: null,
+    // Sites whose horizon file has not been generated yet are skipped, as the app does (C, Sat 23:35).
+    const have = r.sites.filter((s) => existsSync(root + 'app/public/data/horizon/' + s.id + '.json'));
+    const horizons = new Map(have.map((s) => [s.id, r.hz(s.id)]));
+    const opts = slipOptions({ ephem: r.ephem, site: r.site('im2'), horizons, sites: have, features: null,
       tStart: parseUtc('2025-03-06T17:30:00Z'), stayDays: 10, slipDays: 7, mode: 'limb' });
     expect(opts[0].kind).toBe('baseline');
     expect(opts.length).toBeGreaterThan(1);
