@@ -31,14 +31,14 @@
     {
       "site_id": "chandrayaan3",
       "body": "earth",
-      "n": 10,
+      "n": 20,
       "max_az_gap_deg": 9e-05,
       "max_el_gap_deg": 0.00011
     },
     {
       "site_id": "chandrayaan3",
       "body": "sun",
-      "n": 10,
+      "n": 20,
       "max_az_gap_deg": 1e-05,
       "max_el_gap_deg": 0.00069
     },
@@ -99,7 +99,7 @@
       "max_el_gap_deg": 0.00068
     }
   ],
-  "n_fixtures": 140,
+  "n_fixtures": 160,
   "n_failures": 0,
   "failures": [],
   "tol_deg": 0.01,
@@ -108,8 +108,8 @@
   "passed": true,
   "meta": {
     "ai_generated": true,
-    "generated_by": "pipeline/check_vs_horizons.py",
-    "git_sha": "bd11f8f38917bffbbce4888ea10f802cfac73039",
+    "generated_by": "pipeline/residuals",
+    "git_sha": "00efaf4d31268b5bb586f7bde0bc2377bbe39264",
     "mock": false
   }
 }
