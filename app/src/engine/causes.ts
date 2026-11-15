@@ -145,6 +145,16 @@ export function siteIsOn(hz: HorizonFile, f: Feature): boolean {
   return f.radius_km != null && gcKm(su.lat, su.lon_e, f.lat, f.lon_e) <= f.radius_km;
 }
 
+/** An occluder closer than this many cells of its DEM layer is low confidence (pipeline: occluder.cells). */
+export const LOW_CONF_CELLS = 3;
+
+/** The feature the site stands on, when the occluder at this azimuth lies on that same feature. */
+export function hostFeature(hz: HorizonFile, azDeg: number, features: FeaturesFile | null): Feature | undefined {
+  const i = azIndex(azDeg), lat = hz.occluder.lat[i], lon = hz.occluder.lon_e[i];
+  if (lat == null || lon == null) return undefined;
+  return (features?.features ?? []).find((f) => siteIsOn(hz, f) && f.radius_km != null && gcKm(lat, lon, f.lat, f.lon_e) <= f.radius_km);
+}
+
 // One decimal, like every other hour figure in the brief, so "lost 18.5 h" matches the "−18.5 h" beside it.
 const fmtH = (h: number) => Math.abs(h).toFixed(1);
 const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
@@ -191,10 +201,16 @@ export function causeLines(a: CauseInput, b: CauseInput, features: FeaturesFile 
       const { az, distM } = blockPosition(w.scan, w.hz, body, src.ks);
       const feat = src.feature ? names.get(src.feature) : undefined;
       const local = !feat || siteIsOn(w.hz, feat) || (distM != null && distM < nearLimitM(w.hz));
+      // Ground the site itself stands on is not an obstacle with its own name. Close by it is "local
+      // terrain"; farther off it is higher ground on that same feature, which is worth saying.
+      const near = distM != null && distM < nearLimitM(w.hz);
+      const host = feat && siteIsOn(w.hz, feat) ? feat : !feat ? hostFeature(w.hz, az, features) : undefined;
       const name = feat && !local ? feat.name + (feat.name_status === 'informal' ? ' (informal name)' : '')
-        : feat ? 'local terrain' : 'unnamed terrain';
-      const at = sameSite ? '' : `, at ${siteNames?.get(w.hz.site_id) ?? w.hz.site_id}`;
-      const where = `az ${az.toFixed(0)}° (${compass(az)})` + (distM == null ? '' : `, ${fmtKm(distM, w.hz)}`) + at;
+        : host && !near ? `higher ground on ${host.name}` : feat ? 'local terrain' : 'unnamed terrain';
+      const cells = (w.hz.occluder as { cells?: (number | null)[] }).cells?.[azIndex(az)];
+      const conf = cells != null && cells < LOW_CONF_CELLS ? ', low confidence (under 3 grid cells away)' : '';
+      const at = sameSite ? '' : `, at ${siteNames?.get(w.hz.site_id) ?? w.hz.site_id}${w === a ? ' (the baseline site)' : ''}`;
+      const where = `az ${az.toFixed(0)}° (${compass(az)})` + (distM == null ? '' : `, ${fmtKm(distM, w.hz)}`) + conf + at;
       lines.push({
         kind: 'terrain', body, delta_h: d, az_deg: az, dist_km: distM == null ? null : distM / 1000, feature_id: src.feature,
         text: lost

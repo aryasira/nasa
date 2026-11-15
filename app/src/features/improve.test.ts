@@ -11,6 +11,7 @@ import { slipOptions } from '../engine/slip';
 import { linkMargin, setLinkMargin } from '../engine/visibility';
 import { exportRows, toCsv, toJson } from '../ui/export';
 import { heatColor, heatmapSvg, heatmapTable, siteDateGrid } from './heatmap';
+import { earthClearance, earthPlotSvg } from './earthplot';
 
 const root = fileURLToPath(new URL('../../..', import.meta.url));
 const D = 'app/public/data';
@@ -65,6 +66,22 @@ describe.skipIf(!existsSync(root + D + '/ephem.bin'))('improvements (real data)'
     const j = JSON.parse(toJson(sc, rows));
     expect(j.meta.ai_generated).toBe(true);
     expect(j.options).toHaveLength(rows.length);
+  });
+
+  it('Earth clearance plot: matches the engine, Earth sits low and drifts at the pole', () => {
+    const cr = site('connecting_ridge'), hz = horizons.get('connecting_ridge')!;
+    const es = earthClearance(ephem, cr, hz, t0, 30);
+    expect(es.t).toHaveLength(30 * 24 + 1);
+    expect(es.max).toBeLessThan(12);
+    expect(es.max - es.min).toBeGreaterThan(3); // the monthly drift is several degrees
+    const w = win('connecting_ridge'); // Earth is in view part of the time, so the line must cross the skyline
+    if (w.earth_visible_pct > 1 && w.earth_visible_pct < 99) { expect(es.min).toBeLessThan(0.3); expect(es.max).toBeGreaterThan(-0.3); }
+    const svg = earthPlotSvg(es, 5, [{ label: 'Baseline', tStart: t0, tEnd: t0 + 14 * 86400 }]);
+    expect(svg).toContain('link margin 5°');
+    expect(svg).toContain('skyline');
+    expect(earthPlotSvg(es, 0, [])).not.toContain('link margin');
+    const edge = earthClearance(ephem, cr, hz, ephem.tLast - 5 * 86400, 30); // stops at the end of the ephemeris
+    expect(edge.t[edge.t.length - 1]).toBeLessThanOrEqual(ephem.tLast);
   });
 
   it('site-by-date map: bounded, matches the engine at a grid point, best marker is the maximum', () => {

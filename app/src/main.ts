@@ -1,5 +1,6 @@
 // AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
 // Slip Impact Brief: UI. All state lives in the query string (permalink).
+import { earthClearance, earthPlotSvg } from './features/earthplot';
 import { setLinkMargin } from './engine/visibility';
 import { download, exportRows, toCsv, toJson, type ExportRow, type ExportScenario } from './ui/export';
 import { heatmapSvg, heatmapTable, siteDateGrid } from './features/heatmap';
@@ -153,7 +154,7 @@ function controls(d: Data, s: State): string {
     `<option value="${esc(x.id)}" ${x.id === s.site ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</optgroup>`).join('');
   return `<form class="controls" id="f" aria-label="Scenario">
     <div class="wide"><label for="site">Landing site</label><select id="site" name="site">${opts}</select></div>
-    <div class="wide"><label for="t">Baseline landing (UTC)</label><input id="t" name="t" type="datetime-local" value="${s.t}" min="${fmtUtc(d.ephem.t0).slice(0, 16)}" max="${fmtUtc(d.ephem.tLast).slice(0, 16)}" required></div>
+    <div class="wide"><label for="t">Baseline landing (UTC) · ${esc(s.t.replace('T', ' '))} in 24-hour time</label><input id="t" name="t" type="datetime-local" value="${s.t}" min="${fmtUtc(d.ephem.t0).slice(0, 16)}" max="${fmtUtc(d.ephem.tLast).slice(0, 16)}" required></div>
     <div><label for="stay">Surface stay (days)</label><input id="stay" name="stay" type="number" min="1" max="60" step="1" value="${s.stay}" required></div>
     <div><label for="slip">Slip (days)</label><input id="slip" name="slip" type="number" min="-90" max="90" step="1" value="${s.slip}" required></div>
     <div class="wide"><label for="mode">Counts as visible when</label><select id="mode" name="mode">
@@ -199,6 +200,9 @@ function headline(opts: SlipOptionEx[], site: Site, s: State): string {
   const why = bodyChanges(base, slip).map((x) => `${x.body === 'sun' ? 'Sun' : 'Earth'} in view ${h1(x.before_h)} h → ${h1(x.after_h)} h (${signed(x.delta_h, ' h')})`
     + (!x.cause ? '' : x.causeFits ? `; main cause: ${esc(causeName(x.cause))} (${signed(x.cause.delta_h, ' h')})` : `; main cause: ${esc(causeName(x.cause))}, partly offset by other changes`));
   const terr = slip.causes.filter((c) => c.kind === 'terrain').slice(0, 2).map((c) => esc(c.text));
+  // Battery sizing follows the longest stretch without Sun, not the total.
+  const n0 = base.metrics.longest_dark_gap_h, n1 = slip.metrics.longest_dark_gap_h;
+  txt += `<p><strong>Longest stretch without Sun:</strong> ${Math.abs(n1 - n0) < 0.05 ? `${h1(n0)} h in both stays` : `${h1(n0)} h → <strong class="${n1 > n0 ? 'loss' : 'gain'}">${h1(n1)} h</strong>`}${n0 === 0 && n1 === 0 ? ' (the Sun never sets in either stay)' : ''}. This is the gap a battery has to cover.</p>`;
   if (why.length) txt += `<p class="headline why"><strong>Why:</strong> ${why.join('. ')}.</p>`;
   txt += `<p><strong>Terrain:</strong> ${terr.length ? terr.join('. ') + '.' : 'no terrain change of half an hour or more.'}</p>`;
   if (rec) {
@@ -253,6 +257,10 @@ function render(d: Data, s: State) {
       <p class="note">Hours with both Sun and Earth in view for a ${s.stay}-day stay, for every site that has a terrain horizon, over the 384 days after the baseline. Lighter is more. Sampled every 30 minutes, so values can differ slightly from the 10-minute table above.</p>
       <div class="row"><button type="button" id="heat-go">Show the site-by-date map</button><span id="heat-note" role="status" class="note"></span></div>
       <div id="heat-out"></div></section>
+    <section aria-labelledby="h-earth"><h2 id="h-earth">Earth above the skyline, 30 days</h2>
+      ${(() => { const es = earthClearance(d.ephem, site, hz, tStart - 2 * DAY, 32);
+        return `${earthPlotSvg(es, s.margin, same.map((o) => ({ label: o.kind === 'baseline' ? 'Baseline' : o.kind === 'slip' ? (s.slip < 0 ? 'Earlier' : 'Slipped') : 'Recovery', tStart: o.scan.tStart, tEnd: o.scan.tEnd })))}
+      <p class="note">Height of Earth's centre above the local skyline at ${esc(site.name)}, hour by hour: from ${es.min.toFixed(1)}° to ${es.max.toFixed(1)}° in this period. Earth stays in nearly the same part of the sky; it drifts up and down as the Moon wobbles on its orbit (libration). ${es.min > 0 ? 'Here it never drops below the skyline.' : es.max < 0 ? 'Here it never clears the skyline.' : 'Where the line dips under the skyline, the direct link to Earth is lost.'}${s.margin > 0 ? ` With the ${s.margin}° link margin, Earth counts as in view only above the dashed line.` : ''}</p>`; })()}</section>
     <section aria-labelledby="h-tl"><h2 id="h-tl">Timeline at ${esc(site.name)}</h2>
       ${timelineSvg(wide, wins, `Sun, Earth and both visible at ${site.name} from ${fmtUtc(t0).slice(0, 10)} to ${fmtUtc(t1).slice(0, 10)}, with the baseline and slipped stays marked`, 'Three rows show when the Sun, Earth and both are above the local horizon. Bars underneath mark each stay. The same intervals are listed in the table below the chart.')}
       <details class="extra"><summary>Timeline as a table</summary><div style="overflow-x:auto">${timelineTable(wide)}</div></details>

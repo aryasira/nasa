@@ -154,7 +154,8 @@ describe.skipIf(!existsSync(root + D + '/ephem.bin'))('cause lines and slip opti
     for (let d = 0; d < 30; d += 3) {
       const a = win('im2', t0, 7), b = win('im2', t0 + d * 86400, 7);
       for (const l of causeLines({ scan: a.scan, hz }, { scan: b.scan, hz }, features)) {
-        expect(l.text).not.toMatch(/Mons Mouton/);
+        expect(l.text).not.toMatch(/blocked by Mons Mouton/); // never as a named obstacle
+        if (/Mons Mouton/.test(l.text)) expect(l.text).toMatch(/higher ground on Mons Mouton/);
         // Since the 15 Nov pipeline run the horizon files no longer name ground the site stands on:
         // those occluders have feature_id null. Older files named it; then the text must say local terrain.
         if (l.feature_id === 'mons_mouton') expect(l.text).toMatch(/local terrain/);

@@ -156,3 +156,25 @@ pipeline rerun), Sun fraction, DSN station view (needs a new data file), Web Wor
   The published 92.27% lies inside that band.
 Left for C: globe shape and floating marker, lander view as the default camera, phone-width pass,
 video, submission text.
+
+### More B and C items on `b/a-fixes` (Sun 15 Nov, 15:00 CT), checked in headless Chrome
+B:
+- Terrain on the feature a site stands on now reads "higher ground on Mons Mouton" when it is not
+  close by, "local terrain" only when close. Never "blocked by Mons Mouton".
+- Alternate rows: baseline-site terrain lines say "(the baseline site)".
+- Empty band ranges such as "(+147 to +147)" are hidden.
+- Date label shows the value in 24-hour time.
+- Headline adds "Longest stretch without Sun" for both stays.
+- New section "Earth above the skyline, 30 days" (`features/earthplot.ts`), with the link margin line.
+- Confidence tag: a terrain cause under 3 grid cells away gets ", low confidence". It reads
+  `occluder.cells`, which the data does not have until the short pipeline rerun. Until then no tag shows.
+C:
+- Globe: faint night-side fill, so the disc reads as a sphere and dark-side markers do not float.
+  The "lumpy" look was the lit part alone on a black background, not the geometry.
+- Simulator opens on the lander view (`cam=lander` default).
+- `data-src/sites.yaml` DEM heights: im2 5321.8, connecting_ridge 1958.6, shackleton_sr1 1734.0,
+  shackleton_sr2 1727.8 m. `sites.json` rebuilt. 160 Horizons fixtures still pass.
+Vitest 47 passed, Python 34 passed, build ok, no console errors.
+Not done: mast selector (no mast files yet), Sun fraction (frozen contract), DSN view (new data),
+IAU features near IM-1 and Chandrayaan-3 (no Gazetteer ID found for Malapert A; IM-1's skyline is
+set by ground within 500 m, so a crater name 26 km away would not name anything).

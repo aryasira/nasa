@@ -77,7 +77,7 @@ class Simulator {
   private speed = 21600;
   private slipPreview: number | null = null;
   private keepMet: number | null = null; // mission-elapsed time to restore after a commit re-renders the page
-  private cam: Cam = (['lander', 'orbit', 'globe'] as const).find((c) => c === INITIAL.get('cam')) ?? 'orbit';
+  private cam: Cam = (['lander', 'orbit', 'globe'] as const).find((c) => c === INITIAL.get('cam')) ?? 'lander'; // the view from the surface explains the idea fastest
   private size = INITIAL.has('size') && Number(INITIAL.get('size')) > 1 ? 6 : 1;
   private showCompass = INITIAL.get('compass') !== '0';
   private pendingSimT: number | null = INITIAL.has('simt') ? (() => { try { return parseUtc(INITIAL.get('simt')!); } catch { return null; } })() : null;

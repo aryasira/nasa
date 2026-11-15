@@ -68,6 +68,9 @@ void main(){
   float ls = 2.0 * mu0 / max(mu0 + mu, 1e-3);
   float term = smoothstep(-0.02, 0.05, dot(n, L));
   vec3 c = col * ls * term * 2.4;
+  // A faint fill on the night side (illustrative, like earthshine) so the whole disc reads as a sphere
+  // and site markers on the dark side are not left floating on black.
+  c = max(c, col * vec3(0.055, 0.06, 0.075));
   gl_FragColor = vec4(c, 1.0);
 }`;
 

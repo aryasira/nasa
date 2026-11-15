@@ -29,6 +29,7 @@ const minus = (v: number, digits: number) => (v < 0 ? '−' : '') + Math.abs(v).
 /** "82.0 (78–85)"; the band is omitted when absent or when both ends round to the value itself. */
 export function withBand(value: string, range: [number, number] | null, signedEnds = false): string {
   if (!range) return value;
+  if (Math.round(range[0]) === Math.round(range[1])) return value; // an empty band adds nothing
   const f = (v: number) => (signedEnds ? (v > 0 ? '+' : '') + minus(v, 0) : minus(v, 0));
   return `${value} (${f(range[0])}${signedEnds ? ' to ' : '–'}${f(range[1])})`;
 }

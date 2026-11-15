@@ -75,7 +75,7 @@
       "body": "earth",
       "n": 10,
       "max_az_gap_deg": 8e-05,
-      "max_el_gap_deg": 0.00011
+      "max_el_gap_deg": 0.00093
     },
     {
       "site_id": "im2",
@@ -109,7 +109,7 @@
   "meta": {
     "ai_generated": true,
     "generated_by": "pipeline/residuals",
-    "git_sha": "883519165917d8cd22bef4827266bfeef98bf362",
+    "git_sha": "989f03726faa8689ba41155a93e09309e7d612c2",
     "mock": false
   }
 }
