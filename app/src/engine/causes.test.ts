@@ -133,7 +133,7 @@ describe.skipIf(!existsSync(root + D + '/ephem.bin'))('cause lines and slip opti
       if (l.kind === 'terrain' && l.dist_km != null && l.dist_km < 0.5) expect(l.text).toMatch(/< 0\.5 km/);
     }
     const ex = of(run('im1', '2024-02-13T00:00:00Z', 7, 6), 'slip').causes.find((l) => l.kind === 'terrain')!;
-    expect(ex.text).toBe('Sun gained 62.8 h — no longer blocked by unnamed terrain at az 82° (E), < 0.5 km');
+    expect(ex.text).toBe('Sun gained 62.8 h — no longer blocked by nearby terrain at az 82° (E), < 0.5 km');
   });
 
   it('8. non-terrain lines use az_deg null (contract number | null)', () => {
@@ -143,7 +143,7 @@ describe.skipIf(!existsSync(root + D + '/ephem.bin'))('cause lines and slip opti
     }
   });
 
-  it('9. a named feature the site stands on is called "local terrain"', () => {
+  it('9. a named feature the site stands on is named and marked as the feature the site stands on', () => {
     const hz = horizons.get('im2')!;
     const f = (id: string) => features.features.find((x) => x.id === id)!;
     expect(siteIsOn(hz, f('mons_mouton'))).toBe(true);
@@ -154,12 +154,9 @@ describe.skipIf(!existsSync(root + D + '/ephem.bin'))('cause lines and slip opti
     for (let d = 0; d < 30; d += 3) {
       const a = win('im2', t0, 7), b = win('im2', t0 + d * 86400, 7);
       for (const l of causeLines({ scan: a.scan, hz }, { scan: b.scan, hz }, features)) {
-        expect(l.text).not.toMatch(/blocked by Mons Mouton/); // never as a named obstacle
-        if (/Mons Mouton/.test(l.text)) expect(l.text).toMatch(/higher ground on Mons Mouton/);
-        // Since the 15 Nov pipeline run the horizon files no longer name ground the site stands on:
-        // those occluders have feature_id null. Older files named it; then the text must say local terrain.
-        if (l.feature_id === 'mons_mouton') expect(l.text).toMatch(/local terrain/);
-        seen++;
+        // Old files name the ground under the site (feature_id mons_mouton); files from the 15 Nov
+        // pipeline run leave it null and the app looks the host feature up. Either way the wording is the same.
+        if (/Mons Mouton/.test(l.text)) { expect(l.text).toMatch(/Mons Mouton \(the feature the site stands on\)/); seen++; }
       }
     }
     expect(seen).toBeGreaterThan(0);

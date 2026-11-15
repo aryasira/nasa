@@ -59,18 +59,19 @@ void main(){
   float det = dot(dpx, r1);
   vec3 grad = sign(det) * (dhx * r1 + dhy * r2);
   // fade the bump out near the terminator, where per-pixel derivatives would sparkle
-  vec3 nb = normalize(abs(det) * n - grad * 0.0032 * smoothstep(0.0, 0.12, dot(n, normalize(sunDir))));
+  vec3 nb = normalize(abs(det) * n - grad * 0.0022 * smoothstep(0.08, 0.35, dot(n, normalize(sunDir))));
   float alb = mix(0.30, 0.13, maria) * (0.85 + 0.3 * fbm(q * 6.0)) + 0.12 * max(c1.y, c2.y) * (1.0 - maria * 0.5);
   vec3 col = vec3(alb) * mix(vec3(1.0), vec3(0.93, 0.95, 1.0), maria);
   // Lommel-Seeliger: no limb darkening; the terminator is the true sub-solar geometry, softened slightly.
   vec3 L = normalize(sunDir); vec3 V = normalize(cameraPosition - vW);
   float mu0 = max(dot(nb, L), 0.0), mu = max(dot(nb, V), 0.0);
   float ls = 2.0 * mu0 / max(mu0 + mu, 1e-3);
-  float term = smoothstep(-0.02, 0.05, dot(n, L));
+  float term = smoothstep(-0.04, 0.08, dot(n, L));
   vec3 c = col * ls * term * 2.4;
-  // A faint fill on the night side (illustrative, like earthshine) so the whole disc reads as a sphere
-  // and site markers on the dark side are not left floating on black.
-  c = max(c, col * vec3(0.055, 0.06, 0.075));
+  // Faint earthshine on the night side plus a thin limb rim, so the whole disc reads as a round body
+  // and pins on the unlit hemisphere sit visibly on the surface (illustrative brightness, not photometric).
+  float rim = pow(1.0 - max(dot(n, V), 0.0), 4.0);
+  c += col * (1.0 - term) * 0.16 + vec3(0.55, 0.62, 0.75) * rim * 0.10;
   gl_FragColor = vec4(c, 1.0);
 }`;
 

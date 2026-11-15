@@ -200,13 +200,18 @@ export function causeLines(a: CauseInput, b: CauseInput, features: FeaturesFile 
       const w = lost ? b : a;
       const { az, distM } = blockPosition(w.scan, w.hz, body, src.ks);
       const feat = src.feature ? names.get(src.feature) : undefined;
-      const local = !feat || siteIsOn(w.hz, feat) || (distM != null && distM < nearLimitM(w.hz));
-      // Ground the site itself stands on is not an obstacle with its own name. Close by it is "local
-      // terrain"; farther off it is higher ground on that same feature, which is worth saying.
+      const on = !!feat && siteIsOn(w.hz, feat);
       const near = distM != null && distM < nearLimitM(w.hz);
-      const host = feat && siteIsOn(w.hz, feat) ? feat : !feat ? hostFeature(w.hz, az, features) : undefined;
-      const name = feat && !local ? feat.name + (feat.name_status === 'informal' ? ' (informal name)' : '')
-        : host && !near ? `higher ground on ${host.name}` : feat ? 'local terrain' : 'unnamed terrain';
+      const fname = feat ? feat.name + (feat.name_status === 'informal' ? ' (informal name)' : '') : '';
+      // A named feature the site stands on keeps its name ("local" would mislead at 20 km); close unnamed
+      // or sub-cell blockers are "nearby terrain"; everything else unnamed stays "unnamed terrain".
+      // Since the 15 Nov pipeline run the horizon files leave feature_id null for ground the site stands
+      // on, so the host feature is looked up from the occluder position instead.
+      const host = !feat && !near ? hostFeature(w.hz, az, features) : undefined;
+      const name = on ? `${fname} (the feature the site stands on)`
+        : feat && !near ? fname
+        : host ? `${host.name} (the feature the site stands on)`
+        : near ? 'nearby terrain' : 'unnamed terrain';
       const cells = (w.hz.occluder as { cells?: (number | null)[] }).cells?.[azIndex(az)];
       const conf = cells != null && cells < LOW_CONF_CELLS ? ', low confidence (under 3 grid cells away)' : '';
       const at = sameSite ? '' : `, at ${siteNames?.get(w.hz.site_id) ?? w.hz.site_id}${w === a ? ' (the baseline site)' : ''}`;
