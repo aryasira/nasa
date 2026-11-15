@@ -4,6 +4,10 @@ import { setLinkMargin } from './engine/visibility';
 import { download, exportRows, toCsv, toJson, type ExportRow, type ExportScenario } from './ui/export';
 import { heatmapSvg, heatmapTable, siteDateGrid } from './features/heatmap';
 import { earthClearance, earthPlotSvg } from './features/earthplot';
+import '@fontsource-variable/inter/wght.css';
+import '@fontsource-variable/public-sans/wght.css';
+import '@fontsource/dm-mono/latin-400.css';
+import '@fontsource/dm-mono/latin-500.css';
 import './style.css';
 import type { EphemHeader, FeaturesFile, FixturesFile, HorizonFile, Site, SitesFile } from '@contracts/types';
 import { Ephem, fmtUtc, parseUtc } from './engine/ephem';
@@ -179,7 +183,7 @@ function render(d: Data, s: State) {
   const site = d.sites.find((x) => x.id === s.site)!;
   const hz = d.horizons.get(site.id)!;
   const preset = PRESETS.find((p) => Object.entries(p.state).every(([k, v]) => (s as any)[k] === v));
-  let results = '', top = '';
+  let results = '', top = '', heroLine = '';
   const notes: string[] = [];
   try {
     const tStart = parseUtc(s.t + ':00Z');
@@ -210,7 +214,16 @@ function render(d: Data, s: State) {
       hasBand(hz) ? `Figures in brackets are the range when the terrain is lowered or raised by its published height error (σ = ${hz.dem.sigma_m} m).` : 'No terrain-error band is shown: the horizon file carries no terrain height error.',
       'Timeline: a pink tick above the Sun row marks Earth covering part of the Sun. Horizon plot: the vertical scale is stretched, and paths above the top of the plot are cut off.');
     if (altNote) notes.push(esc(altNote));
+    {
+      const sl = opts.find((o) => o.kind === 'slip'), rc = opts.find((o) => o.kind === 'recover');
+      const nm = esc(site.name.replace(/ \(.*$/, ''));
+      const n = Math.abs(s.slip);
+      heroLine = sl
+        ? `<span class="hv-t">If ${nm} lands <b>${n} day${n === 1 ? '' : 's'} ${s.slip > 0 ? 'late' : 'early'}</b>, Sun + Earth time ${sl.metrics.both_visible_h < opts[0].metrics.both_visible_h - 0.05 ? 'falls' : sl.metrics.both_visible_h > opts[0].metrics.both_visible_h + 0.05 ? 'rises' : 'stays'} from <b class="num">${h1(opts[0].metrics.both_visible_h)} h</b> to <b class="num ${sl.metrics.both_visible_h < opts[0].metrics.both_visible_h - 0.05 ? 'neg' : ''}">${h1(sl.metrics.both_visible_h)} h</b>.${rc && rc.label.startsWith('Next') && s.slip > 0 ? ` Next date as good: <b class="num">+${Math.round((parseUtc(rc.start_utc) - parseUtc(opts[0].start_utc)) / DAY)} d</b>.` : ''}</span>`
+        : `<span class="hv-t">${nm}, landing as planned: <b class="num">${h1(opts[0].metrics.both_visible_h)} h</b> with Sun and Earth both in view over a ${s.stay}-day stay.</span>`;
+    }
     top = `${verdict({ opts, site, stay: s.stay, slip: s.slip, illustrative: !!preset && /illustrative/i.test(preset.note) })}
+      <p class="why">Why it matters: NASA's site-selection team keeps more than one candidate landing region to protect launch-timing flexibility, and prefers regions with more Earth visibility for direct-to-Earth radio (<a href="https://ntrs.nasa.gov/citations/20250011660" rel="noopener">George et al., LPSC 2026</a>).</p>
       <details class="more"><summary>Context</summary>${verdictContext(opts)}${preset ? `<p>${esc(preset.note)}${site.story ? ' ' + esc(site.story) : ''}</p>` : ''}</details>`;
     results = `
     <section aria-labelledby="h-opt" class="s-opt"><h2 id="h-opt">Your options, ranked</h2>
@@ -229,10 +242,12 @@ function render(d: Data, s: State) {
     <section aria-labelledby="h-tl" class="s-tl"><h2 id="h-tl">Hour by hour</h2>
       <p class="lead">Coloured bars show when the Sun, Earth, or both are in view. Brackets mark each stay.</p>
       <div class="chart">${timelineSvg(wide, wins, `Sun, Earth and both visible at ${site.name} from ${fmtUtc(t0).slice(0, 10)} to ${fmtUtc(t1).slice(0, 10)}, with the planned and slipped stays marked`, 'Three rows show when the Sun, Earth and both are above the local horizon. Brackets underneath mark each stay. The same intervals are listed in the table below the chart.', W)}</div>
+      <p class="prov">Ephemeris: NASA/NAIF SPICE DE440 · ${sphere ? 'Horizon: smooth sphere, no terrain' : `Terrain: LRO LOLA ${hz.dem.res_m ?? ''} m`} · 10-minute steps · UTC</p>
       <details class="more"><summary>As a table</summary><div class="scroll">${timelineTable(wide)}</div></details></section>
     <section aria-labelledby="h-pan" class="s-pan"><h2 id="h-pan">View from the site${sphere ? ' <span class="tagx warn">smooth sphere, no terrain model</span>' : ''}</h2>
       <p class="lead">Turn all the way around at the landing site: grey is the ${sphere ? 'horizon' : 'terrain skyline'}. The <b class="c-sun">Sun</b> and <b class="c-earth">Earth</b> are in view only while their paths are above it.</p>
-      <div class="chart">${panoramaSvg(hz, tracks, markers, `Horizon at ${site.name} over 360 degrees of azimuth with the Sun and Earth paths for the planned and slipped stays`, 'The grey shape is the horizon by compass direction. A body is in view where its path is above the grey shape. Yellow labels mark terrain that blocks the Sun or Earth.', hasBand(hz), W)}</div></section>`;
+      <div class="chart">${panoramaSvg(hz, tracks, markers, `Horizon at ${site.name} over 360 degrees of azimuth with the Sun and Earth paths for the planned and slipped stays`, 'The grey shape is the horizon by compass direction. A body is in view where its path is above the grey shape. Yellow labels mark terrain that blocks the Sun or Earth.', hasBand(hz), W)}</div>
+      <p class="prov">${sphere ? 'Horizon: smooth sphere, no terrain model' : `Skyline: LRO LOLA ${hz.dem.res_m ?? ''} m grid, ${hz.mast_m} m above ground${hz.dem.max_range_km ? `, out to ${hz.dem.max_range_km} km` : ''}${hasBand(hz) ? ' · yellow band: terrain raised or lowered by its height error (±1σ)' : ''}`} · Paths: NASA/NAIF SPICE DE440</p></section>`;
   } catch (e) {
     top = `<div class="error" role="alert">${esc((e as Error).message)} Ephemeris covers ${when(fmtUtc(d.ephem.t0))} to ${when(fmtUtc(d.ephem.tLast))}.</div>`;
   }
@@ -246,6 +261,7 @@ function render(d: Data, s: State) {
     <p>If your Moon landing slips, what happens to sunlight and the link to Earth, and why.</p></div></header>
   ${linkNotice ? `<div class="error" role="alert">${esc(linkNotice)}</div>` : ''}
   ${d.mock ? '<div class="banner" role="alert">MOCK DATA — synthetic values for development. Not results.</div>' : ''}
+  ${heroLine ? `<div class="hero-v">${heroLine}${res && !d.mock ? `<a class="hv-chip num" href="#h-val" title="Sun and Earth positions recomputed in your browser and compared with NASA JPL Horizons">✓ matches JPL Horizons within ${Math.max(res.az, res.el) < 0.001 ? '0.001' : '0.01'}° · ${res.n} checks</a>` : ''}</div>` : ''}
   <div id="sim-slot"></div>
   <main id="main" class="brief" tabindex="-1">
   <p class="brief-h" id="h-brief">Mission brief</p>

@@ -6,8 +6,8 @@
   --ink: #eef2f6; --ink-2: #aab5c1; --ink-3: #737f8c;
   --hair: rgba(255, 255, 255, 0.1); --glass: rgba(12, 15, 20, 0.66);
   --sun: #e69f00; --sun-hi: #f5b53d; --earth: #56b4e9; --both: #009e73; --alert: #ff5d52;
-  --sans: Inter, "SF Pro Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, "DejaVu Sans Mono", monospace;
+  --sans: "Inter Variable", Inter, "SF Pro Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "DM Mono", "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, "DejaVu Sans Mono", monospace;
 }
 
 /* ---------- page (brief) ---------- */

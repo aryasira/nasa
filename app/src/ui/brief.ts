@@ -127,7 +127,7 @@ export function badges(b: BadgeInput): string {
   const out = [
     b.res ? `<div class="bdg ok"><span class="bdg-k">Horizons checks</span><span class="bdg-v num">${b.res.n} ✓</span><span class="bdg-s num">max ${Math.max(b.res.az, b.res.el).toFixed(4)}°</span></div>`
       : '<div class="bdg warn"><span class="bdg-k">Horizons checks</span><span class="bdg-v">none loaded</span></div>',
-    b.bench ? `<div class="bdg"><span class="bdg-k">${esc(b.bench.name)} sunlit</span><span class="bdg-v num">${b.bench.pct.toFixed(1)}%</span><span class="bdg-s num">${esc(b.bench.published)} published</span></div>` : '',
+    b.bench ? `<div class="bdg"><span class="bdg-k">${esc(b.bench.name)} sunlit</span><span class="bdg-v num">${b.bench.pct.toFixed(1)}%</span><span class="bdg-s num">${esc(b.bench.published)} published (Gläser 2014, 2 m)</span></div>` : '',
     sphere ? '<div class="bdg warn"><span class="bdg-k">Terrain</span><span class="bdg-v">no terrain model</span><span class="bdg-s">smooth-sphere horizon</span></div>'
       : `<div class="bdg"><span class="bdg-k">Terrain</span><span class="bdg-v">LOLA${b.hz.dem.res_m ? ` ${b.hz.dem.res_m} m` : ''}</span><span class="bdg-s">${b.hz.dem.max_range_km ? `to ${b.hz.dem.max_range_km} km` : ''}</span></div>`,
   ];
