@@ -1,148 +1,223 @@
 // AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
 // Cause lines: explain a change in Sun or Earth visibility between two windows.
 //
-// Method (exact decomposition, no fitting):
-//   visible hours = (hours above a flat, terrain-free horizon)
-//                   - (hours when terrain hides the body)
-//                   + (hours seen below the flat horizon, where the real horizon dips under 0 deg)
-// so the change between two windows is the sum of the changes in those three pieces.
-// The first is the Moon's own day/night or libration cycle ("orbital"); the second is terrain,
-// attributed to the occluder stored by the pipeline at the azimuth where the body was hidden;
-// the third is a high site looking down past the flat horizon ("dip").
-import type { CauseLine, FeaturesFile, HorizonFile } from '@contracts/types';
+// Method (exact decomposition, no fitting), per body:
+//   change in visible hours = Σ terrain pieces + one non-terrain piece
+// A terrain piece is the change in hours when a given occluder hides the body (body above a flat 0° horizon,
+// below the real one), attributed to the occluder the pipeline stored at the azimuth where the body was hidden.
+// The non-terrain piece is what is left: visible(b) − visible(a) − Σ terrain. For the same site it is the Moon's
+// own day/night cycle (Sun) or Earth's libration (Earth), net of the hours a high site sees below the flat
+// horizon ("site height"). For a different site it is the difference of location (and date).
+// Pieces under MIN_H are not listed, but they are still in the sum, so the non-terrain piece stays exact.
+import type { CauseLine, Feature, FeaturesFile, HorizonFile } from '@contracts/types';
+import { R_MOON_KM } from './geometry';
 import { STEP_S, type Body, type Scan } from './metrics';
-import { azIndex } from './visibility';
+import { azIndex, N_AZ } from './visibility';
 
-/** `kind` is not in contracts v1 (requested in STATUS-B.md); it extends CauseLine without changing it. */
-export type CauseKind = 'terrain' | 'orbital' | 'dip';
-export interface CauseLineEx extends CauseLine { kind: CauseKind }
-
-const MIN_H = 0.5; // ignore changes smaller than this
-const SECTOR_DEG = 30; // unnamed terrain is grouped by 30-degree compass sector
+const MIN_H = 0.5; // pieces smaller than this are not listed (still counted in the sums)
+const RUN_GAP_BINS = 6; // unnamed terrain: 0.5° bins at most 3° apart belong to the same run (one ridge)
 const DT_H = STEP_S / 3600;
 
-interface Block { hours: number; sx: number; sy: number; feature: string | null }
+const arrays = (scan: Scan, body: Body) => body === 'sun'
+  ? { vis: scan.sunVis, sph: scan.sunVisSphere, az: scan.sunAz }
+  : { vis: scan.earthVis, sph: scan.earthVisSphere, az: scan.earthAz };
 
-/** Hours hidden by terrain (above the flat horizon, below the real one), grouped by occluder. */
-export function terrainBlocks(scan: Scan, hz: HorizonFile, body: Body): Map<string, Block> {
-  const vis = body === 'sun' ? scan.sunVis : scan.earthVis;
-  const sph = body === 'sun' ? scan.sunVisSphere : scan.earthVisSphere;
-  const az = body === 'sun' ? scan.sunAz : scan.earthAz;
-  const out = new Map<string, Block>();
-  for (let k = 0; k < scan.n; k++) {
-    if (!sph[k] || vis[k]) continue;
-    const feature = hz.occluder.feature_id[azIndex(az[k])];
-    const key = feature ?? `unnamed@${Math.floor(az[k] / SECTOR_DEG)}`;
-    let b = out.get(key);
-    if (!b) { b = { hours: 0, sx: 0, sy: 0, feature }; out.set(key, b); }
-    b.hours += DT_H;
-    b.sx += Math.sin((az[k] * Math.PI) / 180);
-    b.sy += Math.cos((az[k] * Math.PI) / 180);
+/** Sample indices (left samples only) where terrain hides the body: above the flat horizon, below the real one. */
+export function hiddenSamples(scan: Scan, body: Body): number[] {
+  const { vis, sph } = arrays(scan, body);
+  const out: number[] = [];
+  for (let k = 0; k < scan.n; k++) if (sph[k] && !vis[k]) out.push(k);
+  return out;
+}
+
+/** Group occupied 0.5° bins into runs around the circle (gaps ≤ RUN_GAP_BINS). Returns bin → run start bin. */
+export function azimuthRuns(occupied: Set<number>): Map<number, number> {
+  const out = new Map<number, number>();
+  if (!occupied.size) return out;
+  const bins = [...occupied].sort((x, y) => x - y);
+  // Start after the largest gap so a run that crosses north (359.5° → 0°) is not split.
+  let startAt = 0, bestGap = -1;
+  for (let i = 0; i < bins.length; i++) {
+    const next = bins[(i + 1) % bins.length];
+    const gap = (next - bins[i] + N_AZ) % N_AZ || N_AZ;
+    if (gap > bestGap) { bestGap = gap; startAt = (i + 1) % bins.length; }
   }
-  // Merge unnamed terrain in neighbouring sectors so one ridge is not reported twice.
-  const nSec = 360 / SECTOR_DEG;
-  for (let i = 0; i < nSec; i++) {
-    const a = out.get(`unnamed@${i}`), b = out.get(`unnamed@${(i + 1) % nSec}`);
-    if (a && b && a !== b) {
-      b.hours += a.hours; b.sx += a.sx; b.sy += a.sy;
-      out.delete(`unnamed@${i}`);
+  let runStart = bins[startAt];
+  for (let j = 0; j < bins.length; j++) {
+    const b = bins[(startAt + j) % bins.length];
+    if (j > 0) {
+      const prev = bins[(startAt + j - 1) % bins.length];
+      if ((b - prev + N_AZ) % N_AZ > RUN_GAP_BINS) runStart = b;
     }
+    out.set(b, runStart);
   }
   return out;
 }
 
-/** Hours seen only because the real horizon dips below the flat one (elevated site). */
-export function dipBlock(scan: Scan, body: Body): Block {
-  const vis = body === 'sun' ? scan.sunVis : scan.earthVis;
-  const sph = body === 'sun' ? scan.sunVisSphere : scan.earthVisSphere;
-  const az = body === 'sun' ? scan.sunAz : scan.earthAz;
-  const b: Block = { hours: 0, sx: 0, sy: 0, feature: null };
-  for (let k = 0; k < scan.n; k++) {
-    if (sph[k] || !vis[k]) continue;
+interface Block { hours: number; ks: number[]; feature: string | null }
+
+/** Hours hidden by terrain, grouped by occluder: named feature id, or the unnamed azimuth run `runs` assigns. */
+export function terrainBlocks(scan: Scan, hz: HorizonFile, body: Body, runs?: Map<number, number>): Map<string, Block> {
+  const { az } = arrays(scan, body);
+  const out = new Map<string, Block>();
+  for (const k of hiddenSamples(scan, body)) {
+    const i = azIndex(az[k]);
+    const feature = hz.occluder.feature_id[i];
+    const key = feature ?? `unnamed@${runs?.get(i) ?? i}`;
+    let b = out.get(key);
+    if (!b) { b = { hours: 0, ks: [], feature }; out.set(key, b); }
     b.hours += DT_H;
-    b.sx += Math.sin((az[k] * Math.PI) / 180);
-    b.sy += Math.cos((az[k] * Math.PI) / 180);
+    b.ks.push(k);
   }
-  return b;
+  return out;
+}
+
+/** Bins where terrain with no feature name hides the body in this window. */
+function unnamedBins(scan: Scan, hz: HorizonFile, body: Body, into: Set<number>) {
+  const { az } = arrays(scan, body);
+  for (const k of hiddenSamples(scan, body)) {
+    const i = azIndex(az[k]);
+    if (hz.occluder.feature_id[i] == null) into.add(i);
+  }
+}
+
+/** Hours seen only because the real horizon dips below the flat one (elevated site). */
+export function dipHours(scan: Scan, body: Body): number {
+  const { vis, sph } = arrays(scan, body);
+  let n = 0;
+  for (let k = 0; k < scan.n; k++) if (!sph[k] && vis[k]) n++;
+  return n * DT_H;
 }
 
 export function sphereHours(scan: Scan, body: Body): number {
-  const sph = body === 'sun' ? scan.sunVisSphere : scan.earthVisSphere;
+  const { sph } = arrays(scan, body);
   let n = 0;
   for (let k = 0; k < scan.n; k++) n += sph[k];
   return n * DT_H;
 }
 
 export function visibleHours(scan: Scan, body: Body): number {
-  const v = body === 'sun' ? scan.sunVis : scan.earthVis;
+  const { vis } = arrays(scan, body);
   let n = 0;
-  for (let k = 0; k < scan.n; k++) n += v[k];
+  for (let k = 0; k < scan.n; k++) n += vis[k];
   return n * DT_H;
 }
 
-const meanAz = (b: Block) => ((Math.atan2(b.sx, b.sy) * 180) / Math.PI + 360) % 360;
+const median = (v: number[]) => {
+  if (!v.length) return null;
+  const s = [...v].sort((x, y) => x - y), m = s.length >> 1;
+  return s.length % 2 ? s[m] : 0.5 * (s[m - 1] + s[m]);
+};
+
+/** Median azimuth of the samples (unwrapped around the first one, so runs across north work) and median occluder distance. */
+export function blockPosition(scan: Scan, hz: HorizonFile, body: Body, ks: number[]): { az: number; distM: number | null } {
+  const { az } = arrays(scan, body);
+  const ref = az[ks[0]];
+  const offs = ks.map((k) => ((az[k] - ref + 540) % 360) - 180);
+  const a = ((ref + median(offs)! + 360) % 360);
+  const d = ks.map((k) => hz.occluder.dist_m[azIndex(az[k])]).filter((x): x is number => x != null);
+  return { az: a, distM: median(d) };
+}
+
+/** Distance below which the DEM cannot resolve where the occluder is: 3 grid cells, at least 0.5 km. */
+export function nearLimitM(hz: HorizonFile): number {
+  return Math.max(500, 3 * (hz.dem.res_m ?? 0));
+}
+export function fmtKm(distM: number, hz: HorizonFile): string {
+  const lim = nearLimitM(hz);
+  if (distM < lim) return `< ${(Math.ceil(lim / 100) / 10).toFixed(1)} km`;
+  const km = distM / 1000;
+  return `${km < 10 ? km.toFixed(1) : km.toFixed(0)} km`;
+}
+
+function gcKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const r = Math.PI / 180;
+  const c = Math.sin(lat1 * r) * Math.sin(lat2 * r) + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.cos((lon1 - lon2) * r);
+  return R_MOON_KM * Math.acos(Math.max(-1, Math.min(1, c)));
+}
+
+/** True when the named feature is the ground the site stands on (the site is inside its radius). */
+export function siteIsOn(hz: HorizonFile, f: Feature): boolean {
+  const su = (hz as HorizonFile & { site_used?: { lat: number; lon_e: number; stands_on?: string | null } }).site_used;
+  if (!su) return false;
+  if (su.stands_on != null) return su.stands_on === f.id;
+  return f.radius_km != null && gcKm(su.lat, su.lon_e, f.lat, f.lon_e) <= f.radius_km;
+}
+
 const fmtH = (h: number) => (Math.abs(h) >= 10 ? Math.abs(h).toFixed(0) : Math.abs(h).toFixed(1));
 const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
 export const compass = (az: number) => COMPASS[Math.round(az / 22.5) % 16];
+
+/** Short name of a cause (the text after the dash, up to any ": "), for the headline. */
+export const causeName = (c: CauseLine) => {
+  const i = c.text.indexOf(' — '), r = i < 0 ? c.text : c.text.slice(i + 3), j = r.indexOf(': ');
+  return (j < 0 ? r : r.slice(0, j)).replace(' (not terrain)', '');
+};
 
 export interface CauseInput { scan: Scan; hz: HorizonFile }
 
 /** Cause lines for the change from window `a` (baseline) to window `b` (option). Sorted by size. */
 export function causeLines(a: CauseInput, b: CauseInput, features: FeaturesFile | null, minH = MIN_H,
-  siteNames?: Map<string, string>): CauseLineEx[] {
+  siteNames?: Map<string, string>): CauseLine[] {
   const names = new Map((features?.features ?? []).map((f) => [f.id, f]));
-  const lines: CauseLineEx[] = [];
+  const sameSite = a.hz.site_id === b.hz.site_id;
+  const lines: CauseLine[] = [];
   for (const body of ['sun', 'earth'] as const) {
     const Body = body === 'sun' ? 'Sun' : 'Earth';
-    // 1. Orbital term: change in hours above a terrain-free horizon.
-    const dOrb = sphereHours(b.scan, body) - sphereHours(a.scan, body);
-    if (Math.abs(dOrb) >= minH && Math.abs(dOrb) > 0) {
-      const why = body === 'sun'
-        ? 'the lunar day/night cycle puts the Sun below a terrain-free horizon for'
-        : "the Moon's libration puts Earth below a terrain-free horizon for";
-      lines.push({
-        kind: 'orbital', body, delta_h: dOrb, az_deg: NaN, dist_km: null, feature_id: null,
-        text: `${Body} ${dOrb < 0 ? 'lost' : 'gained'} ${fmtH(dOrb)} h — ${why} ${dOrb < 0 ? 'more' : 'less'} of this window (not terrain)`,
-      });
-    }
-    // 2. Terrain terms, one per occluder. Keys carry the site so different sites never merge.
-    const A = terrainBlocks(a.scan, a.hz, body), B = terrainBlocks(b.scan, b.hz, body);
+    const total = visibleHours(b.scan, body) - visibleHours(a.scan, body);
+
+    // 1. Terrain pieces, one per occluder. Unnamed terrain is grouped into azimuth runs built from the
+    //    union of both windows' blocked bins, so one ridge has one key. Keys carry the site.
+    const runsFor = (hz: HorizonFile, wins: Scan[]) => { const s = new Set<number>(); for (const w of wins) unnamedBins(w, hz, body, s); return azimuthRuns(s); };
+    const runsA = runsFor(a.hz, sameSite ? [a.scan, b.scan] : [a.scan]);
+    const runsB = sameSite ? runsA : runsFor(b.hz, [b.scan]);
+    const A = terrainBlocks(a.scan, a.hz, body, runsA), B = terrainBlocks(b.scan, b.hz, body, runsB);
     const keys = new Set<string>();
     for (const k of A.keys()) keys.add(`${a.hz.site_id}|${k}`);
     for (const k of B.keys()) keys.add(`${b.hz.site_id}|${k}`);
+    let terrainSum = 0;
     for (const full of keys) {
       const [sid, k] = full.split('|');
       const ba = sid === a.hz.site_id ? A.get(k) : undefined;
       const bb = sid === b.hz.site_id ? B.get(k) : undefined;
-      const d = -((bb?.hours ?? 0) - (ba?.hours ?? 0));
+      const d = (ba?.hours ?? 0) - (bb?.hours ?? 0); // more hidden hours in b = lost
+      terrainSum += d;
       if (Math.abs(d) < minH || d === 0) continue;
       const lost = d < 0;
       const src = lost ? bb! : ba!; // the window where this terrain hides the body for longer
-      const hz = (lost ? b : a).hz;
-      const az = meanAz(src);
-      const distM = hz.occluder.dist_m[azIndex(az)];
-      const distKm = distM == null ? null : distM / 1000;
+      const w = lost ? b : a;
+      const { az, distM } = blockPosition(w.scan, w.hz, body, src.ks);
       const feat = src.feature ? names.get(src.feature) : undefined;
-      const name = feat ? feat.name + (feat.name_status === 'informal' ? ' (informal name)' : '') : 'unnamed terrain';
-      const at = a.hz.site_id !== b.hz.site_id ? `, at ${siteNames?.get(hz.site_id) ?? hz.site_id}` : '';
-      const where = `az ${az.toFixed(0)}° (${compass(az)})` + (distKm == null ? '' : `, ${distKm < 10 ? distKm.toFixed(1) : distKm.toFixed(0)} km`) + at;
+      const local = !feat || siteIsOn(w.hz, feat) || (distM != null && distM < nearLimitM(w.hz));
+      const name = feat && !local ? feat.name + (feat.name_status === 'informal' ? ' (informal name)' : '')
+        : feat ? 'local terrain' : 'unnamed terrain';
+      const at = sameSite ? '' : `, at ${siteNames?.get(w.hz.site_id) ?? w.hz.site_id}`;
+      const where = `az ${az.toFixed(0)}° (${compass(az)})` + (distM == null ? '' : `, ${fmtKm(distM, w.hz)}`) + at;
       lines.push({
-        kind: 'terrain', body, delta_h: d, az_deg: az, dist_km: distKm, feature_id: src.feature,
+        kind: 'terrain', body, delta_h: d, az_deg: az, dist_km: distM == null ? null : distM / 1000, feature_id: src.feature,
         text: lost
           ? `${Body} lost ${fmtH(d)} h — blocked by ${name} at ${where}`
           : `${Body} gained ${fmtH(d)} h — no longer blocked by ${name} at ${where}`,
       });
     }
-    // 3. Dip term: hours seen below the flat horizon because the site stands above its surroundings.
-    const da = dipBlock(a.scan, body), db = dipBlock(b.scan, body);
-    const dDip = db.hours - da.hours;
-    if (Math.abs(dDip) >= minH && dDip !== 0) {
-      const az = meanAz(dDip > 0 ? db : da);
-      lines.push({
-        kind: 'dip', body, delta_h: dDip, az_deg: az, dist_km: null, feature_id: null,
-        text: `${Body} ${dDip < 0 ? 'lost' : 'gained'} ${fmtH(dDip)} h — the site stands above the terrain toward az ${az.toFixed(0)}° (${compass(az)}), `
-          + `so the ${Body} is seen below a flat horizon there for ${dDip < 0 ? 'less' : 'more'} of this window`,
-      });
+
+    // 2. One non-terrain piece: everything that is not a terrain piece (exact remainder).
+    const dRest = total - terrainSum;
+    if (Math.abs(dRest) >= minH && Math.abs(dRest) > 1e-9) {
+      const lost = dRest < 0;
+      let why: string;
+      if (sameSite) {
+        const dip = dipHours(a.scan, body) > 0 || dipHours(b.scan, body) > 0 ? ', net of site height' : '';
+        why = body === 'sun'
+          ? `lunar day/night cycle${dip} (not terrain): the Sun is up for ${lost ? 'less' : 'more'} of this window`
+          : `Earth's libration${dip} (not terrain): Earth is above the horizon for ${lost ? 'less' : 'more'} of this window`;
+      } else {
+        const sameDate = a.scan.tStart === b.scan.tStart;
+        why = `different location${sameDate ? '' : ' and date'} (not terrain): ${body === 'sun' ? 'the Sun is up' : 'Earth is above the horizon'} for ${lost ? 'less' : 'more'} of this window`
+          + ` at ${siteNames?.get(b.hz.site_id) ?? b.hz.site_id}`;
+      }
+      lines.push({ kind: 'orbital', body, delta_h: dRest, az_deg: null, dist_km: null, feature_id: null,
+        text: `${Body} ${lost ? 'lost' : 'gained'} ${fmtH(dRest)} h — ${why}` });
     }
   }
   return lines.sort((x, y) => Math.abs(y.delta_h) - Math.abs(x.delta_h));
