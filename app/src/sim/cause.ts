@@ -42,10 +42,10 @@ export function featuresContaining(site: Pick<Site, 'lat' | 'lon_e'>, f: Feature
 
 const n = (s: string) => `<span class="num">${s}</span>`;
 
-/** Name used in the sentence: "local terrain" when the feature contains the site itself. */
+/** Name used in the sentence; a feature that contains the site itself is named and marked as such. */
 export function blockerName(b: NonNullable<BodyReadout['blocker']>, local: Set<string>): string {
-  if (!b.featureId) return 'unnamed terrain';
-  return local.has(b.featureId) ? 'local terrain' : b.name;
+  if (!b.featureId) return b.distKm != null && b.distKm < 0.5 ? 'nearby terrain' : 'unnamed terrain';
+  return local.has(b.featureId) ? `${b.name} (the feature the site stands on)` : b.name;
 }
 
 function blockedPart(name: 'Sun' | 'Earth', b: BodyReadout, local: Set<string>): CausePart {
