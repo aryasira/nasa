@@ -6,6 +6,7 @@ import type { FeaturesFile, FixturesFile, HorizonFile, Site } from '@contracts/t
 import type { Ephem } from '../engine/ephem';
 import { fmtUtc, parseUtc } from '../engine/ephem';
 import { siteFrame } from '../engine/geometry';
+import { windowMetrics } from '../engine/metrics';
 import type { Mode } from '../engine/visibility';
 import { simView } from '../sim';
 import { augmentSites, checkCustom, CUSTOM_ID, customSite, isSphere, SPHERE_NOTE, sphereHorizon, type CustomInput } from './custom';
@@ -474,12 +475,14 @@ function renderCompare() {
   const full = ids.length >= 4;
   const t0 = tStart();
   sec.innerHTML = `<h2 id="feat-cmp-h">Compare sites${mockTag()}</h2>
-    <details class="more noprint"${ids.length > 1 ? '' : ''}><summary>Choose sites (${ids.length} of 4)</summary>
+    <div id="cmp-strips" class="strips" role="group" aria-label="Every site for the same landing date and stay, most Sun and Earth hours first. Choosing one makes it the landing site."><p class="note">Computing…</p></div>
+    <details class="more noprint"><summary>Compare in a table (${ids.length} of 4)</summary>
     <p class="note">Same landing date (${esc(when(fmtUtc(t0)))}) and ${ctx.state.stay}-day stay at every site.</p>
     <fieldset class="cmp-pick noprint"><legend>Sites to compare (up to 4)</legend>
       ${ctx.data.sites.map((s) => { const on = ids.includes(s.id); return `<label class="chk"><input type="checkbox" value="${esc(s.id)}" ${on ? 'checked' : ''} ${!on && full ? 'disabled' : ''}> ${esc(s.name)}</label>`; }).join('')}
-    </fieldset></details>
-    <div id="cmp-table" class="cmp-wrap"><p class="note">Computing…</p></div>`;
+    </fieldset>
+    <div id="cmp-table" class="cmp-wrap"><p class="note">Computing…</p></div></details>`;
+  idle(() => fillStrips(t0));
   sec.querySelectorAll<HTMLInputElement>('.cmp-pick input').forEach((cb) => cb.addEventListener('change', () => {
     const cur = cmpIds();
     FS.cmp = cb.checked ? [...cur.filter((x) => x !== cb.value), cb.value].slice(0, 4) : cur.filter((x) => x !== cb.value);
@@ -490,6 +493,47 @@ function renderCompare() {
     again?.querySelector<HTMLInputElement>(`.cmp-pick input[value="${CSS.escape(cb.value)}"]`)?.focus();
   }));
   idle(() => fillCompare(ids, t0));
+}
+
+// Small multiples (round 3, Agent B): one tiny Sun / Earth / both strip per site for the same date and stay.
+// Uses the engine's windowMetrics and its 10-minute scan; nothing is computed differently from the table.
+const stripCache = new Map<string, { both: number; sun: number; svg: string }>();
+function fillStrips(t0: number) {
+  const host = document.getElementById('cmp-strips');
+  if (!host) return;
+  const stay = ctx.state.stay;
+  const runs = (v: Uint8Array, w: Uint8Array | null, n: number) => {
+    let d = '', s0 = -1;
+    for (let k = 0; k <= n; k++) {
+      const on = k < n && !!v[k] && (!w || !!w[k]);
+      if (on && s0 < 0) s0 = k;
+      if (!on && s0 >= 0) { d += `M${((200 * s0) / n).toFixed(1)} 0H${((200 * k) / n).toFixed(1)}`; s0 = -1; }
+    }
+    return d;
+  };
+  let rows: { s: Site; both: number; sun: number; svg: string; sphere: boolean }[];
+  try {
+    rows = ctx.data.sites.map((s) => {
+      const hz = ctx.data.horizons.get(s.id)!;
+      const key = `${s.id}|${s.lat}|${s.lon_e}|${t0}|${stay}|${ctx.state.mode}|${ctx.data.mock}`;
+      let r = stripCache.get(key);
+      if (!r) {
+        const { metrics, scan } = windowMetrics(ctx.data.ephem, siteFrame(s), hz, t0, t0 + stay * DAY, ctx.state.mode);
+        r = { both: metrics.both_visible_h, sun: metrics.sunlit_h,
+          svg: `<svg viewBox="0 0 200 17" preserveAspectRatio="none" aria-hidden="true"><path d="M0 2.5H200M0 8.5H200M0 14.5H200" class="st-bg"/>`
+            + `<path transform="translate(0 2.5)" d="${runs(scan.sunVis, null, scan.n)}" class="st-sun"/><path transform="translate(0 8.5)" d="${runs(scan.earthVis, null, scan.n)}" class="st-earth"/>`
+            + `<path transform="translate(0 14.5)" d="${runs(scan.sunVis, scan.earthVis, scan.n)}" class="st-both"/></svg>` };
+        stripCache.set(key, r);
+      }
+      return { s, ...r, sphere: isSphere(hz) };
+    });
+  } catch (e) { host.innerHTML = `<p class="error" role="alert">${esc((e as Error).message)}</p>`; return; }
+  rows.sort((a, b) => b.both - a.both || b.sun - a.sun);
+  host.innerHTML = rows.map((r) => `<button type="button" class="strip" data-site="${esc(r.s.id)}" ${r.s.id === ctx.state.site ? 'aria-current="true"' : ''} aria-label="${esc(r.s.name)}: Sun and Earth both in view ${r.both.toFixed(1)} hours of a ${stay}-day stay${r.sphere ? ', smooth-sphere horizon' : ''}. Make this the landing site.">
+      <span class="st-n"><span>${esc(r.s.name.replace(/\s*\(.*$/, ''))}</span>${r.sphere ? '<abbr class="st-s" title="Smooth-sphere horizon, no terrain model">sphere</abbr>' : ''}</span>
+      <span class="st-h num">${r.both.toFixed(1)}<small> h</small></span>${r.svg}</button>`).join('')
+    + '<p class="st-key note"><span class="k k-sun"></span>Sun<span class="k k-earth"></span>Earth<span class="k k-both"></span>both · hours with both, across the stay</p>';
+  host.querySelectorAll<HTMLButtonElement>('button[data-site]').forEach((b) => b.addEventListener('click', () => ctx.setState({ site: b.dataset.site! })));
 }
 
 function fillCompare(ids: string[], t0: number) {
