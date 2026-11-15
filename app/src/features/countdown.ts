@@ -3,7 +3,7 @@
 // Pure (no DOM). Uses only the validated engine: observe → horizonAt → discFraction → isVisible.
 import type { Ephem } from '../engine/ephem';
 import { observe, type SiteFrame } from '../engine/geometry';
-import { discFraction, horizonAt, isVisible, type Mode } from '../engine/visibility';
+import { discFraction, horizonAt, isVisible, type Mode, linkMargin } from '../engine/visibility';
 
 export type Body = 'sun' | 'earth';
 export const SEARCH_STEP_S = 600; // 10-minute coarse search, same grid as the window metrics
@@ -14,7 +14,7 @@ export function visibleAt(ephem: Ephem, f: SiteFrame, h: ArrayLike<number>, t: n
   const o = observe(ephem, f, t);
   return body === 'sun'
     ? isVisible(discFraction(o.sunEl, o.sunR, horizonAt(h, o.sunAz)), mode)
-    : isVisible(discFraction(o.earthEl, o.earthR, horizonAt(h, o.earthAz)), mode);
+    : isVisible(discFraction(o.earthEl, o.earthR, horizonAt(h, o.earthAz) + linkMargin()), mode);
 }
 
 export interface NextChange {

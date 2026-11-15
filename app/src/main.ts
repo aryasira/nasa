@@ -1,5 +1,8 @@
 // AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
 // Slip Impact Brief: UI. All state lives in the query string (permalink).
+import { setLinkMargin } from './engine/visibility';
+import { download, exportRows, toCsv, toJson, type ExportRow, type ExportScenario } from './ui/export';
+import { heatmapSvg, heatmapTable, siteDateGrid } from './features/heatmap';
 import './style.css';
 import type { EphemHeader, FeaturesFile, FixturesFile, HorizonFile, Site, SitesFile } from '@contracts/types';
 import { Ephem, fmtUtc, parseUtc } from './engine/ephem';
@@ -15,7 +18,7 @@ import { mountSim } from './sim'; // SIM HOOK (Agent C): 3D mission simulator, s
 import { addSphereAndCustomSites, mountFeatures, writeFeatureParams } from './features';
 // --- END
 
-interface State { site: string; t: string; stay: number; slip: number; mode: Mode; data: 'real' | 'mock' }
+interface State { site: string; t: string; stay: number; slip: number; mode: Mode; margin: number; data: 'real' | 'mock' }
 interface Data {
   ephem: Ephem; header: EphemHeader; sites: Site[]; horizons: Map<string, HorizonFile>;
   features: FeaturesFile | null; fixtures: FixturesFile | null; mock: boolean;
@@ -40,6 +43,7 @@ const PRESETS: { id: string; label: string; state: Partial<State>; note: string 
 
 /** Set when the link asked for something that could not be honoured; shown once above the brief. */
 let linkNote = '';
+let lastExport: { scenario: ExportScenario; rows: ExportRow[] } | null = null;
 function readState(sites: Site[] | null): State {
   const q = new URLSearchParams(location.search);
   const num = (k: string, d: number, lo: number, hi: number) => {
@@ -61,11 +65,13 @@ function readState(sites: Site[] | null): State {
     stay: num('stay', 7, 1, 60),
     slip: Math.round(num('slip', 10, -90, 90)),
     mode: mode === 'centre' || mode === 'center' ? 'centre' : 'limb',
+    margin: Math.round(num('margin', 0, 0, 10)),
     data: q.get('data') === 'mock' ? 'mock' : 'real',
   };
 }
 function writeState(s: State) {
   const q = new URLSearchParams({ site: s.site, t: s.t, stay: String(s.stay), slip: String(s.slip), mode: s.mode });
+  if (s.margin > 0) q.set('margin', String(s.margin));
   if (s.data === 'mock') q.set('data', 'mock');
   history.replaceState(null, '', `${location.pathname}?${q}`);
 }
@@ -153,7 +159,9 @@ function controls(d: Data, s: State): string {
     <div class="wide"><label for="mode">Counts as visible when</label><select id="mode" name="mode">
       <option value="limb" ${s.mode === 'limb' ? 'selected' : ''}>any part of the disc shows</option>
       <option value="centre" ${s.mode === 'centre' ? 'selected' : ''}>at least half the disc shows</option></select></div>
-    <div class="wide row"><button type="button" id="print">Print one-page brief</button><button type="button" id="copy">Copy link</button><span id="copied" role="status" class="note"></span></div>
+    <div><label for="margin">Earth link margin</label><select id="margin" name="margin">${[0, 2, 5, 10].concat([0, 2, 5, 10].includes(s.margin) ? [] : [s.margin]).sort((a, b) => a - b).map((m) =>
+      `<option value="${m}" ${s.margin === m ? 'selected' : ''}>${m === 0 ? '0° (line of sight)' : `${m}° above the skyline`}</option>`).join('')}</select></div>
+    <div class="wide row"><button type="button" id="print">Print one-page brief</button><button type="button" id="copy">Copy link</button><button type="button" id="dl-csv">Download CSV</button><button type="button" id="dl-json">Download JSON</button><span id="copied" role="status" class="note"></span></div>
     <div class="wide" style="grid-column:1/-1"><span class="note">Examples:</span>
       <span class="row" style="display:inline-flex">${PRESETS.filter((p) => d.sites.some((x) => x.id === p.state.site)).map((p) => `<button type="button" data-preset="${p.id}">${esc(p.label)}</button>`).join('')}</span></div>
   </form>`;
@@ -203,6 +211,8 @@ function headline(opts: SlipOptionEx[], site: Site, s: State): string {
 }
 
 function render(d: Data, s: State) {
+  setLinkMargin(s.margin);
+  lastExport = null;
   writeState(s);
   // --- FEATURE HOOK (C): keep lat, lon, elev, name, cmp, explain in the permalink
   writeFeatureParams();
@@ -215,6 +225,8 @@ function render(d: Data, s: State) {
     const tStart = parseUtc(s.t + ':00Z');
     const opts = slipOptions({ ephem: d.ephem, site, horizons: d.horizons, sites: d.sites, features: d.features,
       tStart, stayDays: s.stay, slipDays: s.slip, mode: s.mode });
+    lastExport = { rows: exportRows(opts), scenario: { site_id: site.id, site_name: site.name, baseline_utc: s.t + ':00Z', stay_days: s.stay, slip_days: s.slip,
+      visible_rule: s.mode === 'limb' ? 'any part of the disc shows' : 'at least half the disc shows', earth_link_margin_deg: s.margin, page_url: location.href } };
     const same = opts.filter((o) => o.site_id === site.id);
     const t0 = Math.max(d.ephem.t0, Math.min(...same.map((o) => o.scan.tStart)) - 2 * DAY);
     const t1 = Math.min(d.ephem.tLast, Math.max(...same.map((o) => o.scan.tEnd)) + 2 * DAY);
@@ -233,9 +245,14 @@ function render(d: Data, s: State) {
       <div style="overflow-x:auto"><table><thead><tr><th scope="col">Option</th><th scope="col">Landing</th><th scope="col">Sunlit (h)</th><th scope="col">Earth in view</th><th scope="col">Sun + Earth (h)</th><th scope="col">Longest dark gap (h)</th><th scope="col">Change vs baseline</th></tr></thead>
       <tbody>${optionRows(opts, d)}</tbody></table></div>
       <p class="note">Each stay is ${s.stay} days from landing, sampled every 10 minutes. Per body, the cause lines sum to the change in that body's visible hours, apart from pieces under half an hour, which are not listed.
+      ${s.margin > 0 ? `<strong>Earth counts as in view only when it clears the skyline by ${s.margin}° (link margin).</strong>` : ''}
       Sunlit hours include time when Earth covers part or all of the Sun.${opts.some((o) => o.metrics.eclipse_h > 0) ? ` Eclipse (Earth covers the Sun): ${opts.filter((o) => o.metrics.eclipse_h > 0).map((o) => `${esc(o.label)} ${h1(o.metrics.eclipse_h)} h`).join(', ')}.` : ''}
       ${hasBand(hz) ? `Figures in brackets are the range when the terrain is lowered or raised by its published height error (σ = ${hz.dem.sigma_m} m).` : 'No terrain-error band is shown: the horizon file carries no terrain height error.'}
       ${s.slip !== 0 ? esc(alternateSites({ site, sites: d.sites, horizons: d.horizons }).note ?? '') : ''}</p></section>
+    <section aria-labelledby="h-heat"><h2 id="h-heat">All terrain sites, by landing date</h2>
+      <p class="note">Hours with both Sun and Earth in view for a ${s.stay}-day stay, for every site that has a terrain horizon, over the 384 days after the baseline. Lighter is more. Sampled every 30 minutes, so values can differ slightly from the 10-minute table above.</p>
+      <div class="row"><button type="button" id="heat-go">Show the site-by-date map</button><span id="heat-note" role="status" class="note"></span></div>
+      <div id="heat-out"></div></section>
     <section aria-labelledby="h-tl"><h2 id="h-tl">Timeline at ${esc(site.name)}</h2>
       ${timelineSvg(wide, wins, `Sun, Earth and both visible at ${site.name} from ${fmtUtc(t0).slice(0, 10)} to ${fmtUtc(t1).slice(0, 10)}, with the baseline and slipped stays marked`, 'Three rows show when the Sun, Earth and both are above the local horizon. Bars underneath mark each stay. The same intervals are listed in the table below the chart.')}
       <details class="extra"><summary>Timeline as a table</summary><div style="overflow-x:auto">${timelineTable(wide)}</div></details>
@@ -284,11 +301,28 @@ function render(d: Data, s: State) {
     if (!f.reportValidity()) return;
     const fd = new FormData(f);
     linkNote = '';
-    render(d, { ...s, site: String(fd.get('site')), t: String(fd.get('t')).slice(0, 16), stay: Number(fd.get('stay')), slip: Math.round(Number(fd.get('slip'))), mode: fd.get('mode') === 'centre' ? 'centre' : 'limb' });
+    render(d, { ...s, site: String(fd.get('site')), t: String(fd.get('t')).slice(0, 16), stay: Number(fd.get('stay')), slip: Math.round(Number(fd.get('slip'))), mode: fd.get('mode') === 'centre' ? 'centre' : 'limb', margin: Number(fd.get('margin')) || 0 });
     document.getElementById(document.activeElement?.id || 'site')?.focus();
   });
   f.addEventListener('submit', (e) => e.preventDefault());
   document.getElementById('print')!.addEventListener('click', () => window.print());
+  const dl = (kind: 'csv' | 'json') => () => {
+    if (!lastExport) return;
+    const name = `slip-brief_${s.site}_${s.t.slice(0, 10)}_slip${s.slip}.${kind}`;
+    download(name, kind === 'csv' ? toCsv(lastExport.scenario, lastExport.rows) : toJson(lastExport.scenario, lastExport.rows), kind === 'csv' ? 'text/csv' : 'application/json');
+  };
+  document.getElementById('dl-csv')!.addEventListener('click', dl('csv'));
+  document.getElementById('dl-json')!.addEventListener('click', dl('json'));
+  document.getElementById('heat-go')?.addEventListener('click', () => {
+    const out = document.getElementById('heat-out')!, note = document.getElementById('heat-note')!;
+    const terrain = d.sites.filter((x) => d.horizons.get(x.id)!.dem.product !== 'sphere' || x.id === s.site);
+    try {
+      const g = siteDateGrid(d.ephem, terrain, d.horizons, parseUtc(s.t + ':00Z'), 384, 2, s.stay, s.mode);
+      out.innerHTML = `<div style="overflow-x:auto">${heatmapSvg(g, s.site)}</div>
+        <details class="extra"><summary>The same numbers as a table</summary><div style="overflow-x:auto">${heatmapTable(g)}</div></details>`;
+      note.textContent = `${g.rows.length} sites, ${g.dates.length} landing dates, 2 days apart.`;
+    } catch (e) { note.textContent = (e as Error).message; }
+  });
   document.getElementById('copy')!.addEventListener('click', async () => {
     const out = document.getElementById('copied')!;
     try { await navigator.clipboard.writeText(location.href); out.textContent = 'Link copied.'; }

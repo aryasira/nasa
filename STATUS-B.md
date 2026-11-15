@@ -134,5 +134,16 @@ Vitest 43 passed, Python 34 passed, `npm run build` ok. Not looked at in a brows
 - `mode=center` is accepted as `centre`; an unknown mode shows a notice.
 - Cause lines use one decimal ("lost 18.5 h"), matching the "-18.5 h" beside them.
 - An earlier landing is labelled "10 d earlier", not "-10 d slip".
-Not done: confidence tag (needs `occluder.cells`, not in the data yet), Earth elevation mask,
-Sun fraction, heat map, exports, mast selector, Web Worker.
+
+### Improvements added on `b/a-fixes` (Sun 15 Nov, 13:40 CT), checked in headless Chrome on the built app
+- **Earth link margin** (0, 2, 5, 10 deg): Earth counts as in view only when it clears the skyline by
+  the margin. One setting in `engine/visibility.ts`, used by the brief, countdowns and simulator.
+  URL parameter `margin`. Default 0, so no existing number moves.
+- **Download CSV / Download JSON** of the options table (`ui/export.ts`), with the scenario and
+  `ai_generated: true` in the file.
+- **Site-by-date map** (`features/heatmap.ts`): hours with Sun and Earth for a stay, every terrain
+  site against 193 landing dates. One-hue ramp, hover values, best-date marker, table view.
+  Computed on a button press, 30-minute samples.
+- Vitest 46 passed, build ok, no console errors.
+Not done: confidence tag and mast selector (need `occluder.cells` and mast files from a 1-minute
+pipeline rerun), Sun fraction, DSN station view (needs a new data file), Web Worker.
