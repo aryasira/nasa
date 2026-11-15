@@ -65,7 +65,7 @@ export class Terrain {
     const src = Float32Array.from(nrm);
     for (let j = 1; j < rings; j++) {
       const s = j <= RINGS ? g(j) : 1;
-      const k = Math.round(1 + 16 * s * s);
+      const k = Math.round(1 + 22 * s * s);
       for (let i = 0; i < n; i++) {
         let x = 0, y = 0, z = 0, w = 0;
         for (let d = -k; d <= k; d++) {

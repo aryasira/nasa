@@ -67,7 +67,7 @@ float rgSunVis(vec3 p) {
   float hl = length(uSunW.xz);
   float e = asin(clamp(uSunW.y, -1.0, 1.0));
   float vis = 1.0;
-  if (uHFOn > 0.5 && hl > 1e-4) {
+  if (uHFOn > 0.5 && hl > 1e-4 && length(p.xz) > 1400.0) {
     vec2 d = uSunW.xz / hl;
     float best = -1.0e3; float t = 1.2;
     for (int k = 0; k < 40; k++) {
@@ -76,11 +76,12 @@ float rgSunVis(vec3 p) {
       t *= 1.3;
     }
     // penumbra = the Sun's radius, widened with distance to keep vertex-rate shadows from aliasing
-    float pen = uSunR + 0.012 * smoothstep(200.0, 5000.0, length(p.xz));
+    float pen = uSunR + 0.03 * smoothstep(1500.0, 8000.0, length(p.xz));
     vis = clamp((e - atan(best) + pen) / (2.0 * pen), 0.0, 1.0);
   }
-  // At the lander the engine is the truth; the march only takes over away from it.
-  return mix(uSunK, vis, smoothstep(4.0, 30.0, length(p.xz)));
+  // Near field (< ~2 km): the engine's disc fraction at the lander + the shadow map; the vertex-rate march
+  // only shades the distant ridges, where it cannot streak the ground.
+  return mix(uSunK, vis, smoothstep(1500.0, 2500.0, length(p.xz)));
 }`;
 
 const NOISE = /* glsl */ `
@@ -140,7 +141,7 @@ ${NOISE}`)
 		float big = rgFbm( vRgW.xz / 900.0 ) * 0.6 + rgFbm( vRgW.xz / 140.0 ) * 0.4;
 		float alb = 0.78 + 0.45 * ( big - 0.5 );
 		${detail ? `alb *= mix( 1.0, 0.86 + 0.28 * texture2D( uDetail, vRgW.xz / 7.3 ).a, smoothstep( 120.0, 20.0, rgDist ) );
-		alb *= mix( 1.0, 0.8 + 0.4 * texture2D( uDetail, vRgW.xz / 47.0 + 0.31 ).a, smoothstep( 600.0, 150.0, rgDist ) );` : `alb *= 0.85 + 0.3 * rgN( vRgW.xz * 3.1 );`}
+		alb *= mix( 1.0, 0.8 + 0.4 * texture2D( uDetail, vRgW.xz / 47.0 + 0.31 ).a, smoothstep( 300.0, 80.0, rgDist ) );` : `alb *= 0.85 + 0.3 * rgN( vRgW.xz * 3.1 );`}
 		diffuseColor.rgb *= alb;
 	}`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
@@ -154,8 +155,8 @@ ${NOISE}`)
 		vec3 d2 = texture2D( uDetail, rot * vRgW.xz / 6.1 ).xyz * 2.0 - 1.0;
 		vec3 d3 = texture2D( uDetail, rot * rot * vRgW.xz / 0.93 ).xyz * 2.0 - 1.0;
 		d2.xy = rot * d2.xy; d3.xy = ( rot * rot ) * d3.xy;
-		vec2 slope = d1.xy / d1.z * smoothstep( 700.0, 150.0, rgDist ) * 0.8
-			+ d2.xy / d2.z * smoothstep( 260.0, 40.0, rgDist ) * 0.55
+		vec2 slope = d1.xy / d1.z * smoothstep( 260.0, 60.0, rgDist ) * 0.7
+			+ d2.xy / d2.z * smoothstep( 120.0, 25.0, rgDist ) * 0.55
 			+ d3.xy / d3.z * smoothstep( 30.0, 4.0, rgDist ) * 0.5;
 		vec3 nP = normalize( nW + t * slope.x + b * slope.y );
 		normal = normalize( mat3( viewMatrix ) * nP );

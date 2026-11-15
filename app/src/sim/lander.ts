@@ -41,10 +41,10 @@ export class Lander {
     const std = (p: THREE.MeshStandardMaterialParameters) => this.mat(new THREE.MeshStandardMaterial({ envMap: env, ...p }), u);
     const phys = (p: THREE.MeshPhysicalMaterialParameters) => this.mat(new THREE.MeshPhysicalMaterial({ envMap: env, ...p }), u);
     const fn = foilNormal();
-    const goldMap = fn.clone(); goldMap.repeat.set(7, 2.5); goldMap.needsUpdate = true;
+    const goldMap = fn.clone(); goldMap.repeat.set(14, 5); goldMap.needsUpdate = true;
     const silverMap = fn.clone(); silverMap.repeat.set(1.4, 1.4); silverMap.needsUpdate = true;
     this.disposables.push(goldMap, silverMap);
-    const gold = std({ color: new THREE.Color(1.0, 0.71, 0.29), metalness: 1, roughness: 0.4, normalMap: goldMap, normalScale: new THREE.Vector2(0.45, 0.45) });
+    const gold = std({ color: new THREE.Color(1.0, 0.71, 0.29), metalness: 1, roughness: 0.4, normalMap: goldMap, normalScale: new THREE.Vector2(0.22, 0.22) });
     const silver = std({ color: new THREE.Color(0.86, 0.87, 0.89), metalness: 1, roughness: 0.3, normalMap: silverMap, normalScale: new THREE.Vector2(0.3, 0.3) });
     const blackMli = std({ color: 0x0b0b0c, metalness: 0.2, roughness: 0.55, normalMap: silverMap, normalScale: new THREE.Vector2(0.5, 0.5) });
     const alu = std({ color: new THREE.Color(0.9, 0.91, 0.92), metalness: 1, roughness: 0.34 });
@@ -53,7 +53,8 @@ export class Lander {
     const nozzle = std({ color: new THREE.Color(0.2, 0.19, 0.18), metalness: 1, roughness: 0.38, side: THREE.DoubleSide });
     const lens = phys({ color: 0x050608, metalness: 0, roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.15 });
     const cellTex = solarCells();
-    const cells = phys({ map: cellTex, metalness: 0.35, roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.16 });
+    // Bifacial-looking array: cells on both faces, clearcoat so the sunlit ground and the Sun give it a sheen.
+    const cells = phys({ map: cellTex, metalness: 0.5, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.2, envMapIntensity: 1.6 });
     const dishMat = std({ color: new THREE.Color(0.86, 0.86, 0.85), metalness: 0, roughness: 0.48, side: THREE.FrontSide });
 
     const add = (g: THREE.BufferGeometry, m: THREE.Material, parent: THREE.Object3D = this.group) => {
@@ -159,11 +160,14 @@ export class Lander {
     this.panelYaw.add(this.panelTilt);
     const panel = add(new THREE.BoxGeometry(1.1, 0.022, 0.95), cells, this.panelTilt);
     panel.position.y = 0.012;
-    const back = add(new THREE.BoxGeometry(1.12, 0.012, 0.97), white, this.panelTilt);
-    back.position.y = -0.006;
+    const back = add(new THREE.BoxGeometry(1.1, 0.012, 0.95), cells, this.panelTilt);
+    back.position.y = -0.008;
+    // thin aluminium frame on all four edges
     for (const sx of [-1, 1]) {
-      const rail = add(new THREE.BoxGeometry(0.02, 0.03, 0.97), alu, this.panelTilt);
-      rail.position.set(sx * 0.56, 0.005, 0);
+      const rail = add(new THREE.BoxGeometry(0.025, 0.04, 0.99), alu, this.panelTilt);
+      rail.position.set(sx * 0.5625, 0.002, 0);
+      const end = add(new THREE.BoxGeometry(1.15, 0.04, 0.025), alu, this.panelTilt);
+      end.position.set(0, 0.002, sx * 0.4875);
     }
 
     // High-gain dish on a gimbal at the deck edge, pointed at Earth; kept low so it stays out of the mast view.

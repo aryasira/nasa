@@ -50,6 +50,8 @@ export function noise3(x: number, y: number, z: number) {
 
 export interface Crater { x: number; z: number; r: number; depth: number; rim: number }
 
+const smoothstep01 = (x: number) => { const t = Math.min(1, Math.max(0, x)); return t * t * (3 - 2 * t); };
+
 /** Polynomial smooth minimum; always <= min(a, b). */
 const smin = (a: number, b: number, k: number) => {
   if (k <= 0) return Math.min(a, b);
@@ -64,6 +66,8 @@ export class GroundModel {
   readonly dist: Float64Array; // drawing distance of each skyline vertex (m)
   readonly ridgeY: Float64Array; // crest height above the ground at the lander (m)
   readonly craters: Crater[] = [];
+  private readonly logDs: Float64Array; // column-smoothed ln(D) and elevation, for the near-field base profile
+  private readonly elevS: Float64Array;
   private readonly cell = 24;
   private readonly grid = new Map<number, Crater[]>();
   private readonly seed: number;
@@ -75,6 +79,15 @@ export class GroundModel {
     this.dist = ridgeDistances(hz);
     this.ridgeY = new Float64Array(n);
     for (let i = 0; i < n; i++) this.ridgeY[i] = ridgeHeight(hz.elev_deg[i], this.dist[i], this.mast);
+    // Heavily smoothed copies (±12°) so per-sample noise in elev/distance does not corrugate the near field into
+    // radial stripes under a grazing Sun. The exact values take over toward the crest (see heightAt).
+    this.logDs = new Float64Array(n); this.elevS = new Float64Array(n);
+    const W = Math.round(12 / this.step);
+    for (let i = 0; i < n; i++) {
+      let a = 0, b = 0;
+      for (let k = -W; k <= W; k++) { const j = (i + k + n) % n; a += Math.log(this.dist[j]); b += hz.elev_deg[j]; }
+      this.logDs[i] = a / (2 * W + 1); this.elevS[i] = b / (2 * W + 1);
+    }
     const rand = rng(hz.site_id + ':ground');
     this.seed = Math.floor(rand() * 1e6);
     // Power-law crater population (many small, few large), kept clear of the lander footprint.
@@ -110,7 +123,9 @@ export class GroundModel {
     const D = Math.exp(Math.log(this.dist[i0]) * (1 - f) + Math.log(this.dist[i1]) * f);
     const e = this.hz.elev_deg[i0] * (1 - f) + this.hz.elev_deg[i1] * f;
     const tanE = Math.tan(e * D2R);
-    return { D, tanE, Y: this.mast + tanE * D };
+    const Ds = Math.exp(this.logDs[i0] * (1 - f) + this.logDs[i1] * f);
+    const tanEs = Math.tan((this.elevS[i0] * (1 - f) + this.elevS[i1] * f) * D2R);
+    return { D, tanE, Y: this.mast + tanE * D, Ds, Ys: this.mast + tanEs * Ds };
   }
 
   /** Smooth profile from the lander to the crest and a skirt that drops away behind it. */
@@ -147,7 +162,8 @@ export class GroundModel {
     h += u * (0.5 * vnoise(x / 70, z / 70, this.seed) + 0.22 * vnoise(x / 23, z / 23, this.seed + 1) + 0.08 * vnoise(x / 7, z / 7, this.seed + 2));
     // ridged mountain relief that grows with distance and vanishes at the crest
     if (r > 120 && s < 1) {
-      const env = Math.min(1, (r - 120) / 900) * Math.sqrt(1 - s);
+      // fades out well before the crest so the silhouette region stays a continuous slope
+      const env = Math.min(1, (r - 120) / 900) * Math.sqrt(1 - s) * (1 - smoothstep01((s - 0.7) / 0.25));
       let a = 0, amp = 1, f = 1 / 2600;
       for (let o = 0; o < 4; o++) {
         const nv = 1 - Math.abs(vnoise(x * f, z * f, this.seed + 10 + o));
@@ -161,20 +177,22 @@ export class GroundModel {
 
   /** Height of the drawn ground at (azimuth, horizontal range from the lander). */
   heightAt(azDeg: number, r: number) {
-    const { D, tanE, Y } = this.column(azDeg);
+    const { D, tanE, Y, Ds, Ys } = this.column(azDeg);
     const s = r / D;
-    const b = GroundModel.base(r, D, Y);
-    if (s >= 0.9995) return b;
+    if (s >= 0.9995) return GroundModel.base(r, D, Y);
+    // smooth base near the lander, exact profile toward the crest
+    const w = Math.pow(Math.min(1, s), 3);
+    const b = (1 - w) * GroundModel.base(Math.min(r, 0.98 * Ds), Ds, Ys) + w * GroundModel.base(r, D, Y);
     const a = azDeg * D2R;
     const x = Math.sin(a) * r, z = -Math.cos(a) * r;
     const sight = this.mast + tanE * r - (0.02 + 0.0015 * r); // a little below the line of sight from the mast
-    // The base profile never rises above the sight line, so neither does the cap.
-    const cap = Math.max(b, sight), gap = cap - b;
+    // Everything (smoothed base + relief) is bounded by the exact sight line from the mast.
+    const cap = sight, gap = Math.max(0, cap - b);
     let rel = this.relief(x, z, r, s);
     // Positive relief is compressed smoothly into the room left under the sight line (no flat clamped facets),
     // then smin() (always <= min) makes the bound strict. The crest vertex itself stays exact.
     if (rel > 0) rel = gap > 1e-6 ? 0.85 * gap * Math.tanh(rel / (0.85 * gap)) : 0;
-    return smin(b + rel, cap, Math.max(0.02, 0.01 * r) * (1 - s));
+    return Math.min(smin(b + rel, cap, Math.max(0.02, 0.01 * r) * (1 - s)), cap);
   }
 
   /** Line-of-sight height from the mast at azimuth/range (for tests). */

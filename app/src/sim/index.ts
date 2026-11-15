@@ -712,7 +712,7 @@ class Simulator {
     this.uni.uSunK.value = sunK;
     this.sunLight.intensity = r.sun.el > -3 ? SUN_LUX : 0;
     const earthK = r.earth.visible ? r.earth.frac * r.earthLitFrac : 0;
-    this.earthLight.intensity = 0.12 * earthK; // earthshine: faint, the only "fill" in an airless scene
+    this.earthLight.intensity = 0.2 * earthK; // earthshine: faint, the only "fill" in an airless scene
     this.earthLight.position.copy(earthDir).multiplyScalar(100);
     this.uni.uEnvK.value = 0.04 + 0.96 * sunK;
     this.lander.point(sunDir, earthDir);
@@ -758,7 +758,7 @@ class Simulator {
     const sunScreen = this.project(sunDir, cam);
     const w = this.view.clientWidth, h = this.view.clientHeight;
     const sunInFrame = !!sunScreen && sunScreen.x > -0.15 * w && sunScreen.x < 1.15 * w && sunScreen.y > -0.15 * h && sunScreen.y < 1.15 * h;
-    const target2 = night ? 5.5 : sunK > 0 ? (sunInFrame && r.sun.visible ? 0.85 : 1.0) : 3.2;
+    const target2 = night ? 5.5 : sunK > 0 ? (sunInFrame && r.sun.visible ? 0.85 : 1.0) : 4.0;
     if (this.exposure < 0 || REDUCED) this.exposure = target2;
     else {
       this.exposure += (target2 - this.exposure) * (1 - Math.exp(-Math.min(0.1, (now - this.last) / 1000 + 0.016) * 3));
