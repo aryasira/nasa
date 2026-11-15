@@ -126,8 +126,11 @@ export interface WindowMetrics {
 
 export interface CauseLine {
   body: 'sun' | 'earth';
+  // Added Sat 23:15 CT at Agent B's request (engine output only, no data file changes, schema_version stays 1):
+  // 'orbital' = lunar day/night or libration, 'terrain' = blocked by an occluder, 'dip' = site sees below the flat horizon.
+  kind: 'terrain' | 'orbital' | 'dip';
   delta_h: number; // negative = lost
-  az_deg: number;
+  az_deg: number | null; // null for orbital lines
   dist_km: number | null;
   feature_id: string | null; // null => "unnamed terrain"
   text: string; // e.g. "Sun lost 31 h — blocked by Malapert massif at az 172°, 14 km"
