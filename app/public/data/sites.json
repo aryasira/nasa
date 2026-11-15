@@ -211,11 +211,181 @@
       "name_status": "informal",
       "terrain": "lola",
       "validation_use": "none"
+    },
+    {
+      "id": "apollo14",
+      "name": "Apollo 14 LM (Fra Mauro)",
+      "kind": "landed",
+      "lat": -3.64589,
+      "lon_e": 342.52806,
+      "elev_m": -1062,
+      "frame": "MOON_ME",
+      "landing_utc": null,
+      "source": {
+        "org": "NASA / LROC",
+        "url": "https://lroc.im-ldi.com/images/938"
+      },
+      "name_status": "informal",
+      "terrain": "sphere",
+      "validation_use": "none"
+    },
+    {
+      "id": "apollo15",
+      "name": "Apollo 15 LM (Hadley\u2013Apennine)",
+      "kind": "landed",
+      "lat": 26.13239,
+      "lon_e": 3.6333,
+      "elev_m": -1931,
+      "frame": "MOON_ME",
+      "landing_utc": null,
+      "source": {
+        "org": "NASA / LROC",
+        "url": "https://lroc.im-ldi.com/images/938"
+      },
+      "name_status": "informal",
+      "terrain": "sphere",
+      "validation_use": "none"
+    },
+    {
+      "id": "apollo16",
+      "name": "Apollo 16 LM (Descartes)",
+      "kind": "landed",
+      "lat": -8.9734,
+      "lon_e": 15.5011,
+      "elev_m": 8,
+      "frame": "MOON_ME",
+      "landing_utc": null,
+      "source": {
+        "org": "NASA / LROC",
+        "url": "https://lroc.im-ldi.com/images/938"
+      },
+      "name_status": "informal",
+      "terrain": "sphere",
+      "validation_use": "none"
+    },
+    {
+      "id": "apollo17",
+      "name": "Apollo 17 LM (Taurus\u2013Littrow)",
+      "kind": "landed",
+      "lat": 20.1911,
+      "lon_e": 30.7723,
+      "elev_m": -2626,
+      "frame": "MOON_ME",
+      "landing_utc": null,
+      "source": {
+        "org": "NASA / LROC",
+        "url": "https://lroc.im-ldi.com/images/938"
+      },
+      "name_status": "informal",
+      "terrain": "sphere",
+      "validation_use": "none"
+    },
+    {
+      "id": "surveyor7",
+      "name": "Surveyor 7 (Tycho rim)",
+      "kind": "landed",
+      "lat": -40.9812,
+      "lon_e": 348.4873,
+      "elev_m": 81,
+      "frame": "MOON_ME",
+      "landing_utc": null,
+      "source": {
+        "org": "NASA / LROC",
+        "url": "https://lroc.im-ldi.com/images/938"
+      },
+      "name_status": "informal",
+      "terrain": "sphere",
+      "validation_use": "none"
+    },
+    {
+      "id": "luna17",
+      "name": "Luna 17 (Mare Imbrium)",
+      "kind": "landed",
+      "lat": 38.23764,
+      "lon_e": 324.99837,
+      "elev_m": -2471,
+      "frame": "MOON_ME",
+      "landing_utc": null,
+      "source": {
+        "org": "NASA / LROC",
+        "url": "https://lroc.im-ldi.com/images/938"
+      },
+      "name_status": "informal",
+      "terrain": "sphere",
+      "validation_use": "none"
+    },
+    {
+      "id": "luna24",
+      "name": "Luna 24 (Mare Crisium)",
+      "kind": "landed",
+      "lat": 12.7142,
+      "lon_e": 62.2129,
+      "elev_m": -3670,
+      "frame": "MOON_ME",
+      "landing_utc": null,
+      "source": {
+        "org": "NASA / LROC",
+        "url": "https://lroc.im-ldi.com/images/938"
+      },
+      "name_status": "informal",
+      "terrain": "sphere",
+      "validation_use": "none"
+    },
+    {
+      "id": "change3",
+      "name": "Chang'e 3 (Mare Imbrium)",
+      "kind": "landed",
+      "lat": 44.1214,
+      "lon_e": 340.4883,
+      "elev_m": -2630,
+      "frame": "MOON_ME",
+      "landing_utc": null,
+      "source": {
+        "org": "NASA / LROC",
+        "url": "https://lroc.im-ldi.com/images/938"
+      },
+      "name_status": "informal",
+      "terrain": "sphere",
+      "validation_use": "none"
+    },
+    {
+      "id": "change4",
+      "name": "Chang'e 4 (Von K\u00e1rm\u00e1n, far side)",
+      "kind": "landed",
+      "lat": -45.47084,
+      "lon_e": 177.60563,
+      "elev_m": null,
+      "frame": "MOON_ME",
+      "landing_utc": "2019-01-03T02:26:00Z",
+      "source": {
+        "org": "The Planetary Society, quoting LRO scientist N. Petro",
+        "url": "https://planetary.org/articles/change4-deploys-yutu-2"
+      },
+      "name_status": "informal",
+      "terrain": "sphere",
+      "validation_use": "none"
+    },
+    {
+      "id": "change5",
+      "name": "Chang'e 5 (Statio Tianchuan)",
+      "kind": "landed",
+      "lat": 43.06,
+      "lon_e": 308.08,
+      "elev_m": null,
+      "frame": "MOON_ME",
+      "landing_utc": null,
+      "source": {
+        "org": "USGS/IAU Gazetteer, Statio Tianchuan",
+        "url": "https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon&Feature%20Type=59_Statio"
+      },
+      "name_status": "informal",
+      "terrain": "sphere",
+      "validation_use": "none"
     }
   ],
   "meta": {
     "ai_generated": true,
     "generated_by": "data-src/sites.yaml (hand-curated)",
-    "git_sha": "54c587c"
+    "git_sha": "d509614"
   }
 }
