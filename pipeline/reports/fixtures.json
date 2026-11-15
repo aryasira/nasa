@@ -1,0 +1,124 @@
+{
+  "queries": [
+    {
+      "site_id": "im1",
+      "body": "sun",
+      "rows": 10,
+      "start_utc": "2024-02-22T23:30:00Z",
+      "alt_km_sent": 2.579,
+      "catalog_elev_missing": false
+    },
+    {
+      "site_id": "im1",
+      "body": "earth",
+      "rows": 10,
+      "start_utc": "2024-02-22T23:30:00Z",
+      "alt_km_sent": 2.579,
+      "catalog_elev_missing": false
+    },
+    {
+      "site_id": "im2",
+      "body": "sun",
+      "rows": 10,
+      "start_utc": "2025-03-06T17:30:00Z",
+      "alt_km_sent": 0.0,
+      "catalog_elev_missing": true
+    },
+    {
+      "site_id": "im2",
+      "body": "earth",
+      "rows": 10,
+      "start_utc": "2025-03-06T17:30:00Z",
+      "alt_km_sent": 0.0,
+      "catalog_elev_missing": true
+    },
+    {
+      "site_id": "slim",
+      "body": "sun",
+      "rows": 10,
+      "start_utc": "2024-01-19T15:30:00Z",
+      "alt_km_sent": -0.912,
+      "catalog_elev_missing": false
+    },
+    {
+      "site_id": "slim",
+      "body": "earth",
+      "rows": 10,
+      "start_utc": "2024-01-19T15:30:00Z",
+      "alt_km_sent": -0.912,
+      "catalog_elev_missing": false
+    },
+    {
+      "site_id": "chandrayaan3",
+      "body": "sun",
+      "rows": 10,
+      "start_utc": "2026-01-05T00:30:00Z",
+      "alt_km_sent": 0.532,
+      "catalog_elev_missing": false
+    },
+    {
+      "site_id": "chandrayaan3",
+      "body": "earth",
+      "rows": 10,
+      "start_utc": "2026-01-05T00:30:00Z",
+      "alt_km_sent": 0.532,
+      "catalog_elev_missing": false
+    },
+    {
+      "site_id": "change6",
+      "body": "sun",
+      "rows": 10,
+      "start_utc": "2024-06-01T22:30:00Z",
+      "alt_km_sent": -5.256,
+      "catalog_elev_missing": false
+    },
+    {
+      "site_id": "change6",
+      "body": "earth",
+      "rows": 10,
+      "start_utc": "2024-06-01T22:30:00Z",
+      "alt_km_sent": -5.256,
+      "catalog_elev_missing": false
+    },
+    {
+      "site_id": "apollo11",
+      "body": "sun",
+      "rows": 10,
+      "start_utc": "2026-01-05T00:30:00Z",
+      "alt_km_sent": -1.926,
+      "catalog_elev_missing": false
+    },
+    {
+      "site_id": "apollo11",
+      "body": "earth",
+      "rows": 10,
+      "start_utc": "2026-01-05T00:30:00Z",
+      "alt_km_sent": -1.926,
+      "catalog_elev_missing": false
+    },
+    {
+      "site_id": "apollo12",
+      "body": "sun",
+      "rows": 10,
+      "start_utc": "2026-01-05T00:30:00Z",
+      "alt_km_sent": -1.422,
+      "catalog_elev_missing": false
+    },
+    {
+      "site_id": "apollo12",
+      "body": "earth",
+      "rows": 10,
+      "start_utc": "2026-01-05T00:30:00Z",
+      "alt_km_sent": -1.422,
+      "catalog_elev_missing": false
+    }
+  ],
+  "n_fixtures": 140,
+  "tol_deg": 0.01,
+  "meta": {
+    "ai_generated": true,
+    "generated_by": "pipeline/fetch_horizons.py",
+    "git_sha": "bd11f8f38917bffbbce4888ea10f802cfac73039",
+    "mock": false
+  }
+}

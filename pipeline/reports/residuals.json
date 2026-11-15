@@ -1,0 +1,115 @@
+{
+  "rows": [
+    {
+      "site_id": "apollo11",
+      "body": "earth",
+      "n": 10,
+      "max_az_gap_deg": 8e-05,
+      "max_el_gap_deg": 9e-05
+    },
+    {
+      "site_id": "apollo11",
+      "body": "sun",
+      "n": 10,
+      "max_az_gap_deg": 1e-05,
+      "max_el_gap_deg": 0.00065
+    },
+    {
+      "site_id": "apollo12",
+      "body": "earth",
+      "n": 10,
+      "max_az_gap_deg": 0.0001,
+      "max_el_gap_deg": 0.00011
+    },
+    {
+      "site_id": "apollo12",
+      "body": "sun",
+      "n": 10,
+      "max_az_gap_deg": 1e-05,
+      "max_el_gap_deg": 0.00067
+    },
+    {
+      "site_id": "chandrayaan3",
+      "body": "earth",
+      "n": 10,
+      "max_az_gap_deg": 9e-05,
+      "max_el_gap_deg": 0.00011
+    },
+    {
+      "site_id": "chandrayaan3",
+      "body": "sun",
+      "n": 10,
+      "max_az_gap_deg": 1e-05,
+      "max_el_gap_deg": 0.00069
+    },
+    {
+      "site_id": "change6",
+      "body": "earth",
+      "n": 10,
+      "max_az_gap_deg": 9e-05,
+      "max_el_gap_deg": 7e-05
+    },
+    {
+      "site_id": "change6",
+      "body": "sun",
+      "n": 10,
+      "max_az_gap_deg": 1e-05,
+      "max_el_gap_deg": 0.00063
+    },
+    {
+      "site_id": "im1",
+      "body": "earth",
+      "n": 10,
+      "max_az_gap_deg": 9e-05,
+      "max_el_gap_deg": 0.00011
+    },
+    {
+      "site_id": "im1",
+      "body": "sun",
+      "n": 10,
+      "max_az_gap_deg": 0.0,
+      "max_el_gap_deg": 0.00068
+    },
+    {
+      "site_id": "im2",
+      "body": "earth",
+      "n": 10,
+      "max_az_gap_deg": 8e-05,
+      "max_el_gap_deg": 0.00011
+    },
+    {
+      "site_id": "im2",
+      "body": "sun",
+      "n": 10,
+      "max_az_gap_deg": 0.0,
+      "max_el_gap_deg": 0.00067
+    },
+    {
+      "site_id": "slim",
+      "body": "earth",
+      "n": 10,
+      "max_az_gap_deg": 6e-05,
+      "max_el_gap_deg": 0.00014
+    },
+    {
+      "site_id": "slim",
+      "body": "sun",
+      "n": 10,
+      "max_az_gap_deg": 1e-05,
+      "max_el_gap_deg": 0.00068
+    }
+  ],
+  "n_fixtures": 140,
+  "n_failures": 0,
+  "failures": [],
+  "tol_deg": 0.01,
+  "max_earth_parallax_deg": 0.2767,
+  "parallax_upper_bound_deg": 0.2793,
+  "passed": true,
+  "meta": {
+    "ai_generated": true,
+    "generated_by": "pipeline/check_vs_horizons.py",
+    "git_sha": "bd11f8f38917bffbbce4888ea10f802cfac73039",
+    "mock": false
+  }
+}

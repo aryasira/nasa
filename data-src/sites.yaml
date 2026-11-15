@@ -24,7 +24,7 @@ sites:
     lon_e: 29.1957
     elev_m: null
     frame: MOON_ME
-    landing_utc: "2025-03-06T17:30:00Z"   # TODO(C): verify exact UTC from NASA/IM; date verified
+    landing_utc: "2025-03-06T17:28:50Z"   # 12:28:50 p.m. EST per Spaceflight Now (secondary): https://spaceflightnow.com/2025/03/07/intuitive-machines-im-2-mission-ends-with-lander-on-its-side-on-the-moon/
     source: { org: "LROC", url: "https://lroc.im-ldi.com/images/1408" }
     name_status: informal
     terrain: lola
@@ -62,7 +62,7 @@ sites:
     lon_e: 206.0148
     elev_m: -5256
     frame: MOON_ME
-    landing_utc: "2024-06-01T22:23:00Z"   # TODO(C): verify exact UTC; date verified
+    landing_utc: "2024-06-01T22:23:00Z"   # 06:23 Beijing Time 2 June per NSSC/CAS (UTC by conversion): https://english.nssc.ac.cn/news/202407/t20240701_672357.html
     source: { org: "LROC", url: "https://lroc.im-ldi.com/images/1374" }
     alternates:
       - { lat: -41.6251, lon_e: 206.0224, elev_m: -5273, source: { org: "Nature Communications 16:4219", url: "https://www.nature.com/articles/s41467-025-59443-5" } }
@@ -105,15 +105,15 @@ sites:
     name_status: informal
     terrain: sphere
     validation_use: qualitative   # sunset discrepancy unresolved — never a numeric fixture
-  # Candidate polar sites: Agent A fills coordinates from Gläser 2014 / PGDA, with the source URL. Do not guess.
+  # Candidate polar site, sourced from Gläser 2014. Elevation not published; Agent A reads it from LOLA.
   - id: connecting_ridge
     name: "Connecting Ridge (Shackleton–de Gerlache)"
     kind: candidate
-    lat: -89.45       # TODO(A): replace with Gläser 2014 site coordinate + URL; placeholder for mocks only
-    lon_e: 222.0      # TODO(A)
+    lat: -89.4399     # Gläser 2014 "spot 2" (best 2 m site); longitude read as east-positive 0-360 (paper does not state the convention)
+    lon_e: 222.8524
     elev_m: null
     frame: MOON_ME
-    source: { org: "Gläser et al. 2014, Icarus 243:78-90", url: "TODO" }
+    source: { org: "Gläser et al. 2014, Icarus 243:78-90", url: "https://elib.dlr.de/94240", quote: "smallest accumulated percentage in darkness is 7.73% and occurs at 89.4399°S, 222.8524°E" }
     name_status: informal
     terrain: lola
     validation_use: none

@@ -1,0 +1,165 @@
+{
+ "schema_version": 1,
+ "meta": {
+  "ai_generated": true,
+  "generated_by": "pipeline/make_horizons.py",
+  "git_sha": "bd11f8f38917bffbbce4888ea10f802cfac73039",
+  "mock": false
+ },
+ "features": [
+  {
+   "id": "malapert",
+   "name": "Malapert",
+   "name_status": "iau",
+   "gazetteer_id": 3603,
+   "type": "crater",
+   "lat": -85.0,
+   "lon_e": 11.4,
+   "radius_km": 36.19,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/3603"
+   }
+  },
+  {
+   "id": "mons_malapert",
+   "name": "Mons Malapert",
+   "name_status": "iau",
+   "gazetteer_id": 16338,
+   "type": "mons",
+   "lat": -85.98,
+   "lon_e": 358.33,
+   "radius_km": 33.5,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/16338"
+   }
+  },
+  {
+   "id": "mons_mouton",
+   "name": "Mons Mouton",
+   "name_status": "iau",
+   "gazetteer_id": 16070,
+   "type": "mons",
+   "lat": -84.6,
+   "lon_e": 31.0,
+   "radius_km": 65.0,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/16070"
+   }
+  },
+  {
+   "id": "shackleton",
+   "name": "Shackleton",
+   "name_status": "iau",
+   "gazetteer_id": 5450,
+   "type": "crater",
+   "lat": -89.67,
+   "lon_e": 129.78,
+   "radius_km": 10.46,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/5450"
+   }
+  },
+  {
+   "id": "de_gerlache",
+   "name": "de Gerlache",
+   "name_status": "iau",
+   "gazetteer_id": 1439,
+   "type": "crater",
+   "lat": -88.48,
+   "lon_e": 271.66,
+   "radius_km": 16.36,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/1439"
+   }
+  },
+  {
+   "id": "nobile",
+   "name": "Nobile",
+   "name_status": "iau",
+   "gazetteer_id": 4321,
+   "type": "crater",
+   "lat": -85.28,
+   "lon_e": 53.27,
+   "radius_km": 39.64,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/4321"
+   }
+  },
+  {
+   "id": "mons_latreille",
+   "name": "Mons Latreille",
+   "name_status": "iau",
+   "gazetteer_id": 15996,
+   "type": "mons",
+   "lat": 18.47,
+   "lon_e": 61.92,
+   "radius_km": 3.2,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/15996"
+   }
+  },
+  {
+   "id": "shioli",
+   "name": "Shioli",
+   "name_status": "iau",
+   "gazetteer_id": 15851,
+   "type": "crater",
+   "lat": -13.33,
+   "lon_e": 25.23,
+   "radius_km": 0.135,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/15851"
+   }
+  },
+  {
+   "id": "statio_shiv_shakti",
+   "name": "Statio Shiv Shakti",
+   "name_status": "iau",
+   "gazetteer_id": 16272,
+   "type": "statio",
+   "lat": -69.37,
+   "lon_e": 32.32,
+   "radius_km": null,
+   "source": {
+    "org": "USGS Gazetteer of Planetary Nomenclature",
+    "url": "https://planetarynames.wr.usgs.gov/Feature/16272"
+   }
+  },
+  {
+   "id": "connecting_ridge_summit",
+   "name": "Connecting Ridge",
+   "type": "ridge",
+   "lat": -89.438909,
+   "lon_e": 222.85643,
+   "radius_km": 4.0,
+   "name_status": "informal",
+   "gazetteer_id": null,
+   "source": {
+    "org": "NASA GSFC PGDA product 78 (point = highest pixel of the site DEM, computed by pipeline/horizon_lib.py)",
+    "url": "https://pgda.gsfc.nasa.gov/products/78"
+   }
+  },
+  {
+   "id": "peak_near_shackleton",
+   "name": "Peak near Shackleton",
+   "type": "massif",
+   "lat": -88.80815,
+   "lon_e": 123.717548,
+   "radius_km": 4.0,
+   "name_status": "informal",
+   "gazetteer_id": null,
+   "source": {
+    "org": "NASA GSFC PGDA product 78 (point = highest pixel of the site DEM, computed by pipeline/horizon_lib.py)",
+    "url": "https://pgda.gsfc.nasa.gov/products/78"
+   }
+  }
+ ]
+}

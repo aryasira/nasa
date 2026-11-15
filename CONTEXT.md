@@ -7,14 +7,16 @@ Team **Space City Ad Lunam** (Houston Local Event), NASA Space Apps 2026, challe
 Product: **Slip Impact Brief** — a static browser app that shows, for a lunar landing site and date, when the
 Sun and Earth are visible above the *local terrain horizon*, and what changes if the landing slips.
 
-**Differentiator (lead with this everywhere):** every gained or lost window gets a **cause line** naming the
-terrain that blocks the Sun or Earth, with its azimuth and distance, plus an uncertainty band from LOLA terrain error.
-Slip sliders, heatmaps and Horizons validation are table stakes — other teams have them. Cause lines are ours.
+**Differentiator (lead with this everywhere):** every gained or lost window gets a **cause line** that says *why*:
+the lunar day/night cycle or Earth libration (orbital), local slope, or a named terrain feature with its azimuth and
+distance. Slip sliders, heatmaps and Horizons validation are table stakes — other teams have them. Cause lines are ours.
+(Updated Sat 23:15: real data shows IM-1's slip losses are orbital, not a ridge. Never use the old
+"blocked by Malapert massif at az 172°" example; it cannot happen at IM-1.)
 
 Lead sentences for the project page:
-1. When a lunar launch slips, Slip Impact Brief shows in seconds which sunlight and direct-to-Earth windows a landing site gains or loses, and names the ridge, its direction and its distance that causes each change.
-2. We re-enact Intuitive Machines' IM-1 (Houston), where a launch-manifest slip of days became a month because Malapert A's lighting is only available a handful of days each month.
-3. Every number is checked against NASA JPL Horizons at real landing sites located by NASA's LRO cameras, and every result carries an uncertainty band from LOLA terrain error.
+1. When a lunar landing slips, Slip Impact Brief shows which sunlight and direct-to-Earth hours a site gains or loses, and explains each change: the lunar day/night cycle, Earth's libration, or the named terrain that blocks the view, with its direction and distance.
+2. We re-enact Intuitive Machines' IM-1 (Houston): a 10-day slip cuts a 7-day stay from 155 to 82 hours of sunlight because of the lunar day/night cycle, so the next equally good date is a month later — how a launch-manifest slip of days became a slip of a month.
+3. Every Sun and Earth position is checked against NASA JPL Horizons at 140 points at seven LRO-located landing sites (all within 0.01°), and Connecting Ridge's long-run sunlight (91.2%) is compared with the published 92.3% (Gläser et al. 2014).
 
 ## 2. Hard rules
 - **Deadline:** submission Sun 15 Nov 2026, 23:59 CT. Team target: submitted by **23:30**.
@@ -78,6 +80,7 @@ All shapes live in `contracts/`. TypeScript mirrors are in `contracts/types.ts` 
 
 ### Do NOT claim
 - That lighting *caused* the IM-1 slip (it **amplified** a manifest slip).
+- Any named-ridge cause line at IM-1 (its terrain lines are unnamed local slope).
 - Any Blue Ghost sunset time as a numeric validation (unresolved ~2 h discrepancy). Qualitative only.
 - Griffin-1 has launched or landed (it hasn't, as of 14 Nov 2026).
 - Mazarico 2011 / Barker 2021 / Bryant 2009 figures (unverified).

@@ -16,8 +16,7 @@ You are **Agent A** in a 3-agent hackathon build for the NASA Space Apps 2026 ch
 
 Do **not** touch `app/src`, `contracts`, `tests`, `data-src`, `app/public/data/mock`, `app/public/data/sites.json`.
 If a contract or site value looks wrong, write it under "Blocked / needs other agent" in `STATUS-A.md` and move on.
-Exception: the `connecting_ridge` coordinates in `data-src/sites.yaml` are a placeholder — put the sourced values
-in `STATUS-A.md` and the human/Agent C will update the YAML.
+`connecting_ridge` is now sourced (Gläser 2014 spot 2); read its elevation from LOLA. Named features: start from `data-src/features-seed.yaml` (IAU Gazetteer IDs).
 
 ## Tasks (in order)
 1. **Kernels → `ephem.bin`** (`pipeline/make_ephem.py`, spiceypy). Download into `pipeline/kernels/` (git-ignored):
