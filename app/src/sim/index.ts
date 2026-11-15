@@ -22,6 +22,7 @@ import { makeSunUniforms } from './regolith';
 import { disposeTextures } from './textures';
 import { CAMS, CONSOLE_HTML, ICON, OVERLAY_HTML, STATUS_HTML } from './ui';
 import './sim.css';
+import { slipOptions } from '../engine/slip';
 // --- FEATURE (C): countdowns and geometry-only power factors, see src/features/
 import { CountdownCache, countdownText, type CountdownText } from '../features/countdown';
 import { powerGeometry } from '../features/power';
@@ -180,6 +181,8 @@ class Simulator {
       else if (a === 'back') this.step(-HOUR);
       else if (a === 'fwd') this.step(HOUR);
       else if (a === 'fs') this.toggleFullscreen();
+      else if (a === 'story') { if (this.story) this.endStory(); else this.startStory(); }
+      else if (a === 'sound') { this.sound = !this.sound; if (this.sound) this.beep(660, 0.12); this.syncButtons(); }
       else if (a === 'zin') this.zoomBy(1.25);
       else if (a === 'zout') this.zoomBy(1 / 1.25);
       else if (a === 'home') this.homeView();
@@ -445,6 +448,111 @@ class Simulator {
     this.terrain.setResolution(this.view.clientWidth, this.view.clientHeight);
   }
 
+  // ---------------------------------------------------------------- story replay + sound cues
+  // "Replay the slip": a ~20 s guided sequence. Planned stay, then the slipped stay, then the next good date.
+  // Every number in the captions comes from the engine (slipOptions and a 10-minute scan of each stay).
+  private story: { t0: number; a: { t0: number; t1: number }; b: { t0: number; t1: number }; sa: Scan; sb: Scan;
+    ha: number; hb: number; rec: { days: number; date: string } | null; phase: number; wasPlaying: boolean; ab0: AB; tPrev: number } | null = null;
+  private storyEl: HTMLElement | null = null;
+  private startStory() {
+    if (!this.renderer || !this.ctx) return;
+    const [a, b] = this.stays();
+    if (!b) { this.live.textContent = 'Set a launch slip first, then replay it.'; return; }
+    const c = this.ctx;
+    try {
+      const opts = slipOptions({ ephem: c.ephem, site: this.site, horizons: c.horizons, sites: c.sites, features: c.features,
+        tStart: a.t0, stayDays: c.state.stay, slipDays: c.state.slip, mode: c.state.mode });
+      const sl = opts.find((o) => o.kind === 'slip'), rc = opts.find((o) => o.kind === 'recover');
+      if (!sl) return;
+      const rec = rc && rc.label.startsWith('Next') ? { days: Math.round((parseUtc(rc.start_utc) - a.t0) / DAY), date: rc.start_utc.slice(0, 10) } : null;
+      this.story = { t0: performance.now(), a, b, sa: opts[0].scan, sb: sl.scan, ha: opts[0].metrics.both_visible_h, hb: sl.metrics.both_visible_h,
+        rec, phase: -1, wasPlaying: this.playing, ab0: this.ab, tPrev: this.t };
+    } catch { return; }
+    this.playing = false;
+    if (this.cam !== 'lander') this.setCam('lander');
+    if (!this.storyEl) { this.storyEl = el('div', 'sim-story'); this.storyEl.setAttribute('aria-live', 'polite'); this.view.append(this.storyEl); }
+    this.storyEl.hidden = false;
+    this.root.classList.add('in-story');
+    this.syncButtons();
+  }
+  private endStory() {
+    const st = this.story;
+    if (!st) return;
+    this.story = null;
+    if (this.storyEl) this.storyEl.hidden = true;
+    this.root.classList.remove('in-story');
+    this.syncButtons();
+    this.dirty = true;
+  }
+  private stepStory(now: number) {
+    const st = this.story!;
+    const e = (now - st.t0) / 1000;
+    const n = Math.abs(this.ctx.state.slip), late = this.ctx.state.slip > 0;
+    const both = (sc: Scan, t: number, total: number) => {
+      const k = Math.max(0, Math.min(sc.n, Math.round((t - sc.tStart) / ((sc.tEnd - sc.tStart) / sc.n))));
+      let c = 0; for (let i = 0; i < k; i++) c += sc.sunVis[i] & sc.earthVis[i];
+      let all = c; for (let i = k; i < sc.n; i++) all += sc.sunVis[i] & sc.earthVis[i];
+      return all ? (c / all) * total : 0; // scaled so the count ends exactly on the engine's total
+    };
+    const day = (t: number) => fmtUtc(t).slice(0, 10);
+    const ease = (x: number) => x * x * (3 - 2 * x);
+    let phase = 0, html = '';
+    if (e < 7) {
+      phase = 0;
+      if (this.ab !== 'a') { this.ab = 'a'; this.afterStaysChange(); }
+      this.t = st.a.t0 + ease(Math.min(1, e / 6.5)) * (st.a.t1 - st.a.t0);
+      html = `<span class="k">Landing as planned · ${day(st.a.t0)}</span><span class="v num">${both(st.sa, this.t, st.ha).toFixed(1)}<small> h with Sun + Earth</small></span>`;
+    } else if (e < 9.5) {
+      phase = 1;
+      html = `<span class="k">Then the launch slips</span><span class="v">${n} day${n === 1 ? '' : 's'} ${late ? 'late' : 'early'}</span>`;
+    } else if (e < 16.5) {
+      phase = 2;
+      if (this.ab !== 'b') { this.ab = 'b'; this.afterStaysChange(); }
+      this.t = st.b.t0 + ease(Math.min(1, (e - 9.5) / 6.5)) * (st.b.t1 - st.b.t0);
+      html = `<span class="k">Landing ${late ? 'late' : 'early'} · ${day(st.b.t0)}</span><span class="v num ${st.hb < st.ha - 0.05 ? 'neg' : ''}">${both(st.sb, this.t, st.hb).toFixed(1)}<small> h with Sun + Earth</small></span>`;
+    } else if (e < 22) {
+      phase = 3;
+      this.t = st.b.t1;
+      const d = st.hb - st.ha;
+      html = `<span class="k">Same site, same stay</span><span class="v num">${st.ha.toFixed(1)} → <b class="${d < -0.05 ? 'neg' : ''}">${st.hb.toFixed(1)} h</b></span>`
+        + (st.rec ? `<span class="k2">Next date as good: <b class="num">+${st.rec.days} d</b> (${st.rec.date})</span>` : '');
+    } else { this.endStory(); return; }
+    // Keep the Sun (or Earth when the Sun is down) in frame, a little off-centre.
+    const r = this.ro;
+    if (r && phase !== 1) {
+      const target = r.sun.aboveFlat || r.sun.el > -3 ? r.sun : r.earth;
+      const k = phase !== st.phase ? 1 : 0.1; // snap at the start of each part, then follow smoothly
+      this.yaw = (((this.yaw + wrap180(target.az - 14 - this.yaw) * k) % 360) + 360) % 360;
+      this.pitch += (clamp(target.el * 0.5, -4, 20) - this.pitch) * k;
+    }
+    if (this.storyEl && (phase !== st.phase || phase === 0 || phase === 2)) this.storyEl.innerHTML = html;
+    st.phase = phase;
+  }
+  // Optional sound cues (off by default): a falling tone at sunset / Earthset, a rising tone at sunrise / Earthrise.
+  private sound = false;
+  private audio: AudioContext | null = null;
+  private lastVis: { key: string; sun: boolean; earth: boolean; t: number } | null = null;
+  private beep(freq: number, dur: number, to?: number) {
+    try {
+      this.audio ??= new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const ac = this.audio, o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(freq, ac.currentTime);
+      if (to) o.frequency.exponentialRampToValueAtTime(to, ac.currentTime + dur);
+      g.gain.setValueAtTime(0.0001, ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.12, ac.currentTime + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
+      o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + dur + 0.02);
+    } catch { /* no audio available */ }
+  }
+  private cue(r: Readout) {
+    const key = `${this.siteKey}|${this.ab}`;
+    const p = this.lastVis;
+    this.lastVis = { key, sun: r.sun.visible, earth: r.earth.visible, t: this.t };
+    if (!this.sound || !p || p.key !== key || Math.abs(this.t - p.t) > 6 * 3600 || this.t === p.t) return;
+    const fwd = this.t > p.t;
+    if (p.sun !== r.sun.visible) { const set = fwd ? !r.sun.visible : r.sun.visible; this.beep(set ? 520 : 330, 0.5, set ? 260 : 660); }
+    if (p.earth !== r.earth.visible) { const set = fwd ? !r.earth.visible : r.earth.visible; this.beep(set ? 880 : 590, 0.35, set ? 440 : 1180); }
+  }
   // On-screen zoom (+ / −) and home (reset view) buttons, for every camera.
   private landerZoom = 1;
   private landerBaseFov = 66;
@@ -659,6 +767,11 @@ class Simulator {
     press('[data-size]', (x) => Number(x.dataset.size) === this.size);
     press('.pin', (x) => x.dataset.site === this.site.id);
     this.q<HTMLElement>('[data-a="compass"]').setAttribute('aria-checked', String(this.showCompass));
+    this.q<HTMLElement>('[data-a="sound"]')?.setAttribute('aria-checked', String(this.sound));
+    const sl = this.q<HTMLElement>('[data-f="story-l"]');
+    if (sl) sl.textContent = this.story ? 'Stop replay' : 'Replay the slip';
+    const sb = this.q<HTMLButtonElement>('[data-a="story"]');
+    if (sb) sb.hidden = !this.renderer || !this.stays()[1];
     const slip = this.q<HTMLInputElement>('#sim-slip'), slipN = this.q<HTMLInputElement>('#sim-slip-n');
     const s = this.slipDays();
     if (document.activeElement !== slip) slip.value = String(clamp(s, 0, 60));
@@ -748,7 +861,8 @@ class Simulator {
     this.last = now;
     if (!this.ctx) return;
     let continuous = false;
-    if (this.playing) {
+    if (this.story) { this.stepStory(now); this.dirty = continuous = true; }
+    else if (this.playing) {
       const sp = this.span();
       this.t += dt * this.speed;
       if (this.t >= sp.t1) { this.t = sp.t1; this.setPlaying(false); }
@@ -879,6 +993,7 @@ class Simulator {
   }
 
   private updateHud(r: Readout) {
+    this.cue(r);
     const [a, b] = this.stays();
     const start = this.ab === 'b' && b ? b.t0 : a.t0;
     const stayDays = this.ctx.state.stay;

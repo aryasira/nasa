@@ -75,6 +75,7 @@ export const CONSOLE_HTML = `
     <div class="look" role="group" aria-label="Point the lander camera">
       <button type="button" class="chip" data-look="sun" title="Turn the lander camera to the Sun">${ICON.sun}Look at Sun</button>
       <button type="button" class="chip" data-look="earth" title="Turn the lander camera to Earth">${ICON.earth}Look at Earth</button>
+      <button type="button" class="chip chip-story" data-a="story" title="Play a 20-second replay: the planned stay, the slipped stay, and the next good date"><span aria-hidden="true">▶</span> <span data-f="story-l">Replay the slip</span></button>
     </div>
     <div class="tools">
       <button type="button" class="ib" data-pop="about" aria-expanded="false" aria-controls="sim-pop-about" aria-label="About this view" title="About this view">${ICON.info}</button>
@@ -86,6 +87,8 @@ export const CONSOLE_HTML = `
           <div class="seg" role="group" aria-labelledby="sim-size-l"><button type="button" data-size="1">True size</button><button type="button" data-size="6">Enlarged ×6</button></div></div>
         <div class="pop-row"><span id="sim-cmp-l">Compass strip</span>
           <button type="button" class="switch" role="switch" data-a="compass" aria-labelledby="sim-cmp-l"><i></i></button></div>
+        <div class="pop-row"><span id="sim-snd-l">Sunset and Earthset sounds</span>
+          <button type="button" class="switch" role="switch" data-a="sound" aria-labelledby="sim-snd-l"><i></i></button></div>
         <p class="pop-note" data-f="quality"></p>
       </div>
       <div class="pop pop-about" id="sim-pop-about" role="dialog" aria-label="About this view" hidden>
