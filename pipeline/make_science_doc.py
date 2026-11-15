@@ -208,6 +208,18 @@ def band_section():
                    f"{v['peak_occluder_dist_m']} | {res:g} |")
     out += ["", "Error maps read: " + "; ".join(sorted({f"`{e['file']}` (median {e['median_m']} m near the site)"
                                                       for _, v in done for e in v["err_maps"]})) + "."]
+    conf = [(k, v) for k, v in rows if v.get("peak_occluder_cells") is not None]
+    if conf:
+        out += ["", "Grid confidence. `occluder.cells` in each horizon file is the occluder distance divided "
+                "by the grid size of the DEM layer it was found in. Under 3 cells is low confidence.", "",
+                "| Site | Peak occluder distance, in grid cells | Azimuths with an occluder under 3 cells |",
+                "|---|---:|---:|"]
+        out += [f"| {k} | {v['peak_occluder_cells']} | {100 * v['share_under_3_cells']:.0f}% |" for k, v in conf]
+    masts = [(k, v["masts"]) for k, v in rows if v.get("masts")]
+    if masts:
+        out += ["", "Other observer heights (files `horizon/<id>.mast<h>.json`). Mean drop of the horizon "
+                "against the 2 m file:", ""]
+        out += [f"- {k}: " + ", ".join(f"{m} m: {x['mean_drop_deg']} deg" for m, x in d.items()) for k, d in masts]
     missing = [k for k, v in rows if v.get("sigma_m") is None]
     if missing:
         out += ["", "No band (no error map could be read): " + ", ".join(missing) + "."]

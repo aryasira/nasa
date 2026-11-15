@@ -201,6 +201,15 @@ def test_horizon_files_meet_the_contract(tmp_path, monkeypatch):
     assert doc2["elev_deg"] == doc["elev_deg"] and rep2["band"] == "ok"
     assert doc2["elev_hi_deg"][i] > doc2["elev_deg"][i] > doc2["elev_lo_deg"][i]
     assert rep2["band_half_width_deg_max"] > 0
+    # confidence: occluder distance in cells of the layer that holds it
+    occ = doc2["occluder"]
+    assert occ["res_m"][i] == 10.0 and abs(occ["cells"][i] - occ["dist_m"][i] / 10.0) < 0.06
+    assert all((c is None) == (d is None) for c, d in zip(occ["cells"], occ["dist_m"]))
+    assert rep2["peak_occluder_cells"] == occ["cells"][i] and 0 <= rep2["share_under_3_cells"] <= 1
+    # a taller mast lowers the horizon
+    doc5, _ = mh.lola_doc(site, [tmp_path], feats, mast_m=10.0)
+    check(doc5, "horizon.schema.json")
+    assert doc5["mast_m"] == 10.0 and doc5["elev_deg"][i] < doc2["elev_deg"][i]
 
 
 def test_make_horizons_main_end_to_end(tmp_path, monkeypatch, capsys):
@@ -222,12 +231,15 @@ def test_make_horizons_main_end_to_end(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(C, "load_sites", lambda: [
         {"id": "t", "lat": LAT, "lon_e": LON, "elev_m": 10, "terrain": "lola"},
         {"id": "s", "lat": 0.0, "lon_e": 0.0, "elev_m": 0, "terrain": "sphere"}])
-    monkeypatch.setattr(sys, "argv", ["make_horizons.py", "--dem-dir", str(dems), "--fine", "40"])
+    monkeypatch.setattr(sys, "argv", ["make_horizons.py", "--dem-dir", str(dems), "--fine", "40",
+                                      "--masts", "5,10"])
     mh.main()
     out = capsys.readouterr().out
     assert "FAILED" not in out and "NO BAND" not in out
     for sid in ("t", "s", "extra"):
         assert (tmp_path / "data/horizon" / f"{sid}.json").exists()
+    assert (tmp_path / "data/horizon/t.mast5.json").exists() and (tmp_path / "data/horizon/t.mast10.json").exists()
+    assert not (tmp_path / "data/horizon/s.mast5.json").exists()
     extra = json.loads((tmp_path / "data/horizon/extra.json").read_text())
     assert "ROUND2-A.md" in extra["site_used"]["point_from"] and extra["dem"]["sigma_m"] == 0.4
     rep = json.loads((tmp_path / "reports/horizons.json").read_text())
@@ -238,6 +250,7 @@ def test_make_horizons_main_end_to_end(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(C, "DOCS", tmp_path / "docs")
     msd.main()
     text = (tmp_path / "docs/science.md").read_text()
+    assert "Grid confidence" in text and "Other observer heights" in text
     assert "| t |" in text and "| extra |" in text and "Pending: no terrain horizon has a band" not in text
 
 

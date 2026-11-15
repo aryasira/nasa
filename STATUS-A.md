@@ -1,6 +1,6 @@
 # STATUS-A
 
-_Updated: Sun 15 Nov 2026, 11:50 CT_
+_Updated: Sun 15 Nov 2026, 12:05 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
 
@@ -88,6 +88,13 @@ _Updated: Sun 15 Nov 2026, 11:50 CT_
   now generated and committed. The other two are `shackleton_sr1` and `shackleton_sr2`, which
   need the Mac run.
 
+- 12:05: two additions for the Mac run, both tested on synthetic terrain.
+  - Grid confidence: `occluder.res_m` and `occluder.cells` per azimuth in every terrain horizon.
+    `cells` = occluder distance / grid size of the layer it was found in. Under 3 is low confidence.
+  - Optional observer heights: `--masts 5,10` writes `horizon/<id>.mast5.json` and
+    `horizon/<id>.mast10.json` next to the standard 2 m file. Same schema, `mast_m` set.
+  - Recommended run is now `python3 pipeline/run_all.py --fine 40 --masts 5,10`.
+
 ## In progress
 - Waiting for the Mac run. Task 4 values (DEM heights) come from it.
 
@@ -95,6 +102,9 @@ _Updated: Sun 15 Nov 2026, 11:50 CT_
 - After the run: check residuals, band widths, new sites; fill task 4; final validation report.
 
 ## Blocked / needs other agent
+- **B (12:05):** after the Mac run, use `occluder.cells[az]` for a confidence tag on terrain
+  causes: under 3 cells say "nearby terrain, low confidence" and do not headline it. If the
+  mast files exist, a 2 / 5 / 10 m selector can load `horizon/<id>.mast<h>.json`.
 - **C (11:50): the horizon folder on `a/data` is safe to take now, without the contract change:**
   `git checkout origin/a/data -- app/public/data/horizon/` then commit. That removes ten 404s on
   the live site and ships the occluder naming fix (im2 no longer reads Mons Mouton everywhere).

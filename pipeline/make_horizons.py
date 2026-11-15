@@ -94,6 +94,8 @@ ROUND2_SITES = [
 ]
 # A band wider than this at the highest point of the horizon is flagged.
 BAND_FLAG_DEG = 0.5
+# An occluder closer than this many grid cells is low confidence.
+LOW_CONF_CELLS = 3.0
 # Set a point here only if the catalogue must be overridden; the point is
 # then written into the output as site_used.differs_from_catalog = true.
 OVERRIDE = {}
@@ -209,7 +211,8 @@ def sphere_doc(site):
             "meta": C.meta("pipeline/make_horizons.py")}
 
 
-def lola_doc(site, dirs, feats, fine=None, bands=True):
+def lola_doc(site, dirs, feats, fine=None, bands=True, mast_m=None):
+    mast_m = MAST_M if mast_m is None else float(mast_m)
     from horizon_lib import horizon     # needs rasterio, pyproj, scipy
 
     names = list(PLAN[site["id"]])
@@ -228,7 +231,7 @@ def lola_doc(site, dirs, feats, fine=None, bands=True):
     point = OVERRIDE.get(site["id"], {"lat": site["lat"], "lon_e": site["lon_e"]})
     t = time.time()
     try:
-        h = horizon(point["lat"], point["lon_e"], paths, mast_m=MAST_M,
+        h = horizon(point["lat"], point["lon_e"], paths, mast_m=mast_m,
                     max_range_km=MAX_RANGE_KM, err_paths=errs, dem_radius_km=radii)
     except ValueError as err:
         if errs is None:
@@ -236,7 +239,7 @@ def lola_doc(site, dirs, feats, fine=None, bands=True):
         band_note = f"no band: {err}"
         print(f"  {site['id']}: {band_note}")
         errs = None
-        h = horizon(point["lat"], point["lon_e"], paths, mast_m=MAST_M,
+        h = horizon(point["lat"], point["lon_e"], paths, mast_m=mast_m,
                     max_range_km=MAX_RANGE_KM, dem_radius_km=radii)
     has_band = errs is not None
     occ_sig = h["occ_sigma_m"]
@@ -247,13 +250,21 @@ def lola_doc(site, dirs, feats, fine=None, bands=True):
                                 site=(point["lat"], point["lon_e"]))
     under = features_under_site(point["lat"], point["lon_e"], feats)
     used = [d["file"] for d in h["dems"]]
+    # Grid size of the DEM layer that holds each occluder, and how many of its
+    # cells lie between the site and the occluder. Few cells = low confidence:
+    # a grid cannot show relief smaller than its cells.
+    layer_res = np.array([d["used_res_m"] for d in h["dems"]], dtype="float64")
+    idx = h["occ_dem_index"].astype(int)
+    occ_res = np.where(idx >= 0, layer_res[np.clip(idx, 0, None)], np.nan)
+    occ_cells = h["occ_dist_m"] / occ_res
     doc = {
-        "schema_version": 1, "site_id": site["id"], "mast_m": MAST_M, "az_step_deg": 0.5,
+        "schema_version": 1, "site_id": site["id"], "mast_m": mast_m, "az_step_deg": 0.5,
         "elev_deg": [round(float(v), 4) for v in h["elev_deg"]],
         "elev_lo_deg": [round(float(v), 4) for v in h["elev_lo_deg"]],
         "elev_hi_deg": [round(float(v), 4) for v in h["elev_hi_deg"]],
         "occluder": {"dist_m": nullable(h["occ_dist_m"], 0), "lat": nullable(h["occ_lat"], 5),
-                     "lon_e": nullable(h["occ_lon_e"], 5), "feature_id": feature_id},
+                     "lon_e": nullable(h["occ_lon_e"], 5), "feature_id": feature_id,
+                     "res_m": nullable(occ_res, 1), "cells": nullable(occ_cells, 1)},
         "dem": {"product": " + ".join(DEMS[n]["product"] for n in used),
                 "res_m": min(DEMS[n]["res_m"] for n in used),
                 "sigma_m": sigma, "max_range_km": MAX_RANGE_KM, "layers": used},
@@ -292,6 +303,10 @@ def lola_doc(site, dirs, feats, fine=None, bands=True):
         "band_half_width_deg_at_peak": None if sigma is None else round(float(half[int(e.argmax())]), 4),
         "peak_occluder_dist_m": (None if not np.isfinite(h["occ_dist_m"][int(e.argmax())])
                                  else round(float(h["occ_dist_m"][int(e.argmax())]), 0)),
+        "peak_occluder_cells": (None if not np.isfinite(occ_cells[int(e.argmax())])
+                                else round(float(occ_cells[int(e.argmax())]), 1)),
+        "share_under_3_cells": round(float(np.mean(occ_cells < LOW_CONF_CELLS)), 3),
+        "mast_m": mast_m,
         "band_flag": bool(sigma is not None and half[int(e.argmax())] * 2 > BAND_FLAG_DEG),
         "point_from": site.get("_from", "app/public/data/sites.json"),
         "fine": fine if (fine and site["id"] in FINE_SITES) else None,
@@ -333,6 +348,9 @@ def main():
                     help="folder that already holds the DEM files; repeatable")
     ap.add_argument("--only", action="append", default=[], help="site id; repeatable")
     ap.add_argument("--fine", choices=sorted(FINE), help="finer near-field grid for im1 and im2 (large download)")
+    ap.add_argument("--masts", default="",
+                    help="extra observer heights in metres, e.g. 5,10. Writes horizon/<id>.mast<h>.json "
+                         "for terrain sites next to the standard 2 m file")
     ap.add_argument("--rematch", action="store_true",
                     help="only re-label occluders in existing horizon files (no DEM needed)")
     ap.add_argument("--no-bands", action="store_true", help="skip the error maps and the uncertainty band")
@@ -368,6 +386,18 @@ def main():
                 print(f"FAILED {failed[-1]}")
                 continue
             reports[site["id"]] = rep
+            for m in [float(x) for x in args.masts.split(",") if x.strip()]:
+                try:
+                    d2, r2 = lola_doc(site, dirs, feats, fine=args.fine, bands=not args.no_bands, mast_m=m)
+                    C.write_json(C.DATA / "horizon" / f"{site['id']}.mast{m:g}.json", d2)
+                    rep.setdefault("masts", {})[f"{m:g}"] = {
+                        "elev_min_deg": r2["elev_min_deg"], "elev_max_deg": r2["elev_max_deg"],
+                        "mean_drop_deg": round(float(np.mean(np.array(doc["elev_deg"]) - np.array(d2["elev_deg"]))), 4)}
+                    print(f"{'':17s} mast {m:g} m: elev {r2['elev_min_deg']:.2f}..{r2['elev_max_deg']:.2f} deg, "
+                          f"mean drop vs 2 m {rep['masts'][f'{m:g}']['mean_drop_deg']} deg")
+                except Exception as err:
+                    failed.append(f"{site['id']} mast {m:g}: {type(err).__name__}: {err}")
+                    print(f"FAILED {failed[-1]}")
             print(f"{site['id']:17s} elev {rep['elev_min_deg']:6.2f}..{rep['elev_max_deg']:5.2f} deg, "
                   f"peak at az {rep['elev_max_at_az_deg']:5.1f}, site {rep['site_used']['elev_dem_m']:8.1f} m "
                   f"(catalogue {rep['site_used']['elev_catalog_m']}), null occluders "
@@ -380,6 +410,8 @@ def main():
                       + ("  ** WIDE BAND AT PEAK, flag in STATUS-A **" if rep["band_flag"] else ""))
             else:
                 print(f"{'':17s} NO BAND: {rep['band']}")
+            print(f"{'':17s} confidence: peak occluder is {rep['peak_occluder_cells']} grid cells away; "
+                  f"{100 * rep['share_under_3_cells']:.0f}% of azimuths have an occluder under {LOW_CONF_CELLS:g} cells")
         else:
             doc = sphere_doc(site)
             reports[site["id"]] = {"site_id": site["id"], "sphere": True}
