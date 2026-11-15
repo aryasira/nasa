@@ -73,3 +73,20 @@ def test_ai_disclosure_in_meta():
             doc = json.loads(p.read_text())
             if isinstance(doc, dict) and "meta" in doc:
                 assert doc["meta"].get("ai_generated") is True, f"{p}: meta.ai_generated must be true"
+
+
+def test_validation_scorecard():
+    """Added by Agent A (round 3): app/public/data/validation.json against contracts/validation.schema.json."""
+    p = ROOT / "app/public/data/validation.json"
+    if not p.exists(): pytest.skip("no validation.json")
+    doc = json.loads(p.read_text())
+    validate(doc, "validation.schema.json")
+    assert doc["meta"]["mock"] is False and doc["meta"]["ai_generated"] is True
+    h = doc["horizons_check"]
+    assert h["passed"] and max(h["max_az_gap_deg"], h["max_el_gap_deg"]) <= h["tol_deg"]
+    # "1/N of the Sun's width" must never overstate the match
+    assert h["max_gap_as_fraction_of_sun_diameter"]["one_over"] <= h["max_gap_as_fraction_of_sun_diameter"]["exact_ratio"]
+    assert h["n_fixtures"] == len(json.loads((ROOT / "app/public/data/fixtures.json").read_text())["fixtures"])
+    for line in doc["lead_lines"]:
+        lo, hi = line["sunlit_h_range"]
+        assert lo <= line["sunlit_h"] <= hi
