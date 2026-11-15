@@ -32,6 +32,7 @@ const card = (k: 'power' | 'comm', title: string, icon: string, body: 'Sun' | 'E
   <article class="card card-${k}" aria-label="${title}">
     <header><span class="card-k">${icon}${title}</span><span class="card-state" data-f="${k}-state"></span></header>
     <div class="meter" aria-hidden="true"><i data-f="${k}-bar"></i></div>
+    <p class="card-cd num" data-f="${k}-cd" title="Against the local terrain horizon, from the simulator time"></p>
     <dl class="trio">
       <div><dt>${body} az</dt><dd class="num" data-f="${k}-az"></dd></div>
       <div><dt>${body} el</dt><dd class="num" data-f="${k}-el"></dd></div>

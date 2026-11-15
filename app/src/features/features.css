@@ -1,0 +1,105 @@
+/* AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. */
+/* Challenge-coverage panels: custom site, landing dates, compare, explain. Same tokens as sim.css. */
+
+/* smooth-sphere label */
+.sphere-note { margin: 10px 0 0; padding: 8px 12px; border-left: 3px solid var(--sun); background: rgba(230, 159, 0, 0.07); border-radius: 0 8px 8px 0; color: #f3d9a4; font-size: .88rem; }
+.sphere-inline { color: #f3d9a4; }
+
+/* explain bar + tour */
+.feat-explain { margin-top: 16px; }
+.xp-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.xp-row .switch { position: relative; width: 48px; height: 32px; min-height: 0; padding: 0; border: 0; background: transparent; border-radius: 16px; }
+.xp-row .switch i { position: absolute; left: 6px; top: 6px; width: 36px; height: 20px; border-radius: 10px; background: rgba(255, 255, 255, 0.16); transition: background .15s; }
+.xp-row .switch i::after { content: ""; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.xp-row .switch[aria-checked="true"] i { background: var(--both); }
+.xp-row .switch[aria-checked="true"] i::after { transform: translateX(16px); }
+.xp-label { margin: 0; font: 600 15px/1 var(--sans); color: var(--ink); cursor: pointer; }
+.xp-row .note { margin: 0; }
+.tour { margin-top: 10px; padding: 14px 16px; border-color: rgba(0, 158, 115, 0.45); background: rgba(0, 158, 115, 0.06); }
+.tour .tour-k { margin: 0 0 4px; font: 500 12px/1.3 var(--sans); color: var(--ink-2); }
+.tour h3 { font: 600 1.05rem/1.3 var(--sans); margin: 0 0 6px; color: var(--ink); }
+.tour h3:focus { outline: none; }
+.tour h3:focus-visible { outline: 2px solid #fff; }
+.tour p { margin: 0 0 10px; max-width: 80ch; line-height: 1.55; }
+.tour .row button { min-height: 36px; }
+.tour-dots { display: flex; gap: 2px; list-style: none; margin: 0 0 0 auto; padding: 0; }
+.tour-dots button { width: 28px; height: 28px; min-height: 0; padding: 0; border: 0; background: transparent; position: relative; }
+.tour-dots button::after { content: ""; position: absolute; left: 9px; top: 9px; width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.25); }
+.tour-dots button[aria-current="step"]::after { background: var(--both); }
+.xp-note { margin: 4px 0 8px; padding: 6px 10px; font-size: .86rem; line-height: 1.45; color: #cdeee3; background: rgba(0, 158, 115, 0.08); border-left: 3px solid var(--both); border-radius: 0 6px 6px 0; }
+.card .xp-note { margin: 6px 0 4px; font-size: 11.5px; padding: 4px 8px; }
+
+/* custom site */
+.feat-custom details > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; border-radius: 6px; }
+.feat-custom details > summary::-webkit-details-marker { display: none; }
+.feat-custom details > summary h2 { margin: 0; }
+.feat-custom details > summary h2::before { content: "▸ "; color: var(--ink-3); }
+.feat-custom details[open] > summary h2::before { content: "▾ "; }
+.cgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px 14px; align-items: start; margin-top: 12px; }
+.cgrid .cbtn { align-self: end; padding-bottom: 18px; }
+.cgrid .err { display: block; min-height: 1.1em; color: #ffb3a8; font-size: .8rem; margin-top: 2px; }
+.cgrid input[aria-invalid="true"] { border-color: var(--alert); }
+
+/* landing dates */
+.dates-ctl { margin: 6px 0 4px; }
+.dates-ctl .note { margin: 0; }
+.rad, .chk { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: .9rem; color: var(--text); cursor: pointer; min-height: 32px; }
+.rad input, .chk input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-color: var(--both); }
+.dates-chart { position: relative; min-height: 190px; }
+.dates-chart svg { width: 100%; height: auto; touch-action: pan-y; cursor: crosshair; border-radius: 6px; }
+.dates-chart svg:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.dates-chart .g { stroke: rgba(255, 255, 255, 0.08); }
+.dates-chart .ln-sun { fill: none; stroke: #e69f00; stroke-width: 1.5; }
+.dates-chart .ln-earth { fill: none; stroke: #56b4e9; stroke-width: 1.5; stroke-dasharray: 5 3; }
+.dates-chart .ln-both { fill: none; stroke: #009e73; stroke-width: 2.4; }
+.dates-chart .basem { stroke: rgba(255, 255, 255, 0.7); stroke-width: 1.5; }
+.dates-chart .baset, .dates-chart .slipt { font-size: 11px; }
+.dates-chart .slipm { stroke: #f0e442; stroke-width: 1.5; stroke-dasharray: 4 3; }
+.dates-chart .slipt { fill: #f0e442; }
+.dates-chart .best circle { fill: #009e73; stroke: #fff; stroke-width: 1.5; }
+.dates-chart .best text { font-weight: 700; fill: #fff; }
+.dates-chart .cur line { stroke: #fff; stroke-width: 1; stroke-opacity: .6; }
+.dates-chart .cur circle { fill: #fff; }
+.dates-chart .beyond { fill: rgba(255, 255, 255, 0.035); }
+.dates-wait { height: 190px; border-radius: 6px; background: linear-gradient(90deg, rgba(255,255,255,.03), rgba(255,255,255,.06), rgba(255,255,255,.03)); }
+.dates-read { margin: 4px 0 0; min-height: 1.4em; font-size: .85rem; color: var(--ink-2); }
+#dates-sum p { margin: 8px 0 0; max-width: 90ch; }
+#dates-status progress { width: 120px; vertical-align: middle; accent-color: var(--both); }
+
+/* compare */
+.cmp-pick { border: 1px solid var(--line); border-radius: 8px; margin: 8px 0 10px; padding: 6px 12px 8px; display: flex; flex-wrap: wrap; gap: 2px 16px; }
+.cmp-pick legend { font-size: .82rem; color: var(--muted); padding: 0 4px; }
+.chk input:disabled + * , .chk:has(input:disabled) { opacity: .5; cursor: not-allowed; }
+.cmp-wrap { overflow-x: auto; }
+table.cmp { min-width: 760px; }
+table.cmp th[scope="row"] { text-align: left; font-weight: 600; }
+table.cmp thead th { padding: 2px 4px; vertical-align: bottom; }
+.sortb { width: 100%; min-height: 34px; padding: 4px 6px; border: 0; background: transparent; color: var(--muted); font: 600 .8rem/1.2 var(--sans); text-align: inherit; }
+.sortb:hover { color: var(--ink); background: rgba(255, 255, 255, 0.06); }
+table.cmp thead th:first-child .sortb { text-align: left; }
+table.cmp thead th:not(:first-child) .sortb { text-align: right; }
+table.cmp td.best { color: #b9f0dc; text-decoration: underline; text-decoration-color: var(--both); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+
+/* power card countdown lives in sim.css (.card-cd) */
+
+@media (max-width: 720px) {
+  .tour-dots { margin: 4px 0 0; width: 100%; }
+  .cgrid { grid-template-columns: 1fr 1fr; }
+  .cgrid .cbtn { grid-column: 1 / -1; padding-bottom: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .xp-row .switch i, .xp-row .switch i::after { transition: none; }
+}
+@media print {
+  .feat-explain, .xp-note, .dates-ctl, .cmp-pick, #dates-status { display: none !important; }
+  .sortb { color: #000; }
+  table.cmp { min-width: 0; font-size: 9pt; }
+  table.cmp td.best { color: #000; }
+  .dates-chart svg text { fill: #000; }
+  .sphere-note { color: #000; background: none; }
+  .sphere-inline { color: #000; }
+}
+table.cmp td { white-space: nowrap; }
+table.cmp td.hz { font-size: .88rem; color: var(--ink-2); }
+.dates-chart svg text { paint-order: stroke; stroke: #0b0f14; stroke-width: 3px; stroke-linejoin: round; }
+.dates-chart .ln-sun { stroke-width: 5; stroke-opacity: .85; }

@@ -9,6 +9,9 @@ import { slipOptions, type SlipOptionEx } from './engine/slip';
 import type { Mode } from './engine/visibility';
 import { panoramaSvg, timelineSvg, type TimelineWindow } from './ui/charts';
 import { mountSim } from './sim'; // SIM HOOK (Agent C): 3D mission simulator, see src/sim/
+// --- FEATURE HOOK (C): imports for the challenge-coverage panels, see src/features/
+import { addSphereAndCustomSites, mountFeatures, writeFeatureParams } from './features';
+// --- END
 
 interface State { site: string; t: string; stay: number; slip: number; mode: Mode; data: 'real' | 'mock' }
 interface Data {
@@ -80,6 +83,9 @@ async function loadData(kind: State['data']): Promise<Data> {
     const hz = await getJson<HorizonFile>(`${base}horizon/${s.id}.json`, true);
     if (hz) horizons.set(s.id, hz);
   }));
+  // --- FEATURE HOOK (C): sphere horizon for terrain:"sphere" sites without a file; custom site from the URL
+  addSphereAndCustomSites(sitesFile!.sites, horizons);
+  // --- END
   const sites = sitesFile!.sites.filter((s) => horizons.has(s.id));
   const mock = [header!.meta, sitesFile!.meta, ...[...horizons.values()].map((x) => x.meta)].some((m) => m?.mock === true);
   return { ephem: new Ephem(header!, bin), header: header!, sites, horizons, features, fixtures, mock };
@@ -183,6 +189,9 @@ function headline(opts: SlipOptionEx[], site: Site, s: State): string {
 
 function render(d: Data, s: State) {
   writeState(s);
+  // --- FEATURE HOOK (C): keep lat, lon, elev, name, cmp, explain in the permalink
+  writeFeatureParams();
+  // --- END
   const site = d.sites.find((x) => x.id === s.site)!;
   const hz = d.horizons.get(site.id)!;
   const preset = PRESETS.find((p) => Object.entries(p.state).every(([k, v]) => (s as any)[k] === v));
@@ -273,6 +282,9 @@ function render(d: Data, s: State) {
   mountSim(document.getElementById('sim-slot'), { ephem: d.ephem, sites: d.sites, horizons: d.horizons, features: d.features,
     mock: d.mock, state: s, setState: (p) => render(d, { ...s, ...p }) });
   // --- END SIM HOOK ---
+  // --- FEATURE HOOK (C): custom site, landing-date explorer, site comparison, plain-language mode
+  mountFeatures({ data: d, state: s, setState: (p) => render(d, { ...s, ...p }) });
+  // --- END
 }
 
 (async () => {
