@@ -13,7 +13,7 @@ direction and distance.
 - [x] Terrain horizons with occluder attribution from LOLA for IM-1, IM-2, Chandrayaan-3 and Connecting Ridge
 - [x] Sunlight / Earth-visibility metrics per site and date
 - [x] Slip comparison with cause lines (orbital, terrain, site height)
-- [x] Validation against JPL Horizons: 140 points at 7 LRO-located landing sites, all within 0.01°
+- [x] Validation against JPL Horizons: 160 points at 7 LRO-located landing sites, all within 0.01°
 - [ ] Uncertainty bands from LOLA terrain error (code ready, data run pending)
 
 ## Data and tools (NASA and partners)

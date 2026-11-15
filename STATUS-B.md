@@ -147,3 +147,12 @@ Vitest 43 passed, Python 34 passed, `npm run build` ok. Not looked at in a brows
 - Vitest 46 passed, build ok, no console errors.
 Not done: confidence tag and mast selector (need `occluder.cells` and mast files from a 1-minute
 pipeline rerun), Sun fraction, DSN station view (needs a new data file), Web Worker.
+
+### Agent C items done on `b/a-fixes` at the human's request (Sun 15 Nov, 14:05 CT)
+- 3D view no longer traps the page scroll. Plain wheel scrolls the page; Ctrl or Cmd + wheel zooms;
+  full screen zooms as before. Checked in headless Chrome. Caption says so.
+- `CONTEXT.md` lead sentences and `README.md`: 140 -> 160 Horizons points; IM-1 155 -> 155.5 h;
+  Connecting Ridge long-run sunlight 91.25% over 2023 to 2030 (88.2% to 93.1% across the band).
+  The published 92.27% lies inside that band.
+Left for C: globe shape and floating marker, lander view as the default camera, phone-width pass,
+video, submission text.

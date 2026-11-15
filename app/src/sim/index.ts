@@ -300,6 +300,16 @@ class Simulator {
     this.scene.add(this.sky.group);
     this.camLander.rotation.order = 'YXZ';
 
+    // The wheel scrolls the page. It zooms the 3D view only with Ctrl or Cmd held, or in full screen.
+    // Registered before any OrbitControls so it runs first and can keep the event away from them.
+    this.canvas.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey || document.fullscreenElement) return; // zoom
+      e.stopImmediatePropagation();
+      // Scroll the page ourselves: some browsers do not scroll past a canvas that has wheel listeners.
+      e.preventDefault();
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+      window.scrollBy(e.deltaX * unit, e.deltaY * unit);
+    }, { capture: true, passive: false });
     this.orbit = new OrbitControls(this.camOrbit, this.canvas);
     this.orbit.enableDamping = !REDUCED;
     this.orbit.dampingFactor = 0.1;
@@ -390,7 +400,7 @@ class Simulator {
     const sphere = hz.dem.product === 'sphere';
     this.set('note', sphere
       ? `${SPHERE_NOTE} Sun and Earth positions are computed; ground, Earth pattern and stars are illustrative.`
-      : 'Skyline from the LOLA horizon profile (exact elevation angles); ground detail, rocks, Earth pattern and stars are illustrative.');
+      : 'Skyline from the LOLA horizon profile (exact elevation angles); ground detail, rocks, Earth pattern and stars are illustrative. Drag to look around; Ctrl + scroll (Cmd on a Mac) to zoom.');
     this.set('about', [
       sphere ? `${SPHERE_NOTE} The skyline is flat, at the geometric dip of the horizon seen from the mast.`
         : 'The skyline is the LOLA horizon profile: seen from the mast, each of the 720 azimuth samples sits at its exact elevation angle. Ridge distances are smoothed and clamped to 0.3–20 km for drawing only.',

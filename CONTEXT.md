@@ -15,8 +15,8 @@ distance. Slip sliders, heatmaps and Horizons validation are table stakes — ot
 
 Lead sentences for the project page:
 1. When a lunar landing slips, Slip Impact Brief shows which sunlight and direct-to-Earth hours a site gains or loses, and explains each change: the lunar day/night cycle, Earth's libration, or the named terrain that blocks the view, with its direction and distance.
-2. We re-enact Intuitive Machines' IM-1 (Houston): a 10-day slip cuts a 7-day stay from 155 to 82 hours of sunlight because of the lunar day/night cycle, so the next equally good date is a month later — how a launch-manifest slip of days became a slip of a month.
-3. Every Sun and Earth position is checked against NASA JPL Horizons at 140 points at seven LRO-located landing sites (all within 0.01°), and Connecting Ridge's long-run sunlight (91.2%) is compared with the published 92.3% (Gläser et al. 2014).
+2. We re-enact Intuitive Machines' IM-1 (Houston): a 10-day slip cuts a 7-day stay from 155.5 to 82.0 hours of sunlight because of the lunar day/night cycle, so the next equally good date is a month later — how a launch-manifest slip of days became a slip of a month.
+3. Every Sun and Earth position is checked against NASA JPL Horizons at 160 points at seven LRO-located landing sites (all within 0.01°), and Connecting Ridge's long-run sunlight (91.25% over 2023 to 2030, 88.2% to 93.1% across the terrain error band) is compared with the published 92.3% (Gläser et al. 2014).
 
 ## 2. Hard rules
 - **Deadline:** submission Sun 15 Nov 2026, 23:59 CT. Team target: submitted by **23:30**.
