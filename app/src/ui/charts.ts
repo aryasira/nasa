@@ -25,15 +25,16 @@ function runs(v: (k: number) => boolean, n: number): [number, number][] {
 
 export interface TimelineWindow { label: string; tStart: number; tEnd: number; emphasis?: boolean }
 
-export function timelineSvg(scan: Scan, windows: TimelineWindow[], title: string, desc = ''): string {
-  const W = 1000, L = 78, R = 12, top = 18, rowH = 20, gap = 6;
+export function timelineSvg(scan: Scan, windows: TimelineWindow[], title: string, desc = '', W = 1000): string {
+  const narrow = W < 560;
+  const L = narrow ? 44 : 84, R = 10, top = 18, rowH = narrow ? 16 : 20, gap = 5;
   const span = scan.tEnd - scan.tStart;
   const x = (t: number) => L + ((t - scan.tStart) / span) * (W - L - R);
   const xk = (k: number) => x(scan.tStart + k * STEP_S);
   const rows: [string, string, (k: number) => boolean][] = [
     ['Sun', SUN, (k) => !!scan.sunVis[k]],
     ['Earth', 'url(#p-earth)', (k) => !!scan.earthVis[k]],
-    ['Sun + Earth', 'url(#p-both)', (k) => !!(scan.sunVis[k] & scan.earthVis[k])],
+    [narrow ? 'Both' : 'Sun + Earth', 'url(#p-both)', (k) => !!(scan.sunVis[k] & scan.earthVis[k])],
   ];
   let y = top;
   let body = '';
@@ -45,27 +46,33 @@ export function timelineSvg(scan: Scan, windows: TimelineWindow[], title: string
   for (const [a, b] of runs((k) => !!(scan.eclipse[k] & scan.sunVis[k]), scan.n)) {
     body += `<rect x="${xk(a).toFixed(1)}" y="${top - 5}" width="${Math.max(3, xk(b) - xk(a)).toFixed(1)}" height="4" fill="#cc79a7"><title>Earth covers part of the Sun (eclipse)</title></rect>`;
   }
-  y += 4;
+  y += 6;
+  // Stays as brackets with their name and start date written on them.
   for (const w of windows) {
     const x0 = x(Math.max(w.tStart, scan.tStart)), x1 = x(Math.min(w.tEnd, scan.tEnd));
-    body += `<text x="${L - 6}" y="${y + 9}" text-anchor="end" class="muted">${esc(w.label)}</text>`
-      + `<rect x="${x0.toFixed(1)}" y="${y}" width="${(x1 - x0).toFixed(1)}" height="10" fill="${w.emphasis ? '#f0e442' : '#8894a3'}" rx="2"/>`;
-    y += 16;
+    const c = w.emphasis ? '#f0e442' : '#b9c2cd';
+    const label = `${w.label} ${day(w.tStart)}`;
+    const len = label.length * 6.2;
+    const inside = x1 - x0 > len + 10, right = x1 + 5 + len <= W;
+    body += `<path d="M${x0.toFixed(1)} ${y + 2}v10H${x1.toFixed(1)}v-10" fill="none" stroke="${c}" stroke-width="${w.emphasis ? 2 : 1.4}"/>`
+      + `<text x="${(inside ? x0 + 5 : right ? x1 + 5 : x0 - 5).toFixed(1)}" y="${y + 9}" text-anchor="${inside || right ? 'start' : 'end'}" style="fill:${c}">${esc(label)}</text>`;
+    y += 18;
   }
-  const stepDays = Math.max(1, Math.ceil(span / 86400 / 12));
+  const stepDays = Math.max(1, Math.ceil(span / 86400 / (narrow ? 5 : 12)));
   const first = Math.ceil(scan.tStart / 86400) * 86400;
   for (let t = first; t <= scan.tEnd; t += stepDays * 86400) {
     body += `<line x1="${x(t).toFixed(1)}" x2="${x(t).toFixed(1)}" y1="${top}" y2="${y}" stroke="#ffffff22"/><text x="${x(t).toFixed(1)}" y="${y + 12}" text-anchor="middle" class="muted">${day(t)}</text>`;
   }
   const H = y + 18;
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title><desc>${esc(desc)}</desc>${DEFS}${body}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title><desc>${esc(desc)}</desc>${DEFS}${body}</svg>`;
 }
 
 export interface Track { label: string; scan: Scan; dashed: boolean }
-export interface Marker { az: number; label: string }
+export interface Marker { az: number; label: string; sub?: string }
 
-export function panoramaSvg(hz: HorizonFile, tracks: Track[], markers: Marker[], title: string, desc = '', band = false): string {
-  const W = 1000, H = 300, L = 34, R = 8, T = 10, B = 26;
+export function panoramaSvg(hz: HorizonFile, tracks: Track[], markers: Marker[], title: string, desc = '', band = false, W = 1000): string {
+  const narrow = W < 560;
+  const H = narrow ? 230 : 340, L = 34, R = 8, T = 26, B = 26;
   const h = hz.elev_deg;
   let hMin = Infinity, hMax = -Infinity, tMax = -Infinity;
   for (const v of h) { hMin = Math.min(hMin, v); hMax = Math.max(hMax, v); }
@@ -80,8 +87,15 @@ export function panoramaSvg(hz: HorizonFile, tracks: Track[], markers: Marker[],
     body += `<line x1="${L}" x2="${W - R}" y1="${y(e)}" y2="${y(e)}" stroke="${e === 0 ? '#ffffff66' : '#ffffff1c'}"/><text x="${L - 5}" y="${y(e) + 4}" text-anchor="end" class="muted">${e}°</text>`;
   }
   ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW', 'N'].forEach((c, i) => {
-    body += `<text x="${x(i * 45)}" y="${H - 8}" text-anchor="middle" class="muted">${c} ${i * 45 % 360}°</text>`;
+    body += `<line x1="${x(i * 45)}" x2="${x(i * 45)}" y1="${H - B}" y2="${H - B + (i % 2 ? 3 : 6)}" stroke="#8894a3"/>`;
+    if (narrow && i % 2) return;
+    body += `<text x="${x(i * 45)}" y="${H - 8}" text-anchor="${i === 0 ? 'start' : i === 8 ? 'end' : 'middle'}" class="muted">${c}${narrow ? '' : ` ${i * 45 % 360}°`}</text>`;
   });
+  for (let a = 15; a < 360; a += 15) if (a % 45) body += `<line x1="${x(a)}" x2="${x(a)}" y1="${H - B}" y2="${H - B + 2}" stroke="#5d6875"/>`;
+  // North arrow and the vertical stretch of the plot (degrees of elevation are drawn taller than degrees of azimuth).
+  const stretch = ((H - T - B) / (hi - lo)) / ((W - L - R) / 360);
+  body += `<g transform="translate(${L + 8} ${T - 8})"><path d="M0 4V-10M-4 -5l4-5 4 5" fill="none" stroke="#e8edf3" stroke-width="1.6"/><text x="8" y="2">N</text></g>`
+    + `<text x="${W - R}" y="${T - 8}" text-anchor="end" class="muted">elevation ×${stretch.toFixed(0)} stretched</text>`;
   let pts = `${x(0)},${y(lo)}`;
   for (let i = 0; i <= 720; i++) pts += ` ${x(i * 0.5).toFixed(1)},${y(Math.max(lo, h[i % 720])).toFixed(1)}`;
   pts += ` ${x(360)},${y(lo)}`;
@@ -103,14 +117,34 @@ export function panoramaSvg(hz: HorizonFile, tracks: Track[], markers: Marker[],
     }
     return `<path d="${d}" fill="none" stroke="${colour}" stroke-width="${width}" ${dashed ? 'stroke-dasharray="7 5"' : ''} clip-path="url(#pc)"/>`;
   };
+  // Direct label where a path is highest inside the plot (first track only, to keep the plot quiet).
+  const tag = (az: Float32Array, el: Float32Array, n: number, word: string, colour: string) => {
+    let best = -1, bestEl = -Infinity;
+    for (let k = 0; k <= n; k += 3) if (el[k] < hi - 0.3 && el[k] > lo && el[k] > bestEl) { bestEl = el[k]; best = k; }
+    if (best < 0) return '';
+    const tx = x(az[best]), end = tx > W - 60;
+    return `<text x="${(tx + (end ? -6 : 6)).toFixed(1)}" y="${(y(bestEl) - 6).toFixed(1)}" text-anchor="${end ? 'end' : 'start'}" style="fill:${colour};font-weight:600">${word}</text>`;
+  };
   for (const t of tracks) {
     body += line(t.scan.sunAz, t.scan.sunEl, t.scan.n, SUN, t.dashed, 2.4);
     body += line(t.scan.earthAz, t.scan.earthEl, t.scan.n, EARTH, t.dashed, 2.4);
   }
-  for (const m of markers) {
-    body += `<line x1="${x(m.az)}" x2="${x(m.az)}" y1="${T}" y2="${H - B}" stroke="#f0e442" stroke-dasharray="2 3"/><text x="${x(m.az) + 4}" y="${T + 12}" fill="#f0e442">${esc(m.label)}</text>`;
+  if (tracks[0]) body += tag(tracks[0].scan.sunAz, tracks[0].scan.sunEl, tracks[0].scan.n, 'Sun', SUN) + tag(tracks[0].scan.earthAz, tracks[0].scan.earthEl, tracks[0].scan.n, 'Earth', EARTH);
+  // Key for line styles, on the top margin.
+  if (tracks.length > 1 && !narrow) {
+    const kx = L + 44, ky = T - 9;
+    body += `<line x1="${kx}" x2="${kx + 22}" y1="${ky}" y2="${ky}" stroke="#e8edf3" stroke-width="2"/><text x="${kx + 27}" y="${ky + 4}" class="muted">baseline</text>`
+      + `<line x1="${kx + 84}" x2="${kx + 106}" y1="${ky}" y2="${ky}" stroke="#e8edf3" stroke-width="2" stroke-dasharray="6 4"/><text x="${kx + 111}" y="${ky + 4}" class="muted">slipped</text>`;
   }
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title><desc>${esc(desc)}</desc>${body}</svg>`;
+  // Blocking terrain, labelled on the plot with a leader line from the skyline.
+  markers.forEach((m, i) => {
+    const mx = x(m.az), my = y(Math.max(lo, h[Math.round(m.az * 2) % 720]));
+    const ly = T + 14 + i * 28, end = mx > W - 190;
+    body += `<path d="M${mx.toFixed(1)} ${my.toFixed(1)}V${ly + 4}" stroke="#f0e442" stroke-width="1" fill="none"/><circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="3" fill="#f0e442"/>`
+      + `<text x="${(mx + (end ? -6 : 6)).toFixed(1)}" y="${ly}" text-anchor="${end ? 'end' : 'start'}" style="fill:#f0e442;font-weight:600">${esc(m.label)}</text>`
+      + (m.sub ? `<text x="${(mx + (end ? -6 : 6)).toFixed(1)}" y="${ly + 12}" text-anchor="${end ? 'end' : 'start'}" class="muted">${esc(m.sub)}</text>` : '');
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title><desc>${esc(desc)}</desc>${body}</svg>`;
 }
 
 /** Text alternative to the timeline: every interval when the Sun, Earth or both are in view. */

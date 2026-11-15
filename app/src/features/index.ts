@@ -237,7 +237,11 @@ function mountDates() {
   const sec = document.createElement('section');
   sec.id = 'feat-dates';
   sec.setAttribute('aria-labelledby', 'feat-dates-h');
-  sec.innerHTML = `<h2 id="feat-dates-h">Landing dates over the next 13 lunar months${mockTag()}</h2>
+  sec.innerHTML = `<h2 id="feat-dates-h">Landing dates, 13 months${mockTag()}</h2>
+    <div class="dates-chart" id="dates-chart"></div>
+    <p class="dates-read num" id="dates-read" aria-hidden="true"></p>
+    <div class="legend key"><span><span class="sw" style="background:#009e73"></span>both</span><span><span class="sw" style="background:#e69f00"></span>Sun</span><span><span class="sw" style="background:repeating-linear-gradient(90deg,#56b4e9 0 5px,transparent 5px 8px)"></span>Earth</span><span>① ② ③ best</span></div>
+    <details class="more"><summary>Chart details</summary>
     <p class="note">Hours of a ${ctx.state.stay}-day stay at ${esc(site.name)} for every landing date from the baseline (${esc(when(ctx.state.t + ':00Z'))}) to ${SPAN_D} days later, in 12-hour steps. Same 10-minute engine grid as the table above.</p>
     <div class="row dates-ctl" role="radiogroup" aria-label="Choosing a date sets">
       <span class="note">Choosing a date sets the</span>
@@ -245,10 +249,8 @@ function mountDates() {
       <label class="rad"><input type="radio" name="clk" value="base" ${FS.clickSets === 'base' ? 'checked' : ''}> baseline date</label>
       <span class="note">(Shift-click or Shift+Enter does the other.)</span>
     </div>
-    <div class="dates-chart" id="dates-chart"></div>
-    <p class="dates-read num" id="dates-read" aria-hidden="true"></p>
     <div class="legend"><span><span class="sw" style="background:#e69f00"></span>sunlit</span><span><span class="sw" style="background:repeating-linear-gradient(90deg,#56b4e9 0 5px,transparent 5px 8px)"></span>Earth in view</span><span><span class="sw" style="background:#009e73"></span>Sun + Earth</span><span><span class="sw" style="background:#fff"></span>baseline (left edge)</span><span><span class="sw" style="background:#f0e442"></span>slipped date</span><span>1 2 3 = best dates</span><span><span class="sw" style="background:rgba(255,255,255,.12)"></span>beyond the 90-day slip range</span></div>
-    <div id="dates-sum"></div>
+    <div id="dates-sum"></div></details>
     <p id="dates-status" role="status" class="note"></p>`;
   insertAfter(after, sec);
   sec.querySelectorAll<HTMLInputElement>('input[name="clk"]').forEach((r) => r.addEventListener('change', () => { FS.clickSets = r.value === 'base' ? 'base' : 'slip'; drawDates(); }));
@@ -299,7 +301,7 @@ function drawDates() {
   }
   const s = job.series();
   const W = Math.max(300, Math.round(host.clientWidth || 900)), H = W < 560 ? 190 : 230;
-  const L = 40, R = 10, T = 16, B = 24, pw = W - L - R, ph = H - T - B;
+  const L = 40, R = 10, T = 30, B = 24, pw = W - L - R, ph = H - T - B;
   const maxH = ctx.state.stay * 24;
   const x = (i: number) => L + (i / (s.n - 1)) * pw;
   const y = (h: number) => T + (1 - h / maxH) * ph;
@@ -328,6 +330,20 @@ function drawDates() {
   const slip = ctx.state.slip;
   const slipI = slip * perDay;
   const slipM = slip > 0 && slipI < s.n ? `<line x1="${x(slipI)}" x2="${x(slipI)}" y1="${T}" y2="${T + ph}" class="slipm"/><text x="${x(slipI) + 4}" y="${T + 24}" class="slipt">Slipped +${slip} d</text>` : '';
+  // Annotations on the chart itself: the day-night rhythm as a bracket between two peaks, the season range as one line.
+  let notes = '';
+  const rhythm = rhythmDays(s, 'sun') ?? rhythmDays(s, 'both');
+  if (rhythm && best.length) {
+    const i0 = best[0].i, i1 = i0 + rhythm * perDay;
+    if (i1 < s.n) notes += `<g class="ann"><path d="M${x(i0).toFixed(1)} ${T - 4}v-6H${x(i1).toFixed(1)}v6"/><text x="${((x(i0) + x(i1)) / 2).toFixed(1)}" y="${T - 13}" text-anchor="middle">${rhythm.toFixed(1)} d</text></g>`;
+  }
+  if (Math.abs(curSite().lat) >= 70 && W >= 560) {
+    const mm = monthlyMeans(s);
+    if (mm.length >= 6) {
+      const lo = mm.reduce((a, b) => (b.meanSun < a.meanSun ? b : a)), hi = mm.reduce((a, b) => (b.meanSun > a.meanSun ? b : a));
+      if (hi.meanSun - lo.meanSun >= 1) notes += `<text class="ann-t" x="${W - R}" y="${T - 13}" text-anchor="end">season: Sun ${lo.meanSun.toFixed(0)} h (${monYr(lo.t)}) to ${hi.meanSun.toFixed(0)} h (${monYr(hi.t)}) per stay</text>`;
+    }
+  }
   const ci = Math.min(s.n - 1, Math.round(cursor * perDay));
   const narrow = W < 560;
   const beyond = FS.clickSets === 'slip' && 90 * perDay < s.n
@@ -338,7 +354,7 @@ function drawDates() {
     ${beyond}${grid}
     <line x1="${L}" x2="${L}" y1="${T}" y2="${T + ph}" class="basem"/>
     <path d="${path(s.sun)}" class="ln-sun"/><path d="${path(s.earth)}" class="ln-earth"/><path d="${path(s.both)}" class="ln-both"/>
-    ${slipM}${bestM}
+    ${slipM}${bestM}${notes}
     <g class="cur"><line x1="${x(ci)}" x2="${x(ci)}" y1="${T}" y2="${T + ph}"/>${Number.isFinite(s.both[ci]) ? `<circle cx="${x(ci)}" cy="${y(s.both[ci])}" r="4"/>` : ''}</g>
   </svg>`;
   document.getElementById('dates-read')!.textContent = readText(s, cursor);
@@ -458,17 +474,20 @@ function renderCompare() {
   const full = ids.length >= 4;
   const t0 = tStart();
   sec.innerHTML = `<h2 id="feat-cmp-h">Compare sites${mockTag()}</h2>
+    <details class="more noprint"${ids.length > 1 ? '' : ''}><summary>Choose sites (${ids.length} of 4)</summary>
     <p class="note">Same landing date (${esc(when(fmtUtc(t0)))}) and ${ctx.state.stay}-day stay at every site.</p>
     <fieldset class="cmp-pick noprint"><legend>Sites to compare (up to 4)</legend>
       ${ctx.data.sites.map((s) => { const on = ids.includes(s.id); return `<label class="chk"><input type="checkbox" value="${esc(s.id)}" ${on ? 'checked' : ''} ${!on && full ? 'disabled' : ''}> ${esc(s.name)}</label>`; }).join('')}
-    </fieldset>
+    </fieldset></details>
     <div id="cmp-table" class="cmp-wrap"><p class="note">Computing…</p></div>`;
   sec.querySelectorAll<HTMLInputElement>('.cmp-pick input').forEach((cb) => cb.addEventListener('change', () => {
     const cur = cmpIds();
     FS.cmp = cb.checked ? [...cur.filter((x) => x !== cb.value), cb.value].slice(0, 4) : cur.filter((x) => x !== cb.value);
     writeFeatureParams();
     renderCompare();
-    sec.querySelector<HTMLInputElement>(`.cmp-pick input[value="${CSS.escape(cb.value)}"]`)?.focus();
+    const again = document.getElementById('feat-cmp');
+    again?.querySelector('details')?.setAttribute('open', '');
+    again?.querySelector<HTMLInputElement>(`.cmp-pick input[value="${CSS.escape(cb.value)}"]`)?.focus();
   }));
   idle(() => fillCompare(ids, t0));
 }
@@ -513,7 +532,7 @@ function fillCompare(ids: string[], t0: number) {
   }).join('')}</tr>`).join('');
   const anySphere = rows.some((r) => r.horizon === 'Smooth sphere');
   host.innerHTML = `<table class="cmp"><caption class="sr-only">Sites compared for the same landing date and stay; select a column heading to sort</caption><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table>
-    <p class="note">${rows.length > 1 ? 'Underlined = best in its column. ' : 'Tick more sites to compare. '}Max Sun elevation is above the local horizontal plane, not above terrain. “None in stay” = no sunset (or Earthset) inside the stay.${anySphere ? ` <span class="sphere-inline">* ${esc(SPHERE_NOTE)}</span>` : ''}</p>`;
+    <details class="more"><summary>Reading this table</summary><p class="note">${rows.length > 1 ? 'Underlined = best in its column. ' : 'Choose more sites to compare. '}Max Sun elevation is above the local horizontal plane, not above terrain. “None in stay” = no sunset (or Earthset) inside the stay.</p></details>${anySphere ? `<p class="sphere-note">* ${esc(SPHERE_NOTE)}</p>` : ''}`;
   host.querySelectorAll<HTMLButtonElement>('[data-sort]').forEach((b) => b.addEventListener('click', () => {
     const k = b.dataset.sort as ColKey;
     if (sortKey === k) sortDir = sortDir === 1 ? -1 : 1; else { sortKey = k; sortDir = k === 'name' || k === 'gap' || k === 'horizon' ? 1 : -1; }

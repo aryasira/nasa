@@ -1,8 +1,44 @@
 # STATUS-B
 
-_Updated: Sun 15 Nov 2026, 12:25 CT_
+_Updated: Sun 15 Nov 2026, 13:40 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
+
+## Round 3: visual redesign below the simulator (Sun 12:30 to 13:40 CT)
+UI only. No engine maths, data or contract changes. Direction and references: `docs/design.md`.
+- **01 Verdict strip** replaces the "What the slip does" text: Sun + Earth in view (before → after), change,
+  main cause with an orbit/terrain icon, next equally good date. One sentence under it. The full "Why" and
+  "Terrain" sentences, glosses and the IM-1 note are in a "Context" disclosure. An "illustrative date" tag
+  stays visible.
+- **02 Inputs** is one control bar: site, date, stay, slip stepper (− / +), visibility rule, Print, Copy link,
+  three example chips.
+- **03 Landing dates** (C's logic, re-marked-up): rhythm bracket and season range drawn on the chart; short key;
+  the three paragraphs, the long legend and the click-mode control are in "Chart details".
+- **04 Options** are ranked horizontal bars with a baseline tick, big hours, change and cause icons. Full cause
+  sentences open with the row's "why" button (keyboard reachable) and are always in the DOM.
+- **05 Timeline:** direct row labels, stays as brackets with their dates, table alternative in a disclosure.
+- **06 Horizon:** blocking terrain labelled on the plot with leader lines (hours, skyline height, distance,
+  bearing), north arrow, tick marks, "elevation ×N stretched" tag, Sun/Earth labels on the paths.
+- **07 Compare** (C's logic): the 21-checkbox wall is inside "Choose sites (n of 4)". **Small multiples were not
+  built** (time); the table is unchanged.
+- **08 Validation:** badge row (Horizons checks, Connecting Ridge sunlit vs published, terrain model or
+  "no terrain model" in warning colour), a one-line site credit, and one "Method and limits" disclosure that
+  collects every footnote. All numbers are read from the data files or computed live.
+- Charts are now drawn at the real pixel width and redrawn on resize, so text stays readable at 390 px.
+
+Checks (all on the built app, headless Chrome):
+- `npm test` 42 passing, `npm run build` passes. JS bundle 201.5 kB gzip (limit 230); no new dependencies.
+- Words outside the simulator, IM-1 state at 1280 px: 1,377 → 608 by `innerText`; 451 actually visible.
+  **The 250 target is not met.**
+- No horizontal scroll at 390 px. Stepper, "why" toggles, example chips, Explain mode and URL parameters work.
+- Print: one page on Letter and A4 for IM-1, IM-2, Connecting Ridge, Apollo 11 and SLIM states.
+- axe-core (WCAG 2 A/AA + best practice), three states: nothing new from B. Still open, all in C's files:
+  `aria-pressed` on `div.sim-view` (critical), contrast of the sim's "Slipped · date" label, `.feat-explain`
+  outside a landmark, and the tour `h3` heading order.
+- Not checked: Lighthouse (not available), real phones, Safari/Firefox, contrast by hand beyond axe.
+
+Touched outside B's usual files, as the brief allows: `app/src/features/index.ts` (markup only, logic and tests
+unchanged), `docs/design.md`, `docs/design/*.jpg`. `app/src/sim/*` untouched.
 
 ## Live-review fixes (Sun 12:00 to 12:25 CT)
 Merged `origin/c/work` at 081756a (the head of **open PR #6**) so the cause wording in `causes.ts` matches what
