@@ -34,9 +34,9 @@ def load_ephem(data_dir=None):
 def vectors_at(hdr, rec, utc):
     """Sun unit vector and Earth position (km) at a UTC time."""
     x = (C.parse_utc(utc) - C.parse_utc(hdr["t0_utc"])).total_seconds() / hdr["step_s"]
-    i = int(math.floor(x))
-    if i < 0 or i >= len(rec) - 1:
+    if x < 0 or x > len(rec) - 1:
         raise ValueError(f"{utc} is outside the ephemeris span")
+    i = min(int(math.floor(x)), len(rec) - 2)     # the last row itself is valid (f = 1)
     f = x - i
     row = rec[i] * (1 - f) + rec[i + 1] * f
     return C.normalize(tuple(row[:3])), tuple(row[4:7])

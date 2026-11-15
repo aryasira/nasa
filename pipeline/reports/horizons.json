@@ -1,232 +1,558 @@
 {
-  "sites": {
-    "im1": {
-      "site_id": "im1",
-      "site_used": {
-        "lat": -80.13,
-        "lon_e": 1.44,
-        "elev_dem_m": 2591.95,
-        "elev_dem_from": "LDEM_80S_80MPP_ADJ.TIF",
-        "elev_catalog_m": 2579,
-        "differs_from_catalog": false
-      },
-      "dems": [
-        {
-          "file": "LDEM_80S_80MPP_ADJ.TIF",
-          "bytes": 189158392,
-          "width": 7600,
-          "height": 7600,
-          "native_res_m": 80.0,
-          "dtype": "float32",
-          "nodata": NaN,
-          "scale": 1.0,
-          "offset": 0.0,
-          "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
-          "sphere_radius_m": 1737400.0,
-          "used_res_m": 80.0
-        },
-        {
-          "file": "LDEM_60S_240MPP_ADJ.TIF",
-          "bytes": 218961039,
-          "width": 7760,
-          "height": 7760,
-          "native_res_m": 240.0,
-          "dtype": "float32",
-          "nodata": NaN,
-          "scale": 1.0,
-          "offset": 0.0,
-          "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
-          "sphere_radius_m": 1737400.0,
-          "used_res_m": 240.0
-        }
-      ],
-      "skipped": [],
-      "elev_min_deg": -0.244,
-      "elev_max_deg": 11.053,
-      "elev_max_at_az_deg": 152.0,
-      "null_occluder_share": 0.0,
-      "named_share": 0.0,
-      "names_seen": [],
-      "coverage_min_km": 216.8,
-      "occluder_dist_km_median": 1.2,
-      "seconds": 1.3
+ "sites": {
+  "im1": {
+   "site_id": "im1",
+   "site_used": {
+    "lat": -80.13,
+    "lon_e": 1.44,
+    "elev_dem_m": 2592.11,
+    "elev_dem_from": "LDEM_80S_40MPP_ADJ.TIF",
+    "elev_catalog_m": 2579,
+    "point_from": "app/public/data/sites.json",
+    "stands_on": [],
+    "differs_from_catalog": false
+   },
+   "dems": [
+    {
+     "file": "LDEM_80S_40MPP_ADJ.TIF",
+     "bytes": 716299920,
+     "width": 15200,
+     "height": 15200,
+     "native_res_m": 40.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 40.0
     },
-    "im2": {
-      "site_id": "im2",
-      "site_used": {
-        "lat": -84.7906,
-        "lon_e": 29.1957,
-        "elev_dem_m": 5321.5,
-        "elev_dem_from": "LDEM_80S_80MPP_ADJ.TIF",
-        "elev_catalog_m": null,
-        "differs_from_catalog": false
-      },
-      "dems": [
-        {
-          "file": "LDEM_80S_80MPP_ADJ.TIF",
-          "bytes": 189158392,
-          "width": 7600,
-          "height": 7600,
-          "native_res_m": 80.0,
-          "dtype": "float32",
-          "nodata": NaN,
-          "scale": 1.0,
-          "offset": 0.0,
-          "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
-          "sphere_radius_m": 1737400.0,
-          "used_res_m": 80.0
-        },
-        {
-          "file": "LDEM_60S_240MPP_ADJ.TIF",
-          "bytes": 218961039,
-          "width": 7760,
-          "height": 7760,
-          "native_res_m": 240.0,
-          "dtype": "float32",
-          "nodata": NaN,
-          "scale": 1.0,
-          "offset": 0.0,
-          "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
-          "sphere_radius_m": 1737400.0,
-          "used_res_m": 240.0
-        }
-      ],
-      "skipped": [],
-      "elev_min_deg": -1.47,
-      "elev_max_deg": 4.063,
-      "elev_max_at_az_deg": 117.5,
-      "null_occluder_share": 0.0,
-      "named_share": 1.0,
-      "names_seen": [
-        "malapert",
-        "mons_mouton",
-        "nobile"
-      ],
-      "coverage_min_km": 218.5,
-      "occluder_dist_km_median": 12.88,
-      "seconds": 1.7
+    {
+     "file": "LDEM_80S_80MPP_ADJ.TIF",
+     "bytes": 189158392,
+     "width": 7600,
+     "height": 7600,
+     "native_res_m": 80.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 80.0
     },
-    "slim": {
-      "site_id": "slim",
-      "sphere": true
-    },
-    "chandrayaan3": {
-      "site_id": "chandrayaan3",
-      "site_used": {
-        "lat": -69.3741,
-        "lon_e": 32.32,
-        "elev_dem_m": 529.72,
-        "elev_dem_from": "LDEM_60S_240MPP_ADJ.TIF",
-        "elev_catalog_m": 532,
-        "differs_from_catalog": false
-      },
-      "dems": [
-        {
-          "file": "LDEM_60S_240MPP_ADJ.TIF",
-          "bytes": 218961039,
-          "width": 7760,
-          "height": 7760,
-          "native_res_m": 240.0,
-          "dtype": "float32",
-          "nodata": NaN,
-          "scale": 1.0,
-          "offset": 0.0,
-          "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
-          "sphere_radius_m": 1737400.0,
-          "used_res_m": 240.0
-        }
-      ],
-      "skipped": [],
-      "elev_min_deg": 0.379,
-      "elev_max_deg": 2.451,
-      "elev_max_at_az_deg": 350.0,
-      "null_occluder_share": 0.0,
-      "named_share": 0.0,
-      "names_seen": [],
-      "coverage_min_km": 210.2,
-      "occluder_dist_km_median": 22.32,
-      "seconds": 0.4
-    },
-    "change6": {
-      "site_id": "change6",
-      "sphere": true
-    },
-    "apollo11": {
-      "site_id": "apollo11",
-      "sphere": true
-    },
-    "apollo12": {
-      "site_id": "apollo12",
-      "sphere": true
-    },
-    "blueghost1": {
-      "site_id": "blueghost1",
-      "sphere": true
-    },
-    "connecting_ridge": {
-      "site_id": "connecting_ridge",
-      "site_used": {
-        "lat": -89.4399,
-        "lon_e": 222.8524,
-        "elev_dem_m": 1958.58,
-        "elev_dem_from": "Site01_final_adj_5mpp_surf.tif",
-        "elev_catalog_m": null,
-        "differs_from_catalog": false
-      },
-      "dems": [
-        {
-          "file": "Site01_final_adj_5mpp_surf.tif",
-          "bytes": 40980810,
-          "width": 3200,
-          "height": 3200,
-          "native_res_m": 5.0,
-          "dtype": "float32",
-          "nodata": NaN,
-          "scale": 1.0,
-          "offset": 0.0,
-          "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
-          "sphere_radius_m": 1737400.0,
-          "used_res_m": 5.0
-        },
-        {
-          "file": "LDEM_80S_80MPP_ADJ.TIF",
-          "bytes": 189158392,
-          "width": 7600,
-          "height": 7600,
-          "native_res_m": 80.0,
-          "dtype": "float32",
-          "nodata": NaN,
-          "scale": 1.0,
-          "offset": 0.0,
-          "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
-          "sphere_radius_m": 1737400.0,
-          "used_res_m": 80.0
-        }
-      ],
-      "skipped": [],
-      "elev_min_deg": -2.744,
-      "elev_max_deg": -0.516,
-      "elev_max_at_az_deg": 184.5,
-      "null_occluder_share": 0.0,
-      "named_share": 0.821,
-      "names_seen": [
-        "connecting_ridge_summit",
-        "de_gerlache",
-        "mons_malapert",
-        "mons_mouton"
-      ],
-      "coverage_min_km": 218.9,
-      "occluder_dist_km_median": 0.35,
-      "seconds": 2.2
+    {
+     "file": "LDEM_60S_240MPP_ADJ.TIF",
+     "bytes": 218961039,
+     "width": 7760,
+     "height": 7760,
+     "native_res_m": 240.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 240.0
     }
+   ],
+   "skipped": [],
+   "elev_min_deg": -0.247,
+   "elev_max_deg": 11.074,
+   "elev_max_at_az_deg": 149.0,
+   "null_occluder_share": 0.0,
+   "named_share": 0.0,
+   "names_seen": [],
+   "stands_on": [],
+   "coverage_min_km": 216.3,
+   "occluder_dist_km_median": 1.2,
+   "band": "ok",
+   "sigma_m": 0.38,
+   "site_sigma_m": 0.773,
+   "err_maps": [
+    {
+     "file": "LDEM_80S_40MPP_ADJ_ERR.TIF",
+     "for": "LDEM_80S_40MPP_ADJ.TIF",
+     "median_m": 0.363,
+     "native_res_m": 40.0
+    },
+    {
+     "file": "LDEM_80S_80MPP_ADJ_ERR.TIF",
+     "for": "LDEM_80S_80MPP_ADJ.TIF",
+     "median_m": 0.247,
+     "native_res_m": 80.0
+    },
+    {
+     "file": "LDEM_60S_240MPP_ADJ_ERR.TIF",
+     "for": "LDEM_60S_240MPP_ADJ.TIF",
+     "median_m": 0.216,
+     "native_res_m": 240.0
+    }
+   ],
+   "band_half_width_deg_median": 0.056,
+   "band_half_width_deg_max": 0.6672,
+   "band_half_width_deg_at_peak": 0.1691,
+   "peak_occluder_dist_m": 400.0,
+   "band_flag": false,
+   "point_from": "app/public/data/sites.json",
+   "fine": "40",
+   "seconds": 5.1
   },
-  "mast_m": 2.0,
-  "max_range_km": 220.0,
-  "sigma_note": "pending: lo = hi = elev",
-  "meta": {
-    "ai_generated": true,
-    "generated_by": "pipeline/make_horizons.py",
-    "git_sha": "bd11f8f38917bffbbce4888ea10f802cfac73039",
-    "mock": false
+  "im2": {
+   "site_id": "im2",
+   "site_used": {
+    "lat": -84.7906,
+    "lon_e": 29.1957,
+    "elev_dem_m": 5321.83,
+    "elev_dem_from": "LDEM_80S_40MPP_ADJ.TIF",
+    "elev_catalog_m": null,
+    "point_from": "app/public/data/sites.json",
+    "stands_on": [
+     "mons_mouton"
+    ],
+    "differs_from_catalog": false
+   },
+   "dems": [
+    {
+     "file": "LDEM_80S_40MPP_ADJ.TIF",
+     "bytes": 716299920,
+     "width": 15200,
+     "height": 15200,
+     "native_res_m": 40.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 40.0
+    },
+    {
+     "file": "LDEM_80S_80MPP_ADJ.TIF",
+     "bytes": 189158392,
+     "width": 7600,
+     "height": 7600,
+     "native_res_m": 80.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 80.0
+    },
+    {
+     "file": "LDEM_60S_240MPP_ADJ.TIF",
+     "bytes": 218961039,
+     "width": 7760,
+     "height": 7760,
+     "native_res_m": 240.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 240.0
+    }
+   ],
+   "skipped": [],
+   "elev_min_deg": -1.47,
+   "elev_max_deg": 4.064,
+   "elev_max_at_az_deg": 117.5,
+   "null_occluder_share": 0.0,
+   "named_share": 0.068,
+   "names_seen": [
+    "malapert",
+    "nobile"
+   ],
+   "stands_on": [
+    "mons_mouton"
+   ],
+   "coverage_min_km": 218.0,
+   "occluder_dist_km_median": 12.89,
+   "band": "ok",
+   "sigma_m": 0.16,
+   "site_sigma_m": 0.136,
+   "err_maps": [
+    {
+     "file": "LDEM_80S_40MPP_ADJ_ERR.TIF",
+     "for": "LDEM_80S_40MPP_ADJ.TIF",
+     "median_m": 0.22,
+     "native_res_m": 40.0
+    },
+    {
+     "file": "LDEM_80S_80MPP_ADJ_ERR.TIF",
+     "for": "LDEM_80S_80MPP_ADJ.TIF",
+     "median_m": 0.219,
+     "native_res_m": 80.0
+    },
+    {
+     "file": "LDEM_60S_240MPP_ADJ_ERR.TIF",
+     "for": "LDEM_60S_240MPP_ADJ.TIF",
+     "median_m": 0.146,
+     "native_res_m": 240.0
+    }
+   ],
+   "band_half_width_deg_median": 0.0016,
+   "band_half_width_deg_max": 0.0843,
+   "band_half_width_deg_at_peak": 0.001,
+   "peak_occluder_dist_m": 16471.0,
+   "band_flag": false,
+   "point_from": "app/public/data/sites.json",
+   "fine": "40",
+   "seconds": 10.2
+  },
+  "slim": {
+   "site_id": "slim",
+   "sphere": true
+  },
+  "chandrayaan3": {
+   "site_id": "chandrayaan3",
+   "site_used": {
+    "lat": -69.3741,
+    "lon_e": 32.32,
+    "elev_dem_m": 529.72,
+    "elev_dem_from": "LDEM_60S_240MPP_ADJ.TIF",
+    "elev_catalog_m": 532,
+    "point_from": "app/public/data/sites.json",
+    "stands_on": [],
+    "differs_from_catalog": false
+   },
+   "dems": [
+    {
+     "file": "LDEM_60S_240MPP_ADJ.TIF",
+     "bytes": 218961039,
+     "width": 7760,
+     "height": 7760,
+     "native_res_m": 240.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 240.0
+    }
+   ],
+   "skipped": [],
+   "elev_min_deg": 0.379,
+   "elev_max_deg": 2.451,
+   "elev_max_at_az_deg": 350.0,
+   "null_occluder_share": 0.0,
+   "named_share": 0.0,
+   "names_seen": [],
+   "stands_on": [],
+   "coverage_min_km": 210.2,
+   "occluder_dist_km_median": 22.32,
+   "band": "ok",
+   "sigma_m": 0.462,
+   "site_sigma_m": 0.152,
+   "err_maps": [
+    {
+     "file": "LDEM_60S_240MPP_ADJ_ERR.TIF",
+     "for": "LDEM_60S_240MPP_ADJ.TIF",
+     "median_m": 0.43,
+     "native_res_m": 240.0
+    }
+   ],
+   "band_half_width_deg_median": 0.0017,
+   "band_half_width_deg_max": 0.1159,
+   "band_half_width_deg_at_peak": 0.0026,
+   "peak_occluder_dist_m": 16080.0,
+   "band_flag": false,
+   "point_from": "app/public/data/sites.json",
+   "fine": null,
+   "seconds": 0.8
+  },
+  "change6": {
+   "site_id": "change6",
+   "sphere": true
+  },
+  "apollo11": {
+   "site_id": "apollo11",
+   "sphere": true
+  },
+  "apollo12": {
+   "site_id": "apollo12",
+   "sphere": true
+  },
+  "blueghost1": {
+   "site_id": "blueghost1",
+   "sphere": true
+  },
+  "connecting_ridge": {
+   "site_id": "connecting_ridge",
+   "site_used": {
+    "lat": -89.4399,
+    "lon_e": 222.8524,
+    "elev_dem_m": 1958.58,
+    "elev_dem_from": "Site01_final_adj_5mpp_surf.tif",
+    "elev_catalog_m": null,
+    "point_from": "app/public/data/sites.json",
+    "stands_on": [
+     "connecting_ridge_summit"
+    ],
+    "differs_from_catalog": false
+   },
+   "dems": [
+    {
+     "file": "Site01_final_adj_5mpp_surf.tif",
+     "bytes": 40980810,
+     "width": 3200,
+     "height": 3200,
+     "native_res_m": 5.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 5.0
+    },
+    {
+     "file": "LDEM_80S_80MPP_ADJ.TIF",
+     "bytes": 189158392,
+     "width": 7600,
+     "height": 7600,
+     "native_res_m": 80.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 80.0
+    }
+   ],
+   "skipped": [],
+   "elev_min_deg": -2.744,
+   "elev_max_deg": -0.516,
+   "elev_max_at_az_deg": 184.5,
+   "null_occluder_share": 0.0,
+   "named_share": 0.192,
+   "names_seen": [
+    "de_gerlache",
+    "mons_malapert",
+    "mons_mouton"
+   ],
+   "stands_on": [
+    "connecting_ridge_summit"
+   ],
+   "coverage_min_km": 218.9,
+   "occluder_dist_km_median": 0.35,
+   "band": "ok",
+   "sigma_m": 0.198,
+   "site_sigma_m": 0.375,
+   "err_maps": [
+    {
+     "file": "Site01_final_adj_5mpp_toterr.tif",
+     "for": "Site01_final_adj_5mpp_surf.tif",
+     "median_m": 0.372,
+     "native_res_m": 5.0
+    },
+    {
+     "file": "LDEM_80S_80MPP_ADJ_ERR.TIF",
+     "for": "LDEM_80S_80MPP_ADJ.TIF",
+     "median_m": 0.206,
+     "native_res_m": 80.0
+    }
+   ],
+   "band_half_width_deg_median": 0.1219,
+   "band_half_width_deg_max": 0.7894,
+   "band_half_width_deg_at_peak": 0.0993,
+   "peak_occluder_dist_m": 335.0,
+   "band_flag": false,
+   "point_from": "app/public/data/sites.json",
+   "fine": null,
+   "seconds": 5.1
+  },
+  "shackleton_sr1": {
+   "site_id": "shackleton_sr1",
+   "site_used": {
+    "lat": -89.7742,
+    "lon_e": 203.4952,
+    "elev_dem_m": 1733.95,
+    "elev_dem_from": "LDEM_80S_40MPP_ADJ.TIF",
+    "elev_catalog_m": null,
+    "point_from": "app/public/data/sites.json",
+    "stands_on": [
+     "shackleton"
+    ],
+    "differs_from_catalog": false
+   },
+   "dems": [
+    {
+     "file": "LDEM_80S_40MPP_ADJ.TIF",
+     "bytes": 716299920,
+     "width": 15200,
+     "height": 15200,
+     "native_res_m": 40.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 40.0
+    },
+    {
+     "file": "LDEM_80S_80MPP_ADJ.TIF",
+     "bytes": 189158392,
+     "width": 7600,
+     "height": 7600,
+     "native_res_m": 80.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 80.0
+    }
+   ],
+   "skipped": [],
+   "elev_min_deg": -2.553,
+   "elev_max_deg": 1.086,
+   "elev_max_at_az_deg": 32.5,
+   "null_occluder_share": 0.0,
+   "named_share": 0.182,
+   "names_seen": [
+    "connecting_ridge_summit",
+    "de_gerlache",
+    "nobile",
+    "peak_near_shackleton"
+   ],
+   "stands_on": [
+    "shackleton"
+   ],
+   "coverage_min_km": 218.9,
+   "occluder_dist_km_median": 7.4,
+   "band": "ok",
+   "sigma_m": 0.124,
+   "site_sigma_m": 0.105,
+   "err_maps": [
+    {
+     "file": "LDEM_80S_40MPP_ADJ_ERR.TIF",
+     "for": "LDEM_80S_40MPP_ADJ.TIF",
+     "median_m": 0.142,
+     "native_res_m": 40.0
+    },
+    {
+     "file": "LDEM_80S_80MPP_ADJ_ERR.TIF",
+     "for": "LDEM_80S_80MPP_ADJ.TIF",
+     "median_m": 0.206,
+     "native_res_m": 80.0
+    }
+   ],
+   "band_half_width_deg_median": 0.0022,
+   "band_half_width_deg_max": 0.1768,
+   "band_half_width_deg_at_peak": 0.0013,
+   "peak_occluder_dist_m": 9760.0,
+   "band_flag": false,
+   "point_from": "app/public/data/sites.json",
+   "fine": "40",
+   "seconds": 7.5,
+   "note": "In this run the 40 m grid was read ahead of the Site04 5 m tile, so the 5 m tile set no sample. Fixed in the pipeline; these files describe what was actually used."
+  },
+  "shackleton_sr2": {
+   "site_id": "shackleton_sr2",
+   "site_used": {
+    "lat": -89.6871,
+    "lon_e": 197.0983,
+    "elev_dem_m": 1727.78,
+    "elev_dem_from": "LDEM_80S_40MPP_ADJ.TIF",
+    "elev_catalog_m": null,
+    "point_from": "app/public/data/sites.json",
+    "stands_on": [
+     "shackleton"
+    ],
+    "differs_from_catalog": false
+   },
+   "dems": [
+    {
+     "file": "LDEM_80S_40MPP_ADJ.TIF",
+     "bytes": 716299920,
+     "width": 15200,
+     "height": 15200,
+     "native_res_m": 40.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 40.0
+    },
+    {
+     "file": "LDEM_80S_80MPP_ADJ.TIF",
+     "bytes": 189158392,
+     "width": 7600,
+     "height": 7600,
+     "native_res_m": 80.0,
+     "dtype": "float32",
+     "nodata": NaN,
+     "scale": 1.0,
+     "offset": 0.0,
+     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
+     "sphere_radius_m": 1737400.0,
+     "used_res_m": 80.0
+    }
+   ],
+   "skipped": [],
+   "elev_min_deg": -2.452,
+   "elev_max_deg": 1.341,
+   "elev_max_at_az_deg": 54.5,
+   "null_occluder_share": 0.0,
+   "named_share": 0.249,
+   "names_seen": [
+    "connecting_ridge_summit",
+    "malapert",
+    "mons_malapert",
+    "mons_mouton",
+    "nobile",
+    "peak_near_shackleton"
+   ],
+   "stands_on": [
+    "shackleton"
+   ],
+   "coverage_min_km": 218.9,
+   "occluder_dist_km_median": 2.96,
+   "band": "ok",
+   "sigma_m": 0.118,
+   "site_sigma_m": 0.109,
+   "err_maps": [
+    {
+     "file": "LDEM_80S_40MPP_ADJ_ERR.TIF",
+     "for": "LDEM_80S_40MPP_ADJ.TIF",
+     "median_m": 0.142,
+     "native_res_m": 40.0
+    },
+    {
+     "file": "LDEM_80S_80MPP_ADJ_ERR.TIF",
+     "for": "LDEM_80S_80MPP_ADJ.TIF",
+     "median_m": 0.206,
+     "native_res_m": 80.0
+    }
+   ],
+   "band_half_width_deg_median": 0.0052,
+   "band_half_width_deg_max": 0.3284,
+   "band_half_width_deg_at_peak": 0.0018,
+   "peak_occluder_dist_m": 8440.0,
+   "band_flag": false,
+   "point_from": "app/public/data/sites.json",
+   "fine": "40",
+   "seconds": 7.2,
+   "note": "In this run the 40 m grid was read ahead of the Site04 5 m tile, so the 5 m tile set no sample. Fixed in the pipeline; these files describe what was actually used."
   }
+ },
+ "mast_m": 2.0,
+ "max_range_km": 220.0,
+ "band_method": "envelope: terrain raised by its published per-pixel height error and the observer lowered by the error at the site (upper edge), and the reverse (lower edge). Grid-spacing error is not included.",
+ "meta": {
+  "ai_generated": true,
+  "generated_by": "pipeline/horizons",
+  "git_sha": "00efaf4d31268b5bb586f7bde0bc2377bbe39264",
+  "mock": false
+ }
 }

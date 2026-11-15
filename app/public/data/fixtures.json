@@ -722,6 +722,186 @@
    "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%27399%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272026-01-05+00%3A30%27&STOP_TIME=%272026-01-31+15%3A30%27&STEP_SIZE=%2771+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
   },
   {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-23T12:30:00Z",
+   "body": "sun",
+   "horizons_az": 62.075134,
+   "horizons_el": 8.604029,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%2710%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-24T15:30:00Z",
+   "body": "sun",
+   "horizons_az": 48.701854,
+   "horizons_el": 12.59952,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%2710%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-25T18:30:00Z",
+   "body": "sun",
+   "horizons_az": 34.938166,
+   "horizons_el": 15.83985,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%2710%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-26T21:30:00Z",
+   "body": "sun",
+   "horizons_az": 20.791084,
+   "horizons_el": 18.117542,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%2710%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-28T00:30:00Z",
+   "body": "sun",
+   "horizons_az": 6.366356,
+   "horizons_el": 19.273535,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%2710%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-29T03:30:00Z",
+   "body": "sun",
+   "horizons_az": 351.849549,
+   "horizons_el": 19.223312,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%2710%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-30T06:30:00Z",
+   "body": "sun",
+   "horizons_az": 337.454475,
+   "horizons_el": 17.97362,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%2710%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-31T09:30:00Z",
+   "body": "sun",
+   "horizons_az": 323.358578,
+   "horizons_el": 15.620745,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%2710%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-09-01T12:30:00Z",
+   "body": "sun",
+   "horizons_az": 309.655304,
+   "horizons_el": 12.331351,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%2710%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-09-02T15:30:00Z",
+   "body": "sun",
+   "horizons_az": 296.339982,
+   "horizons_el": 8.315999,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%2710%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-23T12:30:00Z",
+   "body": "earth",
+   "horizons_az": 318.996664,
+   "horizons_el": 12.999118,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%27399%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-24T15:30:00Z",
+   "body": "earth",
+   "horizons_az": 319.135224,
+   "horizons_el": 11.51173,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%27399%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-25T18:30:00Z",
+   "body": "earth",
+   "horizons_az": 319.767983,
+   "horizons_el": 10.371616,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%27399%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-26T21:30:00Z",
+   "body": "earth",
+   "horizons_az": 320.917239,
+   "horizons_el": 9.70337,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%27399%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-28T00:30:00Z",
+   "body": "earth",
+   "horizons_az": 322.545449,
+   "horizons_el": 9.608663,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%27399%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-29T03:30:00Z",
+   "body": "earth",
+   "horizons_az": 324.541263,
+   "horizons_el": 10.140373,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%27399%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-30T06:30:00Z",
+   "body": "earth",
+   "horizons_az": 326.723397,
+   "horizons_el": 11.277985,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%27399%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-08-31T09:30:00Z",
+   "body": "earth",
+   "horizons_az": 328.867796,
+   "horizons_el": 12.918112,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%27399%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-09-01T12:30:00Z",
+   "body": "earth",
+   "horizons_az": 330.751494,
+   "horizons_el": 14.890294,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%27399%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
+   "site_id": "chandrayaan3",
+   "utc": "2023-09-02T15:30:00Z",
+   "body": "earth",
+   "horizons_az": 332.19614,
+   "horizons_el": 16.994001,
+   "tol_deg": 0.01,
+   "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%27399%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2732.320000%2C-69.374100%2C0.5320%27&START_TIME=%272023-08-23+12%3A30%27&STOP_TIME=%272023-09-02+15%3A30%27&STEP_SIZE=%2727+h%27&QUANTITIES=%274%27&APPARENT=%27AIRLESS%27&CSV_FORMAT=%27YES%27&CAL_FORMAT=%27JD%27"
+  },
+  {
    "site_id": "change6",
    "utc": "2024-06-01T22:30:00Z",
    "body": "sun",
@@ -1265,7 +1445,7 @@
  "meta": {
   "ai_generated": true,
   "generated_by": "pipeline/fetch_horizons.py",
-  "git_sha": "bd11f8f38917bffbbce4888ea10f802cfac73039",
+  "git_sha": "00efaf4d31268b5bb586f7bde0bc2377bbe39264",
   "mock": false
  }
 }
