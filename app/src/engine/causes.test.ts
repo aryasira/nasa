@@ -49,9 +49,9 @@ describe.skipIf(!existsSync(root + D + '/ephem.bin'))('cause lines and slip opti
     const im2 = of(run(...IM2), 'slip');
     const e = im2.causes.find((l) => l.body === 'earth')!, s = im2.causes.find((l) => l.body === 'sun')!;
     expect(e.delta_h).toBeCloseTo(-82.33, 1);
-    expect(e.text).toMatch(/^Earth lost 82 h — Earth's libration, net of site height/);
+    expect(e.text).toMatch(/^Earth lost 82\.3 h — Earth's libration, net of site height/);
     expect(s.delta_h).toBeCloseTo(-90.33, 1);
-    expect(s.text).toMatch(/^Sun lost 90 h — lunar day\/night cycle, net of site height/);
+    expect(s.text).toMatch(/^Sun lost 90\.3 h — lunar day\/night cycle, net of site height/);
     // Connecting Ridge +7 d: before, Sun "+112 h" orbital and "−112 h" site height; now no Sun line, Earth −168 h.
     const cr = of(run(...CR), 'slip');
     expect(cr.causes.filter((l) => l.body === 'sun')).toHaveLength(0);
@@ -133,7 +133,7 @@ describe.skipIf(!existsSync(root + D + '/ephem.bin'))('cause lines and slip opti
       if (l.kind === 'terrain' && l.dist_km != null && l.dist_km < 0.5) expect(l.text).toMatch(/< 0\.5 km/);
     }
     const ex = of(run('im1', '2024-02-13T00:00:00Z', 7, 6), 'slip').causes.find((l) => l.kind === 'terrain')!;
-    expect(ex.text).toBe('Sun gained 63 h — no longer blocked by nearby terrain at az 82° (E), < 0.5 km');
+    expect(ex.text).toBe('Sun gained 62.8 h — no longer blocked by nearby terrain at az 82° (E), < 0.5 km');
   });
 
   it('8. non-terrain lines use az_deg null (contract number | null)', () => {

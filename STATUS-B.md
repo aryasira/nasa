@@ -1,8 +1,24 @@
 # STATUS-B
 
-_Updated: Sun 15 Nov 2026, 11:45 CT_
+_Updated: Sun 15 Nov 2026, 12:25 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
+
+## Live-review fixes (Sun 12:00 to 12:25 CT)
+Merged `origin/c/work` at 081756a (the head of **open PR #6**) so the cause wording in `causes.ts` matches what
+will land on main; merge `main` again once PR #6 is merged. `main.ts` edits are in place; hooks untouched.
+- (1) A link to a site with no data (e.g. `site=shackleton_sr1`) now shows a message naming the site and the
+  one shown instead. It clears when the user picks a site.
+- (5) Alternate-site rows no longer repeat the baseline site's terrain line: for a different site, the
+  baseline's terrain is part of the "different location" line; only the alternate's own terrain is listed.
+- (6) `mode=center` (US spelling) is accepted and kept as centre.
+- (7) One rounding rule: hours are shown to one decimal everywhere (summary, cause lines, chart markers).
+- (8) One wording: "10-day slip" / "10-day advance" in the headline, the table and the page title.
+- Gloss lines for "libration" and "net of site height" appear under the summary when those words are used.
+- Alternate rows are shorter: "Alternate: <site>", "379 km away, same date.", two cause lines.
+- The date field is a text field in 24-hour UTC (`YYYY-MM-DD HH:MM`); links accept a space or `T`.
+- Checks: `npm test` 42 passing, build passes, each item checked in headless Chrome; axe-core on the IM-2
+  state: no new violations in B's parts.
 
 ## Round 2 (Sun 11:15 to 11:45 CT)
 Merged `origin/main` (d509614, includes the simulator) and `origin/c/work` (1eb4a2d, C's cause-line and slip

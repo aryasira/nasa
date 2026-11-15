@@ -61,10 +61,10 @@ export function slipOptions(inp: SlipInput): SlipOptionEx[] {
   const tSlip = inp.tStart + inp.slipDays * DAY;
   const rest: SlipOptionEx[] = [];
   if (inp.slipDays !== 0 && !fits(tSlip)) {
-    throw new RangeError(`The ${inp.slipDays > 0 ? '+' : ''}${inp.slipDays} d slipped ${inp.stayDays}-day window is outside the ephemeris coverage.`);
+    throw new RangeError(`The stay after a ${slipWords(inp.slipDays)} is outside the ephemeris coverage.`);
   }
   if (inp.slipDays !== 0) {
-    rest.push(mk('slip', `${inp.slipDays > 0 ? '+' : ''}${inp.slipDays} d slip`, site, hz, tSlip));
+    rest.push(mk('slip', slipWords(inp.slipDays), site, hz, tSlip));
 
     // Next date after the slip whose both-visible hours recover the baseline (1-day steps).
     // Only for a real slip (later date): after an advance the baseline itself is still available.
@@ -90,13 +90,15 @@ export function slipOptions(inp: SlipInput): SlipOptionEx[] {
 
     // Alternate catalogue sites on the slipped date (see alternateSites below).
     for (const { s, km } of alternateSites(inp).alts) {
-      rest.push(mk('alternate', `Alternate site: ${s.name}`, s, horizons.get(s.id)!, tSlip,
-        `${km.toFixed(0)} km from ${site.name}, same slipped date.`));
+      rest.push(mk('alternate', `Alternate: ${s.name}`, s, horizons.get(s.id)!, tSlip, `${km.toFixed(0)} km away, same date.`));
     }
   }
   rest.sort((a, b) => (b.delta.both_visible_h ?? 0) - (a.delta.both_visible_h ?? 0));
   return out.concat(rest);
 }
+
+/** The one wording used in the headline, the table and the page title: "10-day slip" (later) or "10-day advance" (earlier). */
+export const slipWords = (days: number) => `${Math.abs(days)}-day ${days < 0 ? 'advance' : 'slip'}`;
 
 export const POLAR_LAT_DEG = 60;
 export const POLAR_ALT_RANGE_KM = 150;
