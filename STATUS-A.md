@@ -1,6 +1,6 @@
 # STATUS-A
 
-_Updated: Sat 14 Nov 2026, 19:55 CT_
+_Updated: Sat 14 Nov 2026, 23:55 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
 
@@ -56,13 +56,39 @@ _Updated: Sat 14 Nov 2026, 19:55 CT_
   - New optional near-field layer for im1 and im2: `--fine 40` or `--fine 20`.
   - `run_all.py --horizons-only` redoes horizons, doc and tests without touching ephem or fixtures.
 
+- **Round 2 code (23:55), all in one Mac run: `python3 pipeline/run_all.py --fine 40`.**
+  - Merged `main` (6fda338). Re-read CONTEXT.md and PLAN.md.
+  - Task 1: `contracts/ephem.header.json` now `t0_utc 2023-01-01T00:00:00Z`, `n 70128`, notes updated.
+    Only those three fields changed. Mocks and golden vectors regenerated with C's tools.
+    Fixtures: the 140 round-1 epochs do not move. `chandrayaan3` gains 10 epochs, 27 h apart,
+    from 2023-08-23T12:30Z to 2023-09-02T15:30Z. Expected total: 160 fixtures.
+  - Task 2: bands are on by default for every terrain site. A full band wider than 0.5 deg at the
+    highest horizon point prints `WIDE BAND` and sets `band_flag` in `pipeline/reports/horizons.json`.
+  - Task 3: `shackleton_sr1` and `shackleton_sr2` horizons use PGDA 78 Site04 5 m, then the 40 m
+    grid to 100 km (with `--fine 40`), then 80 m to 220 km. Until C adds them to `sites.json` the
+    brief's coordinates are used and the file says so in `site_used.point_from`.
+    **`de_gerlache_rim` is skipped.** No published high-illumination point with coordinates was found.
+  - Task 5: `docs/science.md` opens with a validation report (Horizons, Connecting Ridge against
+    Glaeser 2014, band widths, data products with citations and kernel sizes). It fills from the run.
+  - Tests: 32 total. 31 pass. **1 fails until the Mac run:** `tests/contracts::test_ephem[data]`,
+    because the committed real `ephem.bin` still starts in 2024.
+
 ## In progress
-- Waiting for the human to run `python pipeline/run_all.py --horizons-only --fine 40`.
+- Waiting for the Mac run. Task 4 values (DEM heights) come from it.
 
 ## Next
-- Commit the banded horizons. Check band widths are sane. Sun 13:00: validation report.
+- After the run: check residuals, band widths, new sites; fill task 4; final validation report.
 
 ## Blocked / needs other agent
+- **Human / C: do not merge `a/data` into `main` before the Mac run.** The contract says 2023 but the
+  real `ephem.bin` is still 2024 until then. One contract test is red in between.
+- **B:** after the Mac run the fixture count is 160, not 140, and the ephemeris has 70128 rows.
+  Recompute the Connecting Ridge 91.2 percent figure on the new span. `connecting_ridge` terrain
+  layers are unchanged on purpose so that figure moves only because of the span.
+- **C:** lead sentence 3 says 140 points at seven sites. After the run it is 160 points, same seven sites.
+- **C:** add `shackleton_sr1` and `shackleton_sr2` to `data-src/sites.yaml` with `terrain: lola`.
+  The DEM file for both is `Site04_final_adj_5mpp_surf.tif` (PGDA 78). Its name follows the Site01
+  pattern; the Mac run confirms it downloads.
 - **Human:** `main` is still the scaffold commit 84dcbb4 at 19:25 CT. The 17:00 merge did not
   happen. `a/data` (and `b/app`, `c/work`) are waiting to be merged.
 - **Human:** this cloud workspace gets HTTP 403 from naif.jpl.nasa.gov, ssd.jpl.nasa.gov,

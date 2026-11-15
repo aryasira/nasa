@@ -6,6 +6,39 @@ Pipeline commit that produced each report: kernels `bd11f8f`, ephem `bd11f8f`, f
 
 Conventions: body-fixed frame MOON_ME, east longitude 0 to 360, azimuth clockwise from north, elevation above the plane normal to the 1737.4 km reference sphere at the site, UTC.
 
+## Validation report
+
+### A. Sun and Earth directions against NASA JPL Horizons
+
+- 140 fixtures at 7 landing sites (apollo11, apollo12, chandrayaan3, change6, im1, im2, slim), tolerance 0.01 deg: **PASS**, 0 outside tolerance.
+- Largest gap: 0.00010 deg in azimuth (scaled by cos elevation), 0.00069 deg in elevation.
+- Earth parallax between Moon centre and site: up to 0.2767 deg at the fixtures (geometric ceiling 0.2793 deg). The check fails if the site vector is not subtracted.
+- Full table: section 3.
+- Ephemeris rows: 61368 (hourly). Span and ranges: section 2.
+
+### B. Long-run sunlight at Connecting Ridge against a published value
+
+- Ours: sunlit 91.2 percent of the time (2 m mast, limb rule), computed by the app's engine (Agent B, `STATUS-B.md`, Sat 14 Nov) from this pipeline's `ephem.bin` and `horizon/connecting_ridge.json` over the ephemeris span as it was then, 2024 to 2030.
+- Published: 92.27 percent at 2 m above ground (Glaeser et al. 2014, Icarus 243, 78-90, doi:10.1016/j.icarus.2014.08.013), from a 19-year run on a 20 m/pixel LOLA terrain model.
+- The two are not the same experiment: **different time span and newer DEM** (ours is the 5 m PGDA 78 site model inside the 80 m PGDA 90 grid), and our point is the paper's site as listed in `data-src/sites.yaml`. Agreement to about one percentage point is a plausibility check, not a numeric validation.
+
+### C. Uncertainty bands
+
+Pending: no terrain horizon has a band yet (section 5).
+
+### D. Data products
+
+- JPL Horizons API, https://ssd.jpl.nasa.gov/api/horizons.api (NASA/JPL), observer tables for the fixtures. Each fixture stores its query URL.
+- NASA GSFC PGDA product 90, LOLA south polar DEMs, Barker et al. 2023, Planet. Sci. J. 4, 183, doi:10.3847/PSJ/acf3e1, https://pgda.gsfc.nasa.gov/products/90.
+- NASA GSFC PGDA product 78, LOLA 5 m site DEMs, Barker et al. 2021, Planet. Space Sci. 203, 105119, https://pgda.gsfc.nasa.gov/products/78.
+- NASA NAIF SPICE kernels:
+  - `naif0012.tls`, 5257 bytes, https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls
+  - `pck00011.tpc`, 131226 bytes, https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc
+  - `moon_pa_de440_200625.bpc`, 12863488 bytes, https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/moon_pa_de440_200625.bpc
+  - `moon_de440_250416.tf`, 19478 bytes, https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/satellites/moon_de440_250416.tf
+  - `de440s.bsp`, 32726016 bytes, https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp
+- Terrain files read in the last run: `LDEM_60S_240MPP_ADJ.TIF`, `LDEM_80S_80MPP_ADJ.TIF`, `Site01_final_adj_5mpp_surf.tif`.
+
 ## 1. SPICE kernels (`pipeline/get_kernels.py`)
 
 | Kernel | Bytes | SHA-256 (first 16) | URL |
@@ -62,8 +95,8 @@ Earth parallax: the geocentric and topocentric Earth directions differ by up to 
 Method: 720 azimuths, great-circle rays, Moon curvature, observer 2 m above the DEM surface at the site, range 220 km, step growing 0.4 percent per sample. The finest DEM with data at a sample wins. The occluder of an azimuth is the sample with the largest elevation angle. Beyond DEM coverage the terrain is assumed to lie on the reference sphere; where only that assumed surface sets the horizon, the occluder is null. Sites with `terrain: sphere` get a flat 0 deg horizon. For reference, the true smooth-sphere dip for a 2 m mast is -0.087 deg.
 
 DEM sources:
-- NASA GSFC PGDA product 90, https://pgda.gsfc.nasa.gov/products/90, Barker et al. 2023, Planet. Sci. J. 4, 183 (`LDEM_80S_80MPP_ADJ.TIF`, `LDEM_60S_240MPP_ADJ.TIF`).
-- NASA GSFC PGDA product 78, https://pgda.gsfc.nasa.gov/products/78, Barker et al. 2021, Planet. Space Sci. 203, 105119 (`Site01_final_adj_5mpp_surf.tif`).
+- NASA GSFC PGDA product 90, https://pgda.gsfc.nasa.gov/products/90, Barker et al. 2023, Planet. Sci. J. 4, 183, doi:10.3847/PSJ/acf3e1 (`LDEM_80S_80MPP_ADJ.TIF`, `LDEM_60S_240MPP_ADJ.TIF`, and `LDEM_80S_40MPP_ADJ.TIF` when the run used `--fine 40`).
+- NASA GSFC PGDA product 78, https://pgda.gsfc.nasa.gov/products/78, Barker et al. 2021, Planet. Space Sci. 203, 105119 (`Site01_final_adj_5mpp_surf.tif`, `Site04_final_adj_5mpp_surf.tif`).
 - These are the track-adjusted GeoTIFF versions of the LOLA polar grids, not the PDS `.IMG` files named in the brief. Scale and offset below are the GeoTIFF's own tags.
 
 | DEM file | Bytes | Pixels | Native m/pix | dtype | nodata | scale, offset | Sphere radius (m) |

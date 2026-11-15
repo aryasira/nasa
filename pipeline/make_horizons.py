@@ -12,6 +12,7 @@ DEMs (downloaded to pipeline/cache/ if not found in --dem-dir):
     LDEM_60S_240MPP_ADJ.TIF  240 m/pix, 60S to the pole
   NASA GSFC PGDA product 78, Barker et al. 2021, Planet. Space Sci. 203, 105119
     Site01_final_adj_5mpp_surf.tif  5 m/pix, Connecting Ridge
+    Site04_final_adj_5mpp_surf.tif  5 m/pix, Shackleton rim
 Each DEM's published per-pixel height error map (*_ERR.TIF, *_toterr.tif) is
 downloaded too and gives the uncertainty band (elev_lo_deg, elev_hi_deg).
 
@@ -49,6 +50,9 @@ DEMS = {
     "Site01_final_adj_5mpp_surf.tif": {"url": P78 + "Site01/Site01_final_adj_5mpp_surf.tif",
                                        "res_m": 5, "product": "NASA GSFC PGDA 78 Site01 5 m",
                                        "err": "Site01_final_adj_5mpp_toterr.tif"},
+    "Site04_final_adj_5mpp_surf.tif": {"url": P78 + "Site04/Site04_final_adj_5mpp_surf.tif",
+                                       "res_m": 5, "product": "NASA GSFC PGDA 78 Site04 5 m",
+                                       "err": "Site04_final_adj_5mpp_toterr.tif"},
     "LDEM_80S_40MPP_ADJ.TIF": {"url": P90 + "LDEM_80S_40MPP_ADJ.TIF", "res_m": 40,
                                "product": "NASA GSFC PGDA 90 LDEM_80S_40MPP_ADJ",
                                "err": "LDEM_80S_40MPP_ADJ_ERR.TIF", "radius_km": 100.0},
@@ -62,9 +66,11 @@ ERR_URL = {
     "LDEM_80S_40MPP_ADJ_ERR.TIF": P90 + "LDEM_80S_40MPP_ADJ_ERR.TIF",
     "LDEM_80S_20MPP_ADJ_ERR.TIF": P90 + "LDEM_80S_20MPP_ADJ_ERR.TIF",
     "Site01_final_adj_5mpp_toterr.tif": P78 + "Site01/Site01_final_adj_5mpp_toterr.tif",
+    "Site04_final_adj_5mpp_toterr.tif": P78 + "Site04/Site04_final_adj_5mpp_toterr.tif",
 }
 # Sites inside the 80S grids that can take a finer near-field layer (--fine).
-FINE_SITES = {"im1", "im2"}
+# connecting_ridge is left as it was so the published-benchmark number does not move.
+FINE_SITES = {"im1", "im2", "shackleton_sr1", "shackleton_sr2"}
 FINE = {"40": "LDEM_80S_40MPP_ADJ.TIF", "20": "LDEM_80S_20MPP_ADJ.TIF"}
 BAND_METHOD = ("envelope: terrain raised by its published per-pixel height error and the "
                "observer lowered by the error at the site (upper edge), and the reverse "
@@ -75,7 +81,19 @@ PLAN = {
     "im2": ["LDEM_80S_80MPP_ADJ.TIF", "LDEM_60S_240MPP_ADJ.TIF"],
     "chandrayaan3": ["LDEM_60S_240MPP_ADJ.TIF"],
     "connecting_ridge": ["Site01_final_adj_5mpp_surf.tif", "LDEM_80S_80MPP_ADJ.TIF"],
+    "shackleton_sr1": ["Site04_final_adj_5mpp_surf.tif", "LDEM_80S_80MPP_ADJ.TIF"],
+    "shackleton_sr2": ["Site04_final_adj_5mpp_surf.tif", "LDEM_80S_80MPP_ADJ.TIF"],
 }
+# Round-2 sites. Agent C adds them to data-src/sites.yaml with their source
+# (Glaeser et al. 2014). Until they are in sites.json the coordinates below,
+# copied from docs/agents/ROUND2-A.md, are used. The catalogue wins when it has the id.
+# de_gerlache_rim is not here: no published point with coordinates was found.
+ROUND2_SITES = [
+    {"id": "shackleton_sr1", "lat": -89.7742, "lon_e": 203.4952, "elev_m": None, "terrain": "lola"},
+    {"id": "shackleton_sr2", "lat": -89.6871, "lon_e": 197.0983, "elev_m": None, "terrain": "lola"},
+]
+# A band wider than this at the highest point of the horizon is flagged.
+BAND_FLAG_DEG = 0.5
 # Set a point here only if the catalogue must be overridden; the point is
 # then written into the output as site_used.differs_from_catalog = true.
 OVERRIDE = {}
@@ -224,6 +242,7 @@ def lola_doc(site, dirs, feats, fine=None, bands=True):
                       "elev_dem_m": round(h["site_height_m"], 2),
                       "elev_dem_from": h["site_height_from"],
                       "elev_catalog_m": site.get("elev_m"),
+                      "point_from": site.get("_from", "app/public/data/sites.json"),
                       "differs_from_catalog": site["id"] in OVERRIDE},
         "meta": C.meta("pipeline/make_horizons.py"),
     }
@@ -253,6 +272,8 @@ def lola_doc(site, dirs, feats, fine=None, bands=True):
         "band_half_width_deg_at_peak": None if sigma is None else round(float(half[int(e.argmax())]), 4),
         "peak_occluder_dist_m": (None if not np.isfinite(h["occ_dist_m"][int(e.argmax())])
                                  else round(float(h["occ_dist_m"][int(e.argmax())]), 0)),
+        "band_flag": bool(sigma is not None and half[int(e.argmax())] * 2 > BAND_FLAG_DEG),
+        "point_from": site.get("_from", "app/public/data/sites.json"),
         "fine": fine if (fine and site["id"] in FINE_SITES) else None,
         "seconds": round(time.time() - t, 1),
     }
@@ -275,10 +296,18 @@ def main():
           f"{sum(f['name_status'] == 'iau' for f in feats)} with IAU Gazetteer IDs")
     reports = (C.read_report("horizons.json") or {"sites": {}})["sites"]
     failed = []
-    for site in C.load_sites():
+    sites = C.load_sites()
+    have = {x["id"] for x in sites}
+    sites += [dict(x, _from="docs/agents/ROUND2-A.md (not yet in sites.json)")
+              for x in ROUND2_SITES if x["id"] not in have]
+    for site in sites:
         if args.only and site["id"] not in args.only:
             continue
         out = C.DATA / "horizon" / f"{site['id']}.json"
+        if site["terrain"] == "lola" and site["id"] not in PLAN:
+            failed.append(f"{site['id']}: terrain is lola but make_horizons.PLAN has no DEM list for it")
+            print(f"FAILED {failed[-1]}")
+            continue
         if site["terrain"] == "lola":
             try:
                 doc, rep = lola_doc(site, dirs, feats, fine=args.fine, bands=not args.no_bands)
@@ -295,7 +324,10 @@ def main():
             if rep["sigma_m"] is not None:
                 print(f"{'':17s} band: height error {rep['sigma_m']} m at occluders, {rep['site_sigma_m']} m at site; "
                       f"half width median {rep['band_half_width_deg_median']} deg, at peak "
-                      f"{rep['band_half_width_deg_at_peak']} deg, max {rep['band_half_width_deg_max']} deg")
+                      f"{rep['band_half_width_deg_at_peak']} deg, max {rep['band_half_width_deg_max']} deg"
+                      + ("  ** WIDE BAND AT PEAK, flag in STATUS-A **" if rep["band_flag"] else ""))
+            else:
+                print(f"{'':17s} NO BAND: {rep['band']}")
         else:
             doc = sphere_doc(site)
             reports[site["id"]] = {"site_id": site["id"], "sphere": True}

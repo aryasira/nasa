@@ -12,6 +12,70 @@ import common as C
 PENDING = "_Not produced yet: run the pipeline step named above._"
 
 
+def validation_report():
+    """Summary for the project page. Every number is read from a report."""
+    res, eph, hor, ker = (C.read_report(n) for n in
+                          ("residuals.json", "ephem.json", "horizons.json", "kernels.json"))
+    out = ["## Validation report", ""]
+    out += ["### A. Sun and Earth directions against NASA JPL Horizons", ""]
+    if res:
+        sites = sorted({r["site_id"] for r in res["rows"]})
+        az = max(r["max_az_gap_deg"] for r in res["rows"])
+        el = max(r["max_el_gap_deg"] for r in res["rows"])
+        out += [f"- {res['n_fixtures']} fixtures at {len(sites)} landing sites ({', '.join(sites)}), "
+                f"tolerance {res['tol_deg']} deg: **{'PASS' if res['passed'] else 'FAIL'}**, "
+                f"{res['n_failures']} outside tolerance.",
+                f"- Largest gap: {az:.5f} deg in azimuth (scaled by cos elevation), {el:.5f} deg in elevation.",
+                f"- Earth parallax between Moon centre and site: up to {res['max_earth_parallax_deg']:.4f} deg "
+                f"at the fixtures (geometric ceiling {res['parallax_upper_bound_deg']:.4f} deg). The check "
+                "fails if the site vector is not subtracted.",
+                "- Full table: section 3."]
+    else:
+        out.append(PENDING)
+    if eph:
+        out.append(f"- Ephemeris rows: {eph['rows']} (hourly). Span and ranges: section 2.")
+    out += ["", "### B. Long-run sunlight at Connecting Ridge against a published value", "",
+            "- Ours: sunlit 91.2 percent of the time (2 m mast, limb rule), computed by the app's engine "
+            "(Agent B, `STATUS-B.md`, Sat 14 Nov) from this pipeline's `ephem.bin` and "
+            "`horizon/connecting_ridge.json` over the ephemeris span as it was then, 2024 to 2030.",
+            "- Published: 92.27 percent at 2 m above ground (Glaeser et al. 2014, Icarus 243, 78-90, "
+            "doi:10.1016/j.icarus.2014.08.013), from a 19-year run on a 20 m/pixel LOLA terrain model.",
+            "- The two are not the same experiment: **different time span and newer DEM** (ours is "
+            "the 5 m PGDA 78 site model inside the 80 m PGDA 90 grid), and our point is the paper's "
+            "site as listed in `data-src/sites.yaml`. Agreement to about one percentage point is a "
+            "plausibility check, not a numeric validation.", ""]
+    out += ["### C. Uncertainty bands", ""]
+    rows = [(k, v) for k, v in (hor or {"sites": {}})["sites"].items() if not v.get("sphere")]
+    done = [(k, v) for k, v in rows if v.get("sigma_m") is not None]
+    if done:
+        out += ["| Site | Full band width at the highest horizon point (deg) | Median full width (deg) | Flag |",
+                "|---|---:|---:|---|"]
+        for k, v in done:
+            out.append(f"| {k} | {2 * v['band_half_width_deg_at_peak']:.4f} | "
+                       f"{2 * v['band_half_width_deg_median']:.4f} | {'WIDE' if v.get('band_flag') else 'ok'} |")
+        none = [k for k, v in rows if v.get("sigma_m") is None]
+        out += ["", "Method and limits: section 5." + (f" No band for: {', '.join(none)}." if none else "")]
+    else:
+        out.append("Pending: no terrain horizon has a band yet (section 5).")
+    out += ["", "### D. Data products", "",
+            "- JPL Horizons API, https://ssd.jpl.nasa.gov/api/horizons.api (NASA/JPL), observer tables "
+            "for the fixtures. Each fixture stores its query URL.",
+            "- NASA GSFC PGDA product 90, LOLA south polar DEMs, Barker et al. 2023, Planet. Sci. J. 4, 183, "
+            "doi:10.3847/PSJ/acf3e1, https://pgda.gsfc.nasa.gov/products/90.",
+            "- NASA GSFC PGDA product 78, LOLA 5 m site DEMs, Barker et al. 2021, Planet. Space Sci. 203, "
+            "105119, https://pgda.gsfc.nasa.gov/products/78.",
+            "- NASA NAIF SPICE kernels:"]
+    if ker:
+        out += [f"  - `{k['name']}`, {k['bytes']} bytes, {k['url']}" for k in ker["kernels"]]
+    else:
+        out.append("  - " + PENDING)
+    if hor:
+        used = sorted({d["file"] for _, v in rows for d in v.get("dems", [])} |
+                      {e["file"] for _, v in rows for e in v.get("err_maps", [])})
+        out += ["- Terrain files read in the last run: " + ", ".join(f"`{u}`" for u in used) + "."]
+    return out + [""]
+
+
 def kernels_section():
     rep = C.read_report("kernels.json")
     out = ["## 1. SPICE kernels (`pipeline/get_kernels.py`)", ""]
@@ -82,9 +146,11 @@ def horizon_section():
            "horizon. For reference, the true smooth-sphere dip for a 2 m mast is -0.087 deg.", "",
            "DEM sources:",
            "- NASA GSFC PGDA product 90, https://pgda.gsfc.nasa.gov/products/90, "
-           "Barker et al. 2023, Planet. Sci. J. 4, 183 (`LDEM_80S_80MPP_ADJ.TIF`, `LDEM_60S_240MPP_ADJ.TIF`).",
+           "Barker et al. 2023, Planet. Sci. J. 4, 183, doi:10.3847/PSJ/acf3e1 (`LDEM_80S_80MPP_ADJ.TIF`, "
+           "`LDEM_60S_240MPP_ADJ.TIF`, and `LDEM_80S_40MPP_ADJ.TIF` when the run used `--fine 40`).",
            "- NASA GSFC PGDA product 78, https://pgda.gsfc.nasa.gov/products/78, "
-           "Barker et al. 2021, Planet. Space Sci. 203, 105119 (`Site01_final_adj_5mpp_surf.tif`).",
+           "Barker et al. 2021, Planet. Space Sci. 203, 105119 (`Site01_final_adj_5mpp_surf.tif`, "
+           "`Site04_final_adj_5mpp_surf.tif`).",
            "- These are the track-adjusted GeoTIFF versions of the LOLA polar grids, not the "
            "PDS `.IMG` files named in the brief. Scale and offset below are the GeoTIFF's own tags.", ""]
     if not rep or not any(not v.get("sphere") for v in rep["sites"].values()):
@@ -194,7 +260,7 @@ def main():
              "Conventions: body-fixed frame MOON_ME, east longitude 0 to 360, azimuth clockwise "
              "from north, elevation above the plane normal to the 1737.4 km reference sphere "
              "at the site, UTC.", ""]
-    for section in (kernels_section, ephem_section, residual_section, horizon_section, band_section):
+    for section in (validation_report, kernels_section, ephem_section, residual_section, horizon_section, band_section):
         lines += section()
     C.DOCS.mkdir(exist_ok=True)
     (C.DOCS / "science.md").write_text("\n".join(lines) + "\n" + STATIC_TAIL, encoding="utf-8")

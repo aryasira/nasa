@@ -196,6 +196,54 @@ def test_horizon_files_meet_the_contract(tmp_path, monkeypatch):
     assert rep2["band_half_width_deg_max"] > 0
 
 
+def test_make_horizons_main_end_to_end(tmp_path, monkeypatch, capsys):
+    # catalogue has one terrain site and one sphere site; a round-2 site is not in it yet
+    plon, plat, _ = GEOD.fwd(LON, LAT, 200.0, 3000.0)
+    px, py = FWD.transform(plon, plat)
+    dems = tmp_path / "dems"
+    dems.mkdir()
+    write_dem(dems / "a.tif", SX, SY, 6000, 10, bump(px, py, 400.0, 250.0))
+    write_dem(dems / "a_err.tif", SX, SY, 6000, 10, lambda X, Y: np.full_like(X, 0.4))
+    monkeypatch.setattr(mh, "DEMS", {"a.tif": {"url": "", "res_m": 10, "product": "TEST", "err": "a_err.tif"}})
+    monkeypatch.setattr(mh, "PLAN", {"t": ["a.tif"], "extra": ["a.tif"]})
+    monkeypatch.setattr(mh, "ROUND2_SITES", [{"id": "extra", "lat": LAT - 0.01, "lon_e": LON,
+                                              "elev_m": None, "terrain": "lola"}])
+    monkeypatch.setattr(mh, "MAX_RANGE_KM", 5.0)
+    monkeypatch.setattr(C, "DATA", tmp_path / "data")
+    monkeypatch.setattr(C, "REPORTS", tmp_path / "reports")
+    monkeypatch.setattr(C, "CACHE", tmp_path / "cache")
+    monkeypatch.setattr(C, "load_sites", lambda: [
+        {"id": "t", "lat": LAT, "lon_e": LON, "elev_m": 10, "terrain": "lola"},
+        {"id": "s", "lat": 0.0, "lon_e": 0.0, "elev_m": 0, "terrain": "sphere"}])
+    monkeypatch.setattr(sys, "argv", ["make_horizons.py", "--dem-dir", str(dems), "--fine", "40"])
+    mh.main()
+    out = capsys.readouterr().out
+    assert "FAILED" not in out and "NO BAND" not in out
+    for sid in ("t", "s", "extra"):
+        assert (tmp_path / "data/horizon" / f"{sid}.json").exists()
+    extra = json.loads((tmp_path / "data/horizon/extra.json").read_text())
+    assert "ROUND2-A.md" in extra["site_used"]["point_from"] and extra["dem"]["sigma_m"] == 0.4
+    rep = json.loads((tmp_path / "reports/horizons.json").read_text())
+    assert rep["meta"]["ai_generated"] is True and rep["sites"]["t"]["band"] == "ok"
+    assert rep["sites"]["t"]["band_flag"] is False
+    # the science doc builds from these reports and shows the band table
+    import make_science_doc as msd
+    monkeypatch.setattr(C, "DOCS", tmp_path / "docs")
+    msd.main()
+    text = (tmp_path / "docs/science.md").read_text()
+    assert "| t |" in text and "| extra |" in text and "Pending: no terrain horizon has a band" not in text
+
+
+def test_round2_sites_have_a_dem_plan():
+    ids = {x["id"] for x in mh.ROUND2_SITES}
+    assert ids == {"shackleton_sr1", "shackleton_sr2"} and ids <= set(mh.PLAN) and ids <= mh.FINE_SITES
+    for names in mh.PLAN.values():
+        for n in names:
+            assert mh.DEMS[n]["err"] in mh.ERR_URL
+    for n in mh.FINE.values():
+        assert mh.DEMS[n]["err"] in mh.ERR_URL and mh.DEMS[n]["radius_km"]
+
+
 def test_real_feature_list_is_valid_and_sourced():
     feats = mh.load_features()
     ids = [f["id"] for f in feats]
@@ -295,6 +343,18 @@ def test_parse_reply_and_query():
     assert "coord%40301" in url and "399" in url and "1.440000%2C-80.130000%2C2.5790" in url
     old = dict(site, landing_utc="1969-07-20T20:17:40Z")
     assert C.iso_z(fh.start_epoch(old)) == fh.DEFAULT_START
+    # round 2: the ephemeris starts in 2023, but round-1 epochs must not move
+    hdr = json.loads((ROOT / "contracts/ephem.header.json").read_text())
+    assert hdr["t0_utc"] == "2023-01-01T00:00:00Z" and hdr["n"] == 70128
+    assert (C.parse_utc("2030-12-31T23:00:00Z") - C.parse_utc(hdr["t0_utc"])).total_seconds() == 3600 * (hdr["n"] - 1)
+    ch3 = {"id": "chandrayaan3", "lat": -69.3741, "lon_e": 32.32, "elev_m": 532,
+           "landing_utc": "2023-08-23T12:33:00Z"}
+    ser = fh.series(ch3)
+    assert [(C.iso_z(t), st) for t, st in ser] == [(fh.DEFAULT_START, 71), ("2023-08-23T12:30:00Z", 27)]
+    last = ser[1][0] + C.datetime.timedelta(hours=27 * 9)
+    assert C.iso_z(last) == "2023-09-02T15:30:00Z"
+    assert "27+h" in fh.query_url("sun", ch3, *ser[1]) or "27%20h" in fh.query_url("sun", ch3, *ser[1])
+    assert len(fh.series(site)) == 1 and len(fh.series(old)) == 1
 
 
 def _make_case(tmp_path, topocentric):
