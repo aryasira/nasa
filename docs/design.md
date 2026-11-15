@@ -34,8 +34,8 @@ numerals) are applied from general knowledge, not from a specific page. No site'
 ## Word counts (IM-1 state, 1280 px, everything outside the simulator)
 | | Before | After |
 |---|---|---|
-| `innerText` word count (includes dropdown options and screen-reader-only text) | 1,377 | 608 |
-| Visible words (dropdown options and screen-reader-only text removed) | not measured | 451 |
+| `innerText` word count (includes dropdown options and screen-reader-only text) | 1,377 | 592 |
+| Visible words (dropdown options and screen-reader-only text removed) | not measured | 450 |
 
-The target was about 250. What remains is labels, chart text, the compare table, and the header and footer
+The target was about 250. What remains is labels, chart text, the site strips, and the header and footer
 (the AI-use and non-endorsement lines stay visible on purpose).

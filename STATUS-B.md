@@ -1,10 +1,17 @@
 # STATUS-B
 
-_Updated: Sun 15 Nov 2026, 13:40 CT_
+_Updated: Sun 15 Nov 2026, 12:58 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
 
-## Round 3: visual redesign below the simulator (Sun 12:30 to 13:40 CT)
+## Data refresh (Sun 13:05 CT)
+Merged `origin/main` (f8509b0) with Agent A's new data. The verdict strip reads every number from the engine, so
+the IM-1 example now shows **155.5 → 82.0 h** on its own (was 155.3 with the earlier horizon). No figure is
+hard-coded in the app; the "after" screenshots in `docs/design/` were retaken on the new data. Older notes
+further down this file that say 155.3 describe the earlier data. 47 tests pass.
+
+## Round 3: visual redesign below the simulator (Sun, PR #7 opened about 12:50 CT)
+Times in the two sections below were estimates written during the work; the real clock was earlier than stated.
 UI only. No engine maths, data or contract changes. Direction and references: `docs/design.md`.
 - **01 Verdict strip** replaces the "What the slip does" text: Sun + Earth in view (before → after), change,
   main cause with an orbit/terrain icon, next equally good date. One sentence under it. The full "Why" and
@@ -19,16 +26,17 @@ UI only. No engine maths, data or contract changes. Direction and references: `d
 - **05 Timeline:** direct row labels, stays as brackets with their dates, table alternative in a disclosure.
 - **06 Horizon:** blocking terrain labelled on the plot with leader lines (hours, skyline height, distance,
   bearing), north arrow, tick marks, "elevation ×N stretched" tag, Sun/Earth labels on the paths.
-- **07 Compare** (C's logic): the 21-checkbox wall is inside "Choose sites (n of 4)". **Small multiples were not
-  built** (time); the table is unchanged.
+- **07 Compare:** small multiples. One strip per site (Sun, Earth, both across the stay) for the same landing
+  date, most Sun + Earth hours first; choosing a strip makes it the landing site; smooth-sphere sites carry a
+  "sphere" tag. C's sortable table and its site picker are unchanged, inside "Compare in a table".
 - **08 Validation:** badge row (Horizons checks, Connecting Ridge sunlit vs published, terrain model or
   "no terrain model" in warning colour), a one-line site credit, and one "Method and limits" disclosure that
   collects every footnote. All numbers are read from the data files or computed live.
 - Charts are now drawn at the real pixel width and redrawn on resize, so text stays readable at 390 px.
 
 Checks (all on the built app, headless Chrome):
-- `npm test` 42 passing, `npm run build` passes. JS bundle 201.5 kB gzip (limit 230); no new dependencies.
-- Words outside the simulator, IM-1 state at 1280 px: 1,377 → 608 by `innerText`; 451 actually visible.
+- `npm test` 42 passing, `npm run build` passes. JS bundle 202.2 kB gzip (limit 230); no new dependencies.
+- Words outside the simulator, IM-1 state at 1280 px: 1,377 → 592 by `innerText`; 450 actually visible.
   **The 250 target is not met.**
 - No horizontal scroll at 390 px. Stepper, "why" toggles, example chips, Explain mode and URL parameters work.
 - Print: one page on Letter and A4 for IM-1, IM-2, Connecting Ridge, Apollo 11 and SLIM states.
