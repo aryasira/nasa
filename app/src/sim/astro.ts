@@ -5,7 +5,7 @@
 import type { FeaturesFile, HorizonFile } from '@contracts/types';
 import type { Ephem } from '../engine/ephem';
 import { observe, type Observation, type SiteFrame, type Vec3 } from '../engine/geometry';
-import { azIndex, discFraction, horizonAt, isVisible, type Mode } from '../engine/visibility';
+import { azIndex, discFraction, horizonAt, isVisible, type Mode, linkMargin } from '../engine/visibility';
 import { SPHERE_HORIZON_DEG } from '../engine/metrics';
 
 const D2R = Math.PI / 180;
@@ -69,10 +69,11 @@ export function featureIndex(f: FeaturesFile | null): FeatureIndex {
 }
 
 function body(name: 'sun' | 'earth', az: number, el: number, r: number, hz: HorizonFile, feats: FeatureIndex, mode: Mode): BodyReadout {
-  const h = horizonAt(hz.elev_deg, az);
+  const margin = name === 'earth' ? linkMargin() : 0; // Earth must clear the skyline by the link margin
+  const h = horizonAt(hz.elev_deg, az) + margin;
   const frac = discFraction(el, r, h);
   const visible = isVisible(frac, mode);
-  const aboveFlat = isVisible(discFraction(el, r, SPHERE_HORIZON_DEG), mode);
+  const aboveFlat = isVisible(discFraction(el, r, SPHERE_HORIZON_DEG + margin), mode);
   let blocker: Blocker | null = null;
   if (!visible && aboveFlat) {
     const i = azIndex(az);

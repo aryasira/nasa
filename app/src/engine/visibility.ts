@@ -19,6 +19,15 @@ export function discFraction(elDeg: number, rDeg: number, hDeg: number): number 
   return Math.max(0, Math.min(1, (elDeg + rDeg - hDeg) / (2 * rDeg)));
 }
 
+/**
+ * Link margin: Earth counts as in view only when it clears the skyline by this many degrees.
+ * 0 (the default) is pure line of sight. One setting for the whole app, so the brief, the
+ * countdowns and the simulator always agree.
+ */
+let linkMarginDeg = 0;
+export function setLinkMargin(deg: number): void { linkMarginDeg = Number.isFinite(deg) ? Math.max(0, deg) : 0; }
+export function linkMargin(): number { return linkMarginDeg; }
+
 export function isVisible(frac: number, mode: Mode): boolean {
   return mode === 'limb' ? frac > 0 : frac >= 0.5;
 }

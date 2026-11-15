@@ -179,9 +179,16 @@ def test_horizon_files_meet_the_contract(tmp_path, monkeypatch):
     check(mh.sphere_doc({"id": "s"}), "horizon.schema.json")
     check(mh.features_doc(feats), "features.schema.json")
     i = int(np.argmax(doc["elev_deg"]))
-    # the smallest feature that contains the occluder wins
+    # the smallest feature that contains the occluder wins; big_mons (50 km)
+    # contains the site itself, so it is never used as an occluder name
     assert doc["occluder"]["feature_id"][i] == "test_peak"
-    assert set(rep["names_seen"]) == {"big_mons", "test_peak"}
+    assert set(rep["names_seen"]) == {"test_peak"} and doc["site_used"]["stands_on"] == ["big_mons"]
+    assert None in doc["occluder"]["feature_id"]
+    lat = np.array([plat, plat]); lon = np.array([plon % 360, plon % 360])
+    assert mh.match_features(lat, lon, feats) == ["test_peak"] * 2            # no site given
+    only_big = [feats[0]]
+    assert mh.match_features(lat, lon, only_big) == ["big_mons"] * 2
+    assert mh.match_features(lat, lon, only_big, site=(LAT, LON)) == [None, None]
     assert doc["site_used"]["differs_from_catalog"] is False
     assert doc["meta"]["ai_generated"] is True and doc["dem"]["sigma_m"] is None
     assert "band" not in doc and rep["band"].startswith("no band")
@@ -194,6 +201,158 @@ def test_horizon_files_meet_the_contract(tmp_path, monkeypatch):
     assert doc2["elev_deg"] == doc["elev_deg"] and rep2["band"] == "ok"
     assert doc2["elev_hi_deg"][i] > doc2["elev_deg"][i] > doc2["elev_lo_deg"][i]
     assert rep2["band_half_width_deg_max"] > 0
+    # confidence: occluder distance in cells of the layer that holds it
+    occ = doc2["occluder"]
+    assert occ["res_m"][i] == 10.0 and abs(occ["cells"][i] - occ["dist_m"][i] / 10.0) < 0.06
+    assert all((c is None) == (d is None) for c, d in zip(occ["cells"], occ["dist_m"]))
+    assert rep2["peak_occluder_cells"] == occ["cells"][i] and 0 <= rep2["share_under_3_cells"] <= 1
+    # a taller mast lowers the horizon
+    doc5, _ = mh.lola_doc(site, [tmp_path], feats, mast_m=10.0)
+    check(doc5, "horizon.schema.json")
+    assert doc5["mast_m"] == 10.0 and doc5["elev_deg"][i] < doc2["elev_deg"][i]
+
+
+def test_make_horizons_main_end_to_end(tmp_path, monkeypatch, capsys):
+    # catalogue has one terrain site and one sphere site; a round-2 site is not in it yet
+    plon, plat, _ = GEOD.fwd(LON, LAT, 200.0, 3000.0)
+    px, py = FWD.transform(plon, plat)
+    dems = tmp_path / "dems"
+    dems.mkdir()
+    write_dem(dems / "a.tif", SX, SY, 6000, 10, bump(px, py, 400.0, 250.0))
+    write_dem(dems / "a_err.tif", SX, SY, 6000, 10, lambda X, Y: np.full_like(X, 0.4))
+    monkeypatch.setattr(mh, "DEMS", {"a.tif": {"url": "", "res_m": 10, "product": "TEST", "err": "a_err.tif"}})
+    monkeypatch.setattr(mh, "PLAN", {"t": ["a.tif"], "extra": ["a.tif"]})
+    monkeypatch.setattr(mh, "ROUND2_SITES", [{"id": "extra", "lat": LAT - 0.01, "lon_e": LON,
+                                              "elev_m": None, "terrain": "lola"}])
+    monkeypatch.setattr(mh, "MAX_RANGE_KM", 5.0)
+    monkeypatch.setattr(C, "DATA", tmp_path / "data")
+    monkeypatch.setattr(C, "REPORTS", tmp_path / "reports")
+    monkeypatch.setattr(C, "CACHE", tmp_path / "cache")
+    monkeypatch.setattr(C, "load_sites", lambda: [
+        {"id": "t", "lat": LAT, "lon_e": LON, "elev_m": 10, "terrain": "lola"},
+        {"id": "s", "lat": 0.0, "lon_e": 0.0, "elev_m": 0, "terrain": "sphere"}])
+    monkeypatch.setattr(sys, "argv", ["make_horizons.py", "--dem-dir", str(dems), "--fine", "40",
+                                      "--masts", "5,10"])
+    mh.main()
+    out = capsys.readouterr().out
+    assert "FAILED" not in out and "NO BAND" not in out
+    for sid in ("t", "s", "extra"):
+        assert (tmp_path / "data/horizon" / f"{sid}.json").exists()
+    assert (tmp_path / "data/horizon/t.mast5.json").exists() and (tmp_path / "data/horizon/t.mast10.json").exists()
+    assert not (tmp_path / "data/horizon/s.mast5.json").exists()
+    extra = json.loads((tmp_path / "data/horizon/extra.json").read_text())
+    assert "ROUND2-A.md" in extra["site_used"]["point_from"] and extra["dem"]["sigma_m"] == 0.4
+    rep = json.loads((tmp_path / "reports/horizons.json").read_text())
+    assert rep["meta"]["ai_generated"] is True and rep["sites"]["t"]["band"] == "ok"
+    assert rep["sites"]["t"]["band_flag"] is False
+    # the science doc builds from these reports and shows the band table
+    import make_science_doc as msd
+    monkeypatch.setattr(C, "DOCS", tmp_path / "docs")
+    msd.main()
+    text = (tmp_path / "docs/science.md").read_text()
+    assert "Grid confidence" in text and "Other observer heights" in text
+    assert "| t |" in text and "| extra |" in text and "Pending: no terrain horizon has a band" not in text
+
+
+def test_last_ephemeris_row_is_accepted():
+    import check_vs_horizons as cv
+    hdr = {"t0_utc": "2023-01-01T00:00:00Z", "step_s": 3600}
+    rec = np.array([[1, 0, 0, 1, 1, 2, 3], [0, 1, 0, 1, 4, 5, 6], [0, 0, 1, 1, 7, 8, 9]], dtype="float64")
+    sun, earth = cv.vectors_at(hdr, rec, "2023-01-01T02:00:00Z")
+    assert np.allclose(sun, (0, 0, 1)) and np.allclose(earth, (7, 8, 9))
+    sun, earth = cv.vectors_at(hdr, rec, "2023-01-01T00:00:00Z")
+    assert np.allclose(sun, (1, 0, 0))
+    for bad in ("2022-12-31T23:59:59Z", "2023-01-01T02:00:01Z"):
+        with pytest.raises(ValueError):
+            cv.vectors_at(hdr, rec, bad)
+
+
+def test_fine_layer_goes_after_a_finer_site_tile(tmp_path, monkeypatch):
+    seen = {}
+    import horizon_lib
+    def fake(lat, lon, paths, **kw):
+        seen["order"] = [p.name for p in paths]
+        raise RuntimeError("stop here")
+    monkeypatch.setattr(horizon_lib, "horizon", fake)
+    monkeypatch.setattr(mh, "find_dem", lambda n, dirs: tmp_path / n)
+    site = {"id": "shackleton_sr1", "lat": -89.7742, "lon_e": 203.4952, "elev_m": None, "terrain": "lola"}
+    with pytest.raises(RuntimeError):
+        mh.lola_doc(site, [], [], fine="40", bands=False)
+    assert seen["order"] == ["Site04_final_adj_5mpp_surf.tif", "LDEM_80S_40MPP_ADJ.TIF", "LDEM_80S_80MPP_ADJ.TIF"]
+
+
+def check(doc, name):
+    import jsonschema
+    from referencing import Registry, Resource
+    load = lambda n: json.loads((ROOT / "contracts" / n).read_text())      # noqa: E731
+    reg = Registry().with_resources([(n, Resource.from_contents(load(n))) for n in
+                                     ["sites.schema.json", "horizon.schema.json"]])
+    jsonschema.Draft202012Validator(load(name), registry=reg).validate(doc)
+
+
+def test_sphere_sites_use_the_mast_dip():
+    assert abs(mh.sphere_dip_deg({"elev_m": 0}) - (-0.0869)) < 5e-5
+    assert abs(mh.sphere_dip_deg({"elev_m": None}, mast_m=2.0) - (-0.0869)) < 5e-5
+    assert mh.sphere_dip_deg({"elev_m": 0}, mast_m=10.0) < mh.sphere_dip_deg({"elev_m": 0}, mast_m=2.0) < 0
+    doc = mh.sphere_doc({"id": "x", "lat": 0.0, "lon_e": 0.0, "elev_m": 0, "terrain": "sphere"})
+    assert set(doc["elev_deg"]) == {-0.0869} and doc["elev_lo_deg"] == doc["elev_hi_deg"] == doc["elev_deg"]
+    check(doc, "horizon.schema.json")
+
+
+def test_round3_validation_helpers():
+    import make_validation as mv
+    for ratio, want in [(772.5, 750), (1040.0, 1000), (99.9, 95), (49.0, 49), (7.9, 7), (310.0, 310)]:
+        got = mv.honest_one_over(ratio)
+        assert got == want and got <= ratio
+    real = ROOT / "app/public/data/validation.json"
+    if real.exists():
+        v = json.loads(real.read_text())
+        check(v, "validation.schema.json")
+        assert v["meta"]["mock"] is False
+        assert v["benchmark"]["ours_limb_band_pct"][0] <= v["benchmark"]["ours_limb_pct"] <= v["benchmark"]["ours_limb_band_pct"][1]
+
+
+def test_im1_near_field_study_logic(monkeypatch):
+    import im1_near_field as nf
+    calls = []
+
+    def fake(lat, lon, paths, mast_m=2.0, **kw):
+        calls.append((round(lat, 6), round(lon, 6), mast_m, len(paths)))
+        elev = np.full(720, 1.0)
+        elev[120:161] = 6.0 - 0.2 * (mast_m - 2.0)          # the blocker, az 60 to 80
+        if len(paths) == 2:                                  # 80 m grid only: blocker gone
+            elev[120:161] = 2.0
+        dist = np.full(720, 5000.0)
+        dist[120:161] = 300.0
+        return {"elev_deg": elev, "occ_dist_m": dist, "site_height_m": 2590.0}
+
+    monkeypatch.setattr(nf.MH, "find_dem", lambda n, dirs: pathlib.Path(n))
+    monkeypatch.setattr(nf, "lead_hours", lambda e: {"baseline_sunlit_h": 155.0 + float(e[130]) / 10, "slipped_sunlit_h": 82.0})
+    site = {"id": "im1", "lat": -80.13, "lon_e": 1.44, "elev_m": 2579}
+    rep = nf.run(site, [], "40", horizon_fn=fake)
+    keys = [r["variant"] for r in rep["variants"]]
+    assert keys[0] == "base" and "grid_80m" in keys and "mast_1m" in keys and "mast_3m" in keys
+    assert sum(k.startswith("moved_40m") for k in keys) == 4 and sum(k.startswith("moved_80m") for k in keys) == 4
+    by = {r["variant"]: r for r in rep["variants"]}
+    assert by["base"]["blocker_stays"] and by["mast_3m"]["blocker_stays"]
+    assert not by["grid_80m"]["blocker_stays"] and rep["blocker_survives_all"] is False
+    assert "low confidence" in rep["verdict"]
+    assert by["moved_40m_north"]["lat"] > site["lat"] and by["moved_40m_east"]["lon_e"] > site["lon_e"]
+    assert abs((by["moved_80m_north"]["lat"] - site["lat"]) * 3.141592653589793 / 180 * 1737400 - 80) < 1.0
+    assert rep["lead_story"]["largest_loss_h"] >= rep["lead_story"]["smallest_loss_h"] > 70
+    # without the coarse-only variant everything agrees and the blocker survives
+    rep2 = nf.run(site, [], None, horizon_fn=lambda *a, **k: fake(a[0], a[1], [1, 2, 3], k.get("mast_m", 2.0)))
+    assert rep2["blocker_survives_all"] is True and "stays" in rep2["verdict"]
+
+
+def test_round2_sites_have_a_dem_plan():
+    ids = {x["id"] for x in mh.ROUND2_SITES}
+    assert ids == {"shackleton_sr1", "shackleton_sr2"} and ids <= set(mh.PLAN) and ids <= mh.FINE_SITES
+    for names in mh.PLAN.values():
+        for n in names:
+            assert mh.DEMS[n]["err"] in mh.ERR_URL
+    for n in mh.FINE.values():
+        assert mh.DEMS[n]["err"] in mh.ERR_URL and mh.DEMS[n]["radius_km"]
 
 
 def test_real_feature_list_is_valid_and_sourced():
@@ -295,6 +454,18 @@ def test_parse_reply_and_query():
     assert "coord%40301" in url and "399" in url and "1.440000%2C-80.130000%2C2.5790" in url
     old = dict(site, landing_utc="1969-07-20T20:17:40Z")
     assert C.iso_z(fh.start_epoch(old)) == fh.DEFAULT_START
+    # round 2: the ephemeris starts in 2023, but round-1 epochs must not move
+    hdr = json.loads((ROOT / "contracts/ephem.header.json").read_text())
+    assert hdr["t0_utc"] == "2023-01-01T00:00:00Z" and hdr["n"] == 70128
+    assert (C.parse_utc("2030-12-31T23:00:00Z") - C.parse_utc(hdr["t0_utc"])).total_seconds() == 3600 * (hdr["n"] - 1)
+    ch3 = {"id": "chandrayaan3", "lat": -69.3741, "lon_e": 32.32, "elev_m": 532,
+           "landing_utc": "2023-08-23T12:33:00Z"}
+    ser = fh.series(ch3)
+    assert [(C.iso_z(t), st) for t, st in ser] == [(fh.DEFAULT_START, 71), ("2023-08-23T12:30:00Z", 27)]
+    last = ser[1][0] + C.datetime.timedelta(hours=27 * 9)
+    assert C.iso_z(last) == "2023-09-02T15:30:00Z"
+    assert "27+h" in fh.query_url("sun", ch3, *ser[1]) or "27%20h" in fh.query_url("sun", ch3, *ser[1])
+    assert len(fh.series(site)) == 1 and len(fh.series(old)) == 1
 
 
 def _make_case(tmp_path, topocentric):

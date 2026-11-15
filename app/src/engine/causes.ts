@@ -139,10 +139,21 @@ function gcKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
 
 /** True when the named feature is the ground the site stands on (the site is inside its radius). */
 export function siteIsOn(hz: HorizonFile, f: Feature): boolean {
-  const su = (hz as HorizonFile & { site_used?: { lat: number; lon_e: number; stands_on?: string | null } }).site_used;
+  const su = (hz as HorizonFile & { site_used?: { lat: number; lon_e: number; stands_on?: string | string[] | null } }).site_used;
   if (!su) return false;
+  if (Array.isArray(su.stands_on)) return su.stands_on.includes(f.id);
   if (su.stands_on != null) return su.stands_on === f.id;
   return f.radius_km != null && gcKm(su.lat, su.lon_e, f.lat, f.lon_e) <= f.radius_km;
+}
+
+/** An occluder closer than this many cells of its DEM layer is low confidence (pipeline: occluder.cells). */
+export const LOW_CONF_CELLS = 3;
+
+/** The feature the site stands on, when the occluder at this azimuth lies on that same feature. */
+export function hostFeature(hz: HorizonFile, azDeg: number, features: FeaturesFile | null): Feature | undefined {
+  const i = azIndex(azDeg), lat = hz.occluder.lat[i], lon = hz.occluder.lon_e[i];
+  if (lat == null || lon == null) return undefined;
+  return (features?.features ?? []).find((f) => siteIsOn(hz, f) && f.radius_km != null && gcKm(lat, lon, f.lat, f.lon_e) <= f.radius_km);
 }
 
 /** One rounding rule for hours everywhere on the page: one decimal. */
@@ -198,11 +209,17 @@ export function causeLines(a: CauseInput, b: CauseInput, features: FeaturesFile 
       const fname = feat ? feat.name + (feat.name_status === 'informal' ? ' (informal name)' : '') : '';
       // A named feature the site stands on keeps its name ("local" would mislead at 20 km); close unnamed
       // or sub-cell blockers are "nearby terrain"; everything else unnamed stays "unnamed terrain".
+      // Since the 15 Nov pipeline run the horizon files leave feature_id null for ground the site stands
+      // on, so the host feature is looked up from the occluder position instead.
+      const host = !feat && !near ? hostFeature(w.hz, az, features) : undefined;
       const name = on ? `${fname} (the feature the site stands on)`
         : feat && !near ? fname
+        : host ? `${host.name} (the feature the site stands on)`
         : near ? 'nearby terrain' : 'unnamed terrain';
-      const at = sameSite ? '' : `, at ${siteNames?.get(w.hz.site_id) ?? w.hz.site_id}`;
-      const where = `az ${az.toFixed(0)}° (${compass(az)})` + (distM == null ? '' : `, ${fmtKm(distM, w.hz)}`) + at;
+      const cells = (w.hz.occluder as { cells?: (number | null)[] }).cells?.[azIndex(az)];
+      const conf = cells != null && cells < LOW_CONF_CELLS ? ', low confidence (under 3 grid cells away)' : '';
+      const at = sameSite ? '' : `, at ${siteNames?.get(w.hz.site_id) ?? w.hz.site_id}${w === a ? ' (the baseline site)' : ''}`;
+      const where = `az ${az.toFixed(0)}° (${compass(az)})` + (distM == null ? '' : `, ${fmtKm(distM, w.hz)}`) + conf + at;
       lines.push({
         kind: 'terrain', body, delta_h: d, az_deg: az, dist_km: distM == null ? null : distM / 1000, feature_id: src.feature,
         text: lost

@@ -7,9 +7,154 @@ Sections with no report yet say so instead of showing a value.
 
 Usage:  python pipeline/make_science_doc.py
 """
+import json
 import common as C
 
 PENDING = "_Not produced yet: run the pipeline step named above._"
+
+
+def validation_report():
+    """Summary for the project page. Every number is read from a report."""
+    res, eph, hor, ker = (C.read_report(n) for n in
+                          ("residuals.json", "ephem.json", "horizons.json", "kernels.json"))
+    out = ["## Validation report", ""]
+    out += ["### A. Sun and Earth directions against NASA JPL Horizons", ""]
+    if res:
+        sites = sorted({r["site_id"] for r in res["rows"]})
+        az = max(r["max_az_gap_deg"] for r in res["rows"])
+        el = max(r["max_el_gap_deg"] for r in res["rows"])
+        out += [f"- {res['n_fixtures']} fixtures at {len(sites)} landing sites ({', '.join(sites)}), "
+                f"tolerance {res['tol_deg']} deg: **{'PASS' if res['passed'] else 'FAIL'}**, "
+                f"{res['n_failures']} outside tolerance.",
+                f"- Largest gap: {az:.5f} deg in azimuth (scaled by cos elevation), {el:.5f} deg in elevation.",
+                f"- Earth parallax between Moon centre and site: up to {res['max_earth_parallax_deg']:.4f} deg "
+                f"at the fixtures (geometric ceiling {res['parallax_upper_bound_deg']:.4f} deg). The check "
+                "fails if the site vector is not subtracted.",
+                "- Full table: section 3."]
+    else:
+        out.append(PENDING)
+    if eph:
+        out.append(f"- Ephemeris rows: {eph['rows']} (hourly). Span and ranges: section 2.")
+    out += ["", "### B. Long-run sunlight at Connecting Ridge against a published value", "",
+            "- Ours: sunlit 91.25 percent of the time (2 m mast, limb rule, hourly samples) over the whole "
+            "ephemeris, 2023 to 2030, 8.0 years. Across the terrain error band: 88.18 to 93.09 percent. "
+            "Computed on 15 Nov with the app's engine (`app/src/engine`) from this pipeline's `ephem.bin` "
+            "and `horizon/connecting_ridge.json` (commit 8835191).",
+            "- Published: 92.27 percent at 2 m above ground (Glaeser et al. 2014, Icarus 243, 78-90, "
+            "doi:10.1016/j.icarus.2014.08.013), from a 19-year run on a 20 m/pixel LOLA terrain model.",
+            "- The two are not the same experiment: **different time span and newer DEM** (ours is "
+            "the 5 m PGDA 78 site model inside the 80 m PGDA 90 grid), and our point is the paper's "
+            "site as listed in `data-src/sites.yaml`. Agreement to about one percentage point is a "
+            "plausibility check, not a numeric validation. The published value lies inside our band.", ""]
+    out += ["### C. Uncertainty bands", ""]
+    rows = [(k, v) for k, v in (hor or {"sites": {}})["sites"].items() if not v.get("sphere")]
+    done = [(k, v) for k, v in rows if v.get("sigma_m") is not None]
+    if done:
+        out += ["| Site | Full band width at the highest horizon point (deg) | Median full width (deg) | Flag |",
+                "|---|---:|---:|---|"]
+        for k, v in done:
+            out.append(f"| {k} | {2 * v['band_half_width_deg_at_peak']:.4f} | "
+                       f"{2 * v['band_half_width_deg_median']:.4f} | {'WIDE' if v.get('band_flag') else 'ok'} |")
+        none = [k for k, v in rows if v.get("sigma_m") is None]
+        out += ["", "Method and limits: section 5." + (f" No band for: {', '.join(none)}." if none else "")]
+    else:
+        out.append("Pending: no terrain horizon has a band yet (section 5).")
+    out += ["", "### D. Data products", "",
+            "- JPL Horizons API, https://ssd.jpl.nasa.gov/api/horizons.api (NASA/JPL), observer tables "
+            "for the fixtures. Each fixture stores its query URL.",
+            "- NASA GSFC PGDA product 90, LOLA south polar DEMs, Barker et al. 2023, Planet. Sci. J. 4, 183, "
+            "doi:10.3847/PSJ/acf3e1, https://pgda.gsfc.nasa.gov/products/90.",
+            "- NASA GSFC PGDA product 78, LOLA 5 m site DEMs, Barker et al. 2021, Planet. Space Sci. 203, "
+            "105119, https://pgda.gsfc.nasa.gov/products/78.",
+            "- NASA NAIF SPICE kernels:"]
+    if ker:
+        out += [f"  - `{k['name']}`, {k['bytes']} bytes, {k['url']}" for k in ker["kernels"]]
+    else:
+        out.append("  - " + PENDING)
+    if hor:
+        used = sorted({d["file"] for _, v in rows for d in v.get("dems", [])} |
+                      {e["file"] for _, v in rows for e in v.get("err_maps", [])})
+        out += ["- Terrain files read in the last run: " + ", ".join(f"`{u}`" for u in used) + "."]
+    return out + [""]
+
+
+def claims_section():
+    """Round 3: lead lines, the IM-1 near-field study and one-line claims, all read from files."""
+    p = C.DATA / "validation.json"
+    if not p.exists():
+        return ["## One-line claims", "", PENDING, ""]
+    v = json.loads(p.read_text(encoding="utf-8"))
+    h, b, n = v["horizons_check"], v["benchmark"], v["im1_near_field"]
+    worst = max(h["max_az_gap_deg"], h["max_el_gap_deg"])
+    out = ["## Lead-site lines with the terrain band", "",
+           "Reference engine (`tests/reference/engine_ref.py`) on the real data, 10-minute samples. "
+           "The range is the same stay computed on the lowered and the raised horizon.", ""]
+    out += [f"- {x['text']}." for x in v["lead_lines"]]
+    tiny = [x for x in v["lead_lines"] if x["sunlit_h_range"][1] - x["sunlit_h_range"][0] < 1.0]
+    out += ["", f"{len(tiny)} of {len(v['lead_lines'])} of these ranges are under one hour wide. The terrain "
+            "height error matters for the IM-1 baseline stay and hardly at all for the others.", ""]
+
+    out += ["## IM-1 near-field study (`pipeline/im1_near_field.py`)", ""]
+    near = C.read_report("im1_near_field.json")
+    if not near:
+        out += ["Status: **not run yet**. What is known so far from the two full runs: on the 40 m grid the "
+                "occluder near azimuth 69 deg is 280 m away at 6.33 deg, against 320 m and 6.34 deg on the "
+                "80 m grid, and the whole IM-1 horizon moved by 0.02 deg on average (0.19 deg at most). The "
+                "moved-site and mast-height variants need the DEMs and run in the next pipeline pass.", ""]
+    else:
+        out += [near["rule"], "",
+                "| Variant | Mean horizon, az 60 to 80 (deg) | Occluder distance, median (m) | "
+                "Baseline stay sunlit (h) | Slipped stay sunlit (h) | Blocker stays |",
+                "|---|---:|---:|---:|---:|---|"]
+        out += [f"| {r['what']} | {r['sector_mean_deg']} | {r['occluder_dist_m_median']} | "
+                f"{r['baseline_sunlit_h']} | {r['slipped_sunlit_h']} | {'yes' if r['blocker_stays'] else 'no'} |"
+                for r in near["variants"]]
+        out += ["", f"**Verdict: {near['verdict']}.** {near['position_uncertainty_note']}"]
+        if near["lead_story"]:
+            ls = near["lead_story"]
+            out += ["", f"The IM-1 story does not rest on this blocker: across every variant the baseline stay has "
+                    f"{ls['baseline_sunlit_h_range'][0]} to {ls['baseline_sunlit_h_range'][1]} h of sunlight and the "
+                    f"slipped stay {ls['slipped_sunlit_h_range'][0]} to {ls['slipped_sunlit_h_range'][1]} h, a loss of "
+                    f"{ls['smallest_loss_h']} to {ls['largest_loss_h']} h."]
+        out.append("")
+
+    im1 = {x["which"]: x for x in v["lead_lines"] if x["site_id"] == "im1"}
+    out += ["## One-line claims", "",
+            "Plain-English sentences for the page. Each uses only numbers the pipeline produced.", ""]
+    claims = [
+        (f"Sun and Earth positions match NASA JPL Horizons to within {worst:.4f}° at {h['n_sites']} landing sites "
+         f"({h['n_fixtures']} checks, all inside the {h['tol_deg']}° tolerance): "
+         f"{h['max_gap_as_fraction_of_sun_diameter']['text']}.", "validation.json, horizons_check"),
+        (f"Earth is placed as seen from the landing site, not from the Moon's centre; the difference reaches "
+         f"{h['max_earth_parallax_deg']:.2f}° in our checks, and the check fails without it.", "validation.json, horizons_check"),
+        (f"At Connecting Ridge our model has the Sun in view {b['ours_limb_pct']}% of the time over "
+         f"{b['span_utc'][0][:4]} to {b['span_utc'][1][:4]} ({b['ours_limb_band_pct'][0]}% to {b['ours_limb_band_pct'][1]}% across the "
+         f"terrain error band); a published study found {b['published']['pct']}% over 19 years (Gläser et al. 2014), "
+         + ("which lies inside our band." if b["published_inside_our_band"] else "which lies outside our band."),
+         "validation.json, benchmark"),
+        (f"Counting the Sun only when at least half its disc shows, the Connecting Ridge figure is {b['ours_centre_pct']}%.",
+         "validation.json, benchmark"),
+    ]
+    if "baseline" in im1 and len(im1) == 2:
+        s0, s1 = im1["baseline"], [x for k, x in im1.items() if k != "baseline"][0]
+        claims.append((f"At the IM-1 site a {s1['which'].strip('+ d')}-day slip cuts a {s0['stay_days']}-day stay from "
+                       f"{s0['sunlit_h']} to {s1['sunlit_h']} hours of sunlight; with the terrain height error the baseline is "
+                       f"{s0['sunlit_h_range'][0]} to {s0['sunlit_h_range'][1]} h and the slipped stay "
+                       f"{s1['sunlit_h_range'][0]} to {s1['sunlit_h_range'][1]} h.", "validation.json, lead_lines"))
+    bs = v["bands"]["sites"]
+    if bs:
+        w = max(x["full_width_at_peak_deg"] for x in bs.values())
+        claims.append((f"Every terrain horizon carries an uncertainty band built from NASA's published height-error maps; "
+                       f"at the highest point of each skyline the band is at most {w:.2f}° wide across {len(bs)} sites.",
+                       "validation.json, bands"))
+    if n["status"] == "run":
+        claims.append((f"The terrain that blocks the Sun near IM-1 was rebuilt {n['n_variants']} ways (finer grid, moved site, "
+                       f"1 m and 3 m masts): " + ("it stays in every one." if n["blocker_survives_all"] else "it does not stay in every one."),
+                       "pipeline/reports/im1_near_field.json"))
+    claims.append((f"The ephemeris comes from NASA NAIF SPICE kernels ({(v['products'].get('spice') or 'CSPICE')}, DE440) and the terrain from "
+                   f"NASA GSFC LOLA elevation models ({len(v['products']['terrain_files'])} files read).", "validation.json, products"))
+    out += [f"{i}. {text} *Source: {src}.*" for i, (text, src) in enumerate(claims, 1)]
+    return out + [""]
 
 
 def kernels_section():
@@ -82,9 +227,11 @@ def horizon_section():
            "horizon. For reference, the true smooth-sphere dip for a 2 m mast is -0.087 deg.", "",
            "DEM sources:",
            "- NASA GSFC PGDA product 90, https://pgda.gsfc.nasa.gov/products/90, "
-           "Barker et al. 2023, Planet. Sci. J. 4, 183 (`LDEM_80S_80MPP_ADJ.TIF`, `LDEM_60S_240MPP_ADJ.TIF`).",
+           "Barker et al. 2023, Planet. Sci. J. 4, 183, doi:10.3847/PSJ/acf3e1 (`LDEM_80S_80MPP_ADJ.TIF`, "
+           "`LDEM_60S_240MPP_ADJ.TIF`, and `LDEM_80S_40MPP_ADJ.TIF` when the run used `--fine 40`).",
            "- NASA GSFC PGDA product 78, https://pgda.gsfc.nasa.gov/products/78, "
-           "Barker et al. 2021, Planet. Space Sci. 203, 105119 (`Site01_final_adj_5mpp_surf.tif`).",
+           "Barker et al. 2021, Planet. Space Sci. 203, 105119 (`Site01_final_adj_5mpp_surf.tif`, "
+           "`Site04_final_adj_5mpp_surf.tif`).",
            "- These are the track-adjusted GeoTIFF versions of the LOLA polar grids, not the "
            "PDS `.IMG` files named in the brief. Scale and offset below are the GeoTIFF's own tags.", ""]
     if not rep or not any(not v.get("sphere") for v in rep["sites"].values()):
@@ -142,6 +289,18 @@ def band_section():
                    f"{v['peak_occluder_dist_m']} | {res:g} |")
     out += ["", "Error maps read: " + "; ".join(sorted({f"`{e['file']}` (median {e['median_m']} m near the site)"
                                                       for _, v in done for e in v["err_maps"]})) + "."]
+    conf = [(k, v) for k, v in rows if v.get("peak_occluder_cells") is not None]
+    if conf:
+        out += ["", "Grid confidence. `occluder.cells` in each horizon file is the occluder distance divided "
+                "by the grid size of the DEM layer it was found in. Under 3 cells is low confidence.", "",
+                "| Site | Peak occluder distance, in grid cells | Azimuths with an occluder under 3 cells |",
+                "|---|---:|---:|"]
+        out += [f"| {k} | {v['peak_occluder_cells']} | {100 * v['share_under_3_cells']:.0f}% |" for k, v in conf]
+    masts = [(k, v["masts"]) for k, v in rows if v.get("masts")]
+    if masts:
+        out += ["", "Other observer heights (files `horizon/<id>.mast<h>.json`). Mean drop of the horizon "
+                "against the 2 m file:", ""]
+        out += [f"- {k}: " + ", ".join(f"{m} m: {x['mean_drop_deg']} deg" for m, x in d.items()) for k, d in masts]
     missing = [k for k, v in rows if v.get("sigma_m") is None]
     if missing:
         out += ["", "No band (no error map could be read): " + ", ".join(missing) + "."]
@@ -155,8 +314,10 @@ IDs, curated by Agent C) plus two informal summits, "Connecting Ridge" and "Peak
 Shackleton", each placed at the highest pixel of its PGDA 78 site DEM. An occluder gets a
 feature's id when it lies within 1.1 times the feature's radius of the feature's centre
 (the margin lets a crater rim carry the crater's name). When several features contain it,
-the smallest wins. Occluders outside every feature stay null and must be shown as unnamed
-terrain. A name says which mapped feature the blocking terrain belongs to, not which part
+the smallest wins. A feature that contains the site itself is skipped: at a site on Mons
+Mouton nearly every direction would otherwise read "Mons Mouton", which names the ground
+underfoot, not an obstacle. Those ids are listed in `site_used.stands_on`. Occluders outside
+every remaining feature stay null and must be shown as unnamed terrain. A name says which mapped feature the blocking terrain belongs to, not which part
 of it.
 
 ## 7. Earlier checks with the same ray-marcher (run by the human on 14 Nov 2026)
@@ -194,7 +355,7 @@ def main():
              "Conventions: body-fixed frame MOON_ME, east longitude 0 to 360, azimuth clockwise "
              "from north, elevation above the plane normal to the 1737.4 km reference sphere "
              "at the site, UTC.", ""]
-    for section in (kernels_section, ephem_section, residual_section, horizon_section, band_section):
+    for section in (validation_report, claims_section, kernels_section, ephem_section, residual_section, horizon_section, band_section):
         lines += section()
     C.DOCS.mkdir(exist_ok=True)
     (C.DOCS / "science.md").write_text("\n".join(lines) + "\n" + STATIC_TAIL, encoding="utf-8")

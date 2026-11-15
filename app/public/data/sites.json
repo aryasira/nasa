@@ -26,7 +26,7 @@
       "kind": "landed",
       "lat": -84.7906,
       "lon_e": 29.1957,
-      "elev_m": null,
+      "elev_m": 5321.8,
       "frame": "MOON_ME",
       "landing_utc": "2025-03-06T17:28:50Z",
       "source": {
@@ -167,7 +167,7 @@
       "kind": "candidate",
       "lat": -89.4399,
       "lon_e": 222.8524,
-      "elev_m": null,
+      "elev_m": 1958.6,
       "frame": "MOON_ME",
       "source": {
         "org": "Gl\u00e4ser et al. 2014, Icarus 243:78-90",
@@ -185,7 +185,7 @@
       "kind": "candidate",
       "lat": -89.7742,
       "lon_e": 203.4952,
-      "elev_m": null,
+      "elev_m": 1734.0,
       "frame": "MOON_ME",
       "source": {
         "org": "Gl\u00e4ser et al. 2014, Icarus 243:78-90",
@@ -202,7 +202,7 @@
       "kind": "candidate",
       "lat": -89.6871,
       "lon_e": 197.0983,
-      "elev_m": null,
+      "elev_m": 1727.8,
       "frame": "MOON_ME",
       "source": {
         "org": "Gl\u00e4ser et al. 2014, Icarus 243:78-90",
@@ -386,6 +386,6 @@
   "meta": {
     "ai_generated": true,
     "generated_by": "data-src/sites.yaml (hand-curated)",
-    "git_sha": "d509614"
+    "git_sha": "f42045a"
   }
 }

@@ -1,5 +1,9 @@
 // AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
 // Slip Impact Brief: UI. All state lives in the query string (permalink).
+import { setLinkMargin } from './engine/visibility';
+import { download, exportRows, toCsv, toJson, type ExportRow, type ExportScenario } from './ui/export';
+import { heatmapSvg, heatmapTable, siteDateGrid } from './features/heatmap';
+import { earthClearance, earthPlotSvg } from './features/earthplot';
 import './style.css';
 import type { EphemHeader, FeaturesFile, FixturesFile, HorizonFile, Site, SitesFile } from '@contracts/types';
 import { Ephem, fmtUtc, parseUtc } from './engine/ephem';
@@ -16,7 +20,7 @@ import { addSphereAndCustomSites, mountFeatures, writeFeatureParams } from './fe
 // --- END
 import './ui/brief.css'; // round 3 design layer; loaded last so it wins over sim.css / features.css
 
-interface State { site: string; t: string; stay: number; slip: number; mode: Mode; data: 'real' | 'mock' }
+interface State { site: string; t: string; stay: number; slip: number; mode: Mode; margin: number; data: 'real' | 'mock' }
 interface Data {
   ephem: Ephem; header: EphemHeader; sites: Site[]; horizons: Map<string, HorizonFile>;
   features: FeaturesFile | null; fixtures: FixturesFile | null; mock: boolean;
@@ -40,6 +44,7 @@ const PRESETS: { id: string; label: string; state: Partial<State>; note: string 
 const T_RE = /^\d{4}-\d\d-\d\d[T ]\d\d:\d\d$/;
 /** Message shown when a link asks for something this build cannot show (for example a site with no data yet). */
 let linkNotice = '';
+let lastExport: { scenario: ExportScenario; rows: ExportRow[] } | null = null;
 
 function readState(sites: Site[] | null): State {
   const q = new URLSearchParams(location.search);
@@ -54,11 +59,13 @@ function readState(sites: Site[] | null): State {
     stay: num('stay', 7, 1, 60),
     slip: Math.round(num('slip', 10, -90, 90)),
     mode: /^cent(re|er)$/i.test(q.get('mode') ?? '') ? 'centre' : 'limb',
+    margin: Math.round(num('margin', 0, 0, 10)), // Earth link margin, degrees above the skyline
     data: q.get('data') === 'mock' ? 'mock' : 'real',
   };
 }
 function writeState(s: State) {
   const q = new URLSearchParams({ site: s.site, t: s.t, stay: String(s.stay), slip: String(s.slip), mode: s.mode });
+  if (s.margin > 0) q.set('margin', String(s.margin));
   if (s.data === 'mock') q.set('data', 'mock');
   history.replaceState(null, '', `${location.pathname}?${q}`);
 }
@@ -146,7 +153,9 @@ function controls(d: Data, s: State): string {
     <div class="fld f-mode"><label for="mode">In view when</label><select id="mode" name="mode">
       <option value="limb" ${s.mode === 'limb' ? 'selected' : ''}>any of the disc shows</option>
       <option value="centre" ${s.mode === 'centre' ? 'selected' : ''}>half the disc shows</option></select></div>
-    <div class="tools"><button type="button" id="print">Print</button><button type="button" id="copy">Copy link</button><span id="copied" role="status" class="fine"></span></div>
+    <div class="fld f-margin"><label for="margin">Earth link margin</label><select id="margin" name="margin">${[0, 2, 5, 10].concat([0, 2, 5, 10].includes(s.margin) ? [] : [s.margin]).sort((a, b) => a - b).map((m) =>
+      `<option value="${m}" ${s.margin === m ? 'selected' : ''}>${m === 0 ? '0°, line of sight' : `${m}° above skyline`}</option>`).join('')}</select></div>
+    <div class="tools"><button type="button" id="print">Print</button><button type="button" id="copy">Copy link</button><button type="button" id="dl-csv">CSV</button><button type="button" id="dl-json">JSON</button><span id="copied" role="status" class="fine"></span></div>
     <div class="chips" role="group" aria-label="Examples">${PRESETS.filter((p) => d.sites.some((x) => x.id === p.state.site)).map((p) => `<button type="button" class="chip" data-preset="${p.id}">${esc(p.label)}</button>`).join('')}</div>
   </form>`;
 }
@@ -158,6 +167,8 @@ let lastW = 0, resizeBound = false;
 let rerender: (() => void) | null = null;
 
 function render(d: Data, s: State) {
+  setLinkMargin(s.margin);
+  lastExport = null;
   writeState(s);
   // --- FEATURE HOOK (C): keep lat, lon, elev, name, cmp, explain in the permalink
   writeFeatureParams();
@@ -171,6 +182,8 @@ function render(d: Data, s: State) {
     const tStart = parseUtc(s.t + ':00Z');
     const opts = slipOptions({ ephem: d.ephem, site, horizons: d.horizons, sites: d.sites, features: d.features,
       tStart, stayDays: s.stay, slipDays: s.slip, mode: s.mode });
+    lastExport = { rows: exportRows(opts), scenario: { site_id: site.id, site_name: site.name, baseline_utc: s.t + ':00Z', stay_days: s.stay, slip_days: s.slip,
+      visible_rule: s.mode === 'limb' ? 'any part of the disc shows' : 'at least half the disc shows', earth_link_margin_deg: s.margin, page_url: location.href } };
     const same = opts.filter((o) => o.site_id === site.id);
     const t0 = Math.max(d.ephem.t0, Math.min(...same.map((o) => o.scan.tStart)) - 2 * DAY);
     const t1 = Math.min(d.ephem.tLast, Math.max(...same.map((o) => o.scan.tEnd)) + 2 * DAY);
@@ -199,7 +212,16 @@ function render(d: Data, s: State) {
     results = `
     <section aria-labelledby="h-opt" class="s-opt"><h2 id="h-opt">Options ranked</h2>
       ${optionBars(opts, d.horizons, s.stay)}
-      ${altNote ? `<p class="fine">${esc(altNote)}</p>` : ''}</section>
+      ${altNote ? `<p class="fine">${esc(altNote)}</p>` : ''}
+      ${s.margin > 0 ? `<p class="fine"><strong>Earth counts as in view only when it clears the skyline by ${s.margin}° (link margin).</strong></p>` : ''}</section>
+    <section aria-labelledby="h-heat" class="s-heat"><h2 id="h-heat">All terrain sites by landing date</h2>
+      <p class="fine">Hours with both Sun and Earth in view for a ${s.stay}-day stay, every site with a terrain horizon, over the 384 days after the baseline. Lighter is more. Sampled every 30 minutes, so values can differ slightly from the 10-minute figures.</p>
+      <div class="tools"><button type="button" id="heat-go">Show the site-by-date map</button><span id="heat-note" role="status" class="fine"></span></div>
+      <div id="heat-out"></div></section>
+    <section aria-labelledby="h-earth" class="s-earth"><h2 id="h-earth">Earth above the skyline, 30 days</h2>
+      ${(() => { const es = earthClearance(d.ephem, site, hz, parseUtc(s.t + ':00Z') - 2 * DAY, 32);
+        return `<div class="chart">${earthPlotSvg(es, s.margin, same.map((o) => ({ label: o.kind === 'baseline' ? 'Baseline' : o.kind === 'slip' ? (s.slip < 0 ? 'Earlier' : 'Slipped') : 'Recovery', tStart: o.scan.tStart, tEnd: o.scan.tEnd })))}</div>
+      <p class="fine">Height of Earth's centre above the local skyline, hour by hour: from ${es.min.toFixed(1)}° to ${es.max.toFixed(1)}° in this period. Earth stays in nearly the same part of the sky and drifts up and down as the Moon wobbles on its orbit. ${es.min > 0 ? 'Here it never drops below the skyline.' : es.max < 0 ? 'Here it never clears the skyline.' : 'Where the line dips under the skyline, the direct link to Earth is lost.'}${s.margin > 0 ? ` With the ${s.margin}° link margin, Earth counts only above the dashed line.` : ''}</p>`; })()}</section>
     <section aria-labelledby="h-tl" class="s-tl"><h2 id="h-tl">Timeline</h2>
       <div class="chart">${timelineSvg(wide, wins, `Sun, Earth and both visible at ${site.name} from ${fmtUtc(t0).slice(0, 10)} to ${fmtUtc(t1).slice(0, 10)}, with the baseline and slipped stays marked`, 'Three rows show when the Sun, Earth and both are above the local horizon. Brackets underneath mark each stay. The same intervals are listed in the table below the chart.', W)}</div>
       <details class="more"><summary>As a table</summary><div class="scroll">${timelineTable(wide)}</div></details></section>
@@ -254,7 +276,7 @@ function render(d: Data, s: State) {
     if (!f.reportValidity()) return;
     const fd = new FormData(f);
     if (String(fd.get('site')) !== s.site) linkNotice = '';
-    render(d, { ...s, site: String(fd.get('site')), t: String(fd.get('t')).trim().slice(0, 16).replace(' ', 'T'), stay: Number(fd.get('stay')), slip: Math.round(Number(fd.get('slip'))), mode: fd.get('mode') === 'centre' ? 'centre' : 'limb' });
+    render(d, { ...s, site: String(fd.get('site')), t: String(fd.get('t')).trim().slice(0, 16).replace(' ', 'T'), stay: Number(fd.get('stay')), slip: Math.round(Number(fd.get('slip'))), mode: fd.get('mode') === 'centre' ? 'centre' : 'limb', margin: Number(fd.get('margin')) || 0 });
     document.getElementById(document.activeElement?.id || 'site')?.focus();
   });
   f.addEventListener('submit', (e) => e.preventDefault());
@@ -280,6 +302,23 @@ function render(d: Data, s: State) {
   }
   rerender = () => render(d, s);
   document.getElementById('print')!.addEventListener('click', () => window.print());
+  const dl = (kind: 'csv' | 'json') => () => {
+    if (!lastExport) return;
+    const name = `slip-brief_${s.site}_${s.t.slice(0, 10)}_slip${s.slip}.${kind}`;
+    download(name, kind === 'csv' ? toCsv(lastExport.scenario, lastExport.rows) : toJson(lastExport.scenario, lastExport.rows), kind === 'csv' ? 'text/csv' : 'application/json');
+  };
+  document.getElementById('dl-csv')?.addEventListener('click', dl('csv'));
+  document.getElementById('dl-json')?.addEventListener('click', dl('json'));
+  document.getElementById('heat-go')?.addEventListener('click', () => {
+    const out = document.getElementById('heat-out')!, note = document.getElementById('heat-note')!;
+    const terrain = d.sites.filter((x) => d.horizons.get(x.id)!.dem.product !== 'sphere' || x.id === s.site);
+    try {
+      const g = siteDateGrid(d.ephem, terrain, d.horizons, parseUtc(s.t + ':00Z'), 384, 2, s.stay, s.mode);
+      out.innerHTML = `<div style="overflow-x:auto">${heatmapSvg(g, s.site)}</div>
+        <details class="extra"><summary>The same numbers as a table</summary><div style="overflow-x:auto">${heatmapTable(g)}</div></details>`;
+      note.textContent = `${g.rows.length} sites, ${g.dates.length} landing dates, 2 days apart.`;
+    } catch (e) { note.textContent = (e as Error).message; }
+  });
   document.getElementById('copy')!.addEventListener('click', async () => {
     const out = document.getElementById('copied')!;
     try { await navigator.clipboard.writeText(location.href); out.textContent = 'Link copied.'; }

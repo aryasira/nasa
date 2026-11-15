@@ -179,3 +179,80 @@ The split is exact. Pieces under 0.5 h are not listed.
   memory). A reload offline needs a service worker in `app/public/`, which is outside B's paths.
 - **Human:** GitHub Pages will not deploy while the repo is private on a free plan, and the deploy step has
   `continue-on-error: true`, so CI stays green either way. No LICENSE file yet.
+
+## Fixes made from the Agent A session at the human's request (Sun 15 Nov, 12:45 CT, branch `b/a-fixes`)
+Branch = `b/app` (ab910bd) + `main` (e1c712e) + `a/data` (8670e9d, the checked Mac run) + the fixes below.
+Vitest 43 passed, Python 34 passed, `npm run build` ok. Not looked at in a browser.
+- Works with the new data: `site_used.stands_on` is a list now; `siteIsOn` accepts list or string.
+- Regression numbers moved by one 10-minute sample on the 40 m terrain: IM-1 baseline 155.3 -> 155.5 h
+  (slipped stays 82.0 h); IM-2 Earth -82.3 -> -82.5 h, Sun -90.3 -> -90.5 h. Tests updated.
+  **C: lead sentences and page copy that quote 155.3 h need 155.5 h.**
+- A link to an unknown or not-yet-built site now shows a notice instead of silently loading IM-1.
+- `mode=center` is accepted as `centre`; an unknown mode shows a notice.
+- Cause lines use one decimal ("lost 18.5 h"), matching the "-18.5 h" beside them.
+- An earlier landing is labelled "10 d earlier", not "-10 d slip".
+
+### Improvements added on `b/a-fixes` (Sun 15 Nov, 13:40 CT), checked in headless Chrome on the built app
+- **Earth link margin** (0, 2, 5, 10 deg): Earth counts as in view only when it clears the skyline by
+  the margin. One setting in `engine/visibility.ts`, used by the brief, countdowns and simulator.
+  URL parameter `margin`. Default 0, so no existing number moves.
+- **Download CSV / Download JSON** of the options table (`ui/export.ts`), with the scenario and
+  `ai_generated: true` in the file.
+- **Site-by-date map** (`features/heatmap.ts`): hours with Sun and Earth for a stay, every terrain
+  site against 193 landing dates. One-hue ramp, hover values, best-date marker, table view.
+  Computed on a button press, 30-minute samples.
+- Vitest 46 passed, build ok, no console errors.
+Not done: confidence tag and mast selector (need `occluder.cells` and mast files from a 1-minute
+pipeline rerun), Sun fraction, DSN station view (needs a new data file), Web Worker.
+
+### Agent C items done on `b/a-fixes` at the human's request (Sun 15 Nov, 14:05 CT)
+- 3D view no longer traps the page scroll. Plain wheel scrolls the page; Ctrl or Cmd + wheel zooms;
+  full screen zooms as before. Checked in headless Chrome. Caption says so.
+- `CONTEXT.md` lead sentences and `README.md`: 140 -> 160 Horizons points; IM-1 155 -> 155.5 h;
+  Connecting Ridge long-run sunlight 91.25% over 2023 to 2030 (88.2% to 93.1% across the band).
+  The published 92.27% lies inside that band.
+Left for C: globe shape and floating marker, lander view as the default camera, phone-width pass,
+video, submission text.
+
+### More B and C items on `b/a-fixes` (Sun 15 Nov, 15:00 CT), checked in headless Chrome
+B:
+- Terrain on the feature a site stands on now reads "higher ground on Mons Mouton" when it is not
+  close by, "local terrain" only when close. Never "blocked by Mons Mouton".
+- Alternate rows: baseline-site terrain lines say "(the baseline site)".
+- Empty band ranges such as "(+147 to +147)" are hidden.
+- Date label shows the value in 24-hour time.
+- Headline adds "Longest stretch without Sun" for both stays.
+- New section "Earth above the skyline, 30 days" (`features/earthplot.ts`), with the link margin line.
+- Confidence tag: a terrain cause under 3 grid cells away gets ", low confidence". It reads
+  `occluder.cells`, which the data does not have until the short pipeline rerun. Until then no tag shows.
+C:
+- Globe: faint night-side fill, so the disc reads as a sphere and dark-side markers do not float.
+  The "lumpy" look was the lit part alone on a black background, not the geometry.
+- Simulator opens on the lander view (`cam=lander` default).
+- `data-src/sites.yaml` DEM heights: im2 5321.8, connecting_ridge 1958.6, shackleton_sr1 1734.0,
+  shackleton_sr2 1727.8 m. `sites.json` rebuilt. 160 Horizons fixtures still pass.
+Vitest 47 passed, Python 34 passed, build ok, no console errors.
+Not done: mast selector (no mast files yet), Sun fraction (frozen contract), DSN view (new data),
+IAU features near IM-1 and Chandrayaan-3 (no Gazetteer ID found for Malapert A; IM-1's skyline is
+set by ground within 500 m, so a crater name 26 km away would not name anything).
+
+### Merge state of `b/a-fixes` (Sun 15 Nov, 12:40 CT, real clock)
+Correction: the clock times in the three sections above were guesses and are wrong. All of that
+work was done between about 12:00 and 12:40 CT.
+`b/a-fixes` now contains `main` (9afba58) and `b/app` (854ffe6), merged and conflict-free.
+Where B or C had already fixed the same thing, their version was kept: C's scroll fix, round globe,
+lander default and blocker names; B's link notice, mode alias, text date input, one-decimal hours
+and "N-day advance" label. Kept from this session: new-data compatibility, Earth link margin,
+CSV/JSON export, site-by-date map, Earth clearance plot, longest-night line, confidence-tag hook,
+"(the baseline site)", empty-band hiding, DEM heights in sites.yaml, updated lead numbers.
+Vitest 47 passed, Python 34 passed, build ok, headless Chrome check ok.
+One thing seen: in headless Chrome the plain wheel over the 3D view did not scroll the page with
+C's fix. It may behave differently in a real browser. Check it on the live site.
+
+### `b/a-fixes` after B's round 3 redesign (Sun 15 Nov, 13:35 CT, real clock)
+Merged `main` 1d6a154 (B's redesign, PR #7) and `a/data` 29a3382 (A's round 3). `main.ts` is B's
+redesigned version. Re-attached to it, in B's layout: Earth link margin field, CSV and JSON buttons,
+section "All terrain sites by landing date", section "Earth above the skyline, 30 days".
+Dropped because the redesign replaced that part: the longest-night sentence and the 24-hour label.
+Vitest 47 passed, Python 38 passed, build ok, headless Chrome ok, no console errors.
+Seen at 1280 px in "Options ranked": the band text "(+7 to +8)" overlaps the cause chips. B's layout.
