@@ -198,8 +198,8 @@ function render(d: Data, s: State) {
     const slip = opts.find((o) => o.kind === 'slip');
     const tracks = [{ label: 'Baseline', scan: opts[0].scan, dashed: false }];
     if (slip) tracks.push({ label: 'Slipped', scan: slip.scan, dashed: true });
-    const markers = (slip?.causes ?? []).filter((c) => c.kind === 'terrain' && Math.abs(c.delta_h) >= 1).slice(0, 3)
-      .map((c) => ({ az: c.az_deg, label: `${c.body === 'sun' ? 'Sun' : 'Earth'} ${c.delta_h < 0 ? '−' : '+'}${Math.abs(c.delta_h).toFixed(0)} h` }));
+    const markers = (slip?.causes ?? []).filter((c) => c.kind === 'terrain' && c.az_deg != null && Math.abs(c.delta_h) >= 1).slice(0, 3)
+      .map((c) => ({ az: c.az_deg as number, label: `${c.body === 'sun' ? 'Sun' : 'Earth'} ${c.delta_h < 0 ? '−' : '+'}${Math.abs(c.delta_h).toFixed(0)} h` }));
     const sphere = hz.dem.product === 'sphere';
     results = `
     <section aria-labelledby="h-sum"><h2 id="h-sum">What the slip does</h2>${headline(opts, site, s)}
