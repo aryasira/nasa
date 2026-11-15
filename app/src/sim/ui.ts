@@ -62,7 +62,7 @@ export const CONSOLE_HTML = `
       </div>
       <span id="sim-scrub-help" class="sr-only">Coloured strips show when the Sun and Earth are in view above the terrain. Arrow keys move by 10 minutes.</span>
     </div>
-    <div class="seg seg-stay" role="group" aria-label="Which stay to play"><button type="button" data-ab="a">Baseline</button><button type="button" data-ab="b">Slipped</button></div>
+    <div class="seg seg-stay" role="group" aria-label="Which stay to play"><button type="button" data-ab="a" title="The landing date as planned">Planned</button><button type="button" data-ab="b">Slipped</button></div>
   </div>
   <div class="bar bar-setup">
     <div class="slip">

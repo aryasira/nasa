@@ -99,7 +99,7 @@ export function panoramaSvg(hz: HorizonFile, tracks: Track[], markers: Marker[],
   let pts = `${x(0)},${y(lo)}`;
   for (let i = 0; i <= 720; i++) pts += ` ${x(i * 0.5).toFixed(1)},${y(Math.max(lo, h[i % 720])).toFixed(1)}`;
   pts += ` ${x(360)},${y(lo)}`;
-  body += `<polygon points="${pts}" fill="#6b7686" stroke="#cfd6df" stroke-width="1" clip-path="url(#pc)"/>`;
+  body += `<defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b96a6"/><stop offset="1" stop-color="#3b4350"/></linearGradient></defs><polygon points="${pts}" fill="url(#pg)" stroke="#e8edf3" stroke-width="1.4" clip-path="url(#pc)"/>`;
   if (band) { // terrain raised / lowered by one sigma
     let up = '', down = '';
     for (let i = 0; i <= 720; i++) {
@@ -133,7 +133,7 @@ export function panoramaSvg(hz: HorizonFile, tracks: Track[], markers: Marker[],
   // Key for line styles, on the top margin.
   if (tracks.length > 1 && !narrow) {
     const kx = L + 44, ky = T - 9;
-    body += `<line x1="${kx}" x2="${kx + 22}" y1="${ky}" y2="${ky}" stroke="#e8edf3" stroke-width="2"/><text x="${kx + 27}" y="${ky + 4}" class="muted">baseline</text>`
+    body += `<line x1="${kx}" x2="${kx + 22}" y1="${ky}" y2="${ky}" stroke="#e8edf3" stroke-width="2"/><text x="${kx + 27}" y="${ky + 4}" class="muted">planned</text>`
       + `<line x1="${kx + 84}" x2="${kx + 106}" y1="${ky}" y2="${ky}" stroke="#e8edf3" stroke-width="2" stroke-dasharray="6 4"/><text x="${kx + 111}" y="${ky + 4}" class="muted">slipped</text>`;
   }
   // Blocking terrain, labelled on the plot with a leader line from the skyline.

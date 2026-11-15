@@ -206,8 +206,23 @@ function mountCustom() {
     if (!r.ok) { sec.querySelector<HTMLInputElement>('[aria-invalid="true"]')?.focus(); return; }
     setCustom(r.value!);
     ctx.setState({ site: CUSTOM_ID });
-    document.getElementById('custom-h')?.scrollIntoView({ block: 'nearest' });
+    // Take the user to the simulator, now showing the new site, and say so.
+    const v = r.value!;
+    toast(`Custom site created: ${v.name || 'Custom site'} (${Math.abs(v.lat).toFixed(2)}°${v.lat < 0 ? 'S' : 'N'}, ${v.lon.toFixed(2)}°E). Now showing it.`);
+    (document.getElementById('sim-slot') ?? document.body).scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
   });
+}
+
+let toastTimer = 0;
+function toast(msg: string) {
+  document.querySelector('.feat-toast')?.remove();
+  const t = document.createElement('div');
+  t.className = 'feat-toast';
+  t.setAttribute('role', 'status');
+  t.textContent = msg;
+  document.body.append(t);
+  clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => t.remove(), 6000);
 }
 
 function setCustom(v: CustomInput) {
@@ -238,19 +253,20 @@ function mountDates() {
   const sec = document.createElement('section');
   sec.id = 'feat-dates';
   sec.setAttribute('aria-labelledby', 'feat-dates-h');
-  sec.innerHTML = `<h2 id="feat-dates-h">Landing dates, 13 months${mockTag()}</h2>
+  sec.innerHTML = `<h2 id="feat-dates-h">Best dates to land${mockTag()}</h2>
+    <p class="lead">Every possible landing date for the next 13 months. The higher the green area, the more hours a ${ctx.state.stay}-day stay gets with both Sun and Earth in view. <b>Land on a peak.</b> Click any date to try it.</p>
     <div class="dates-chart" id="dates-chart"></div>
     <p class="dates-read num" id="dates-read" aria-hidden="true"></p>
-    <div class="legend key"><span><span class="sw" style="background:#009e73"></span>both</span><span><span class="sw" style="background:#e69f00"></span>Sun</span><span><span class="sw" style="background:repeating-linear-gradient(90deg,#56b4e9 0 5px,transparent 5px 8px)"></span>Earth</span><span>① ② ③ best</span></div>
-    <details class="more"><summary>Chart details</summary>
-    <p class="note">Hours of a ${ctx.state.stay}-day stay at ${esc(site.name)} for every landing date from the baseline (${esc(when(ctx.state.t + ':00Z'))}) to ${SPAN_D} days later, in 12-hour steps. Same 10-minute engine grid as the table above.</p>
+    <div class="legend key"><span><span class="sw" style="background:#009e73"></span>both</span><span><span class="sw" style="background:#e69f00"></span>Sun</span><span><span class="sw" style="background:repeating-linear-gradient(90deg,#56b4e9 0 5px,transparent 5px 8px)"></span>Earth</span><span>① ② ③ best dates to land</span></div>
+    <details class="more"><summary>More about this chart</summary>
+    <p class="note">Hours of a ${ctx.state.stay}-day stay at ${esc(site.name)} for every landing date from the planned date (${esc(when(ctx.state.t + ':00Z'))}) to ${SPAN_D} days later, in 12-hour steps. Same 10-minute engine grid as the table above.</p>
     <div class="row dates-ctl" role="radiogroup" aria-label="Choosing a date sets">
       <span class="note">Choosing a date sets the</span>
       <label class="rad"><input type="radio" name="clk" value="slip" ${FS.clickSets === 'slip' ? 'checked' : ''}> slip</label>
-      <label class="rad"><input type="radio" name="clk" value="base" ${FS.clickSets === 'base' ? 'checked' : ''}> baseline date</label>
+      <label class="rad"><input type="radio" name="clk" value="base" ${FS.clickSets === 'base' ? 'checked' : ''}> planned date</label>
       <span class="note">(Shift-click or Shift+Enter does the other.)</span>
     </div>
-    <div class="legend"><span><span class="sw" style="background:#e69f00"></span>sunlit</span><span><span class="sw" style="background:repeating-linear-gradient(90deg,#56b4e9 0 5px,transparent 5px 8px)"></span>Earth in view</span><span><span class="sw" style="background:#009e73"></span>Sun + Earth</span><span><span class="sw" style="background:#fff"></span>baseline (left edge)</span><span><span class="sw" style="background:#f0e442"></span>slipped date</span><span>1 2 3 = best dates</span><span><span class="sw" style="background:rgba(255,255,255,.12)"></span>beyond the 90-day slip range</span></div>
+    <div class="legend"><span><span class="sw" style="background:#e69f00"></span>sunlit</span><span><span class="sw" style="background:repeating-linear-gradient(90deg,#56b4e9 0 5px,transparent 5px 8px)"></span>Earth in view</span><span><span class="sw" style="background:#009e73"></span>Sun + Earth</span><span><span class="sw" style="background:#fff"></span>planned date (left edge)</span><span><span class="sw" style="background:#f0e442"></span>slipped date</span><span>1 2 3 = best dates</span><span><span class="sw" style="background:rgba(255,255,255,.12)"></span>beyond the 90-day slip range</span></div>
     <div id="dates-sum"></div></details>
     <p id="dates-status" role="status" class="note"></p>`;
   insertAfter(after, sec);
@@ -302,10 +318,19 @@ function drawDates() {
   }
   const s = job.series();
   const W = Math.max(300, Math.round(host.clientWidth || 900)), H = W < 560 ? 190 : 230;
-  const L = 40, R = 10, T = 30, B = 24, pw = W - L - R, ph = H - T - B;
+  const L = 46, R = 10, T = 34, B = 24, pw = W - L - R, ph = H - T - B;
   const maxH = ctx.state.stay * 24;
   const x = (i: number) => L + (i / (s.n - 1)) * pw;
   const y = (h: number) => T + (1 - h / maxH) * ph;
+  const area = (arr: Float64Array) => {
+    let d = '', pen = false, last = 0;
+    for (let i = 0; i < s.n; i++) {
+      if (!Number.isFinite(arr[i])) { if (pen) d += `L${x(last).toFixed(1)},${y(0).toFixed(1)}Z`; pen = false; continue; }
+      d += pen ? `L${x(i).toFixed(1)},${y(arr[i]).toFixed(1)}` : `M${x(i).toFixed(1)},${y(0).toFixed(1)}L${x(i).toFixed(1)},${y(arr[i]).toFixed(1)}`;
+      pen = true; last = i;
+    }
+    return pen ? d + `L${x(last).toFixed(1)},${y(0).toFixed(1)}Z` : d;
+  };
   const path = (arr: Float64Array) => {
     let d = '', pen = false;
     for (let i = 0; i < s.n; i++) {
@@ -331,6 +356,17 @@ function drawDates() {
   const slip = ctx.state.slip;
   const slipI = slip * perDay;
   const slipM = slip > 0 && slipI < s.n ? `<line x1="${x(slipI)}" x2="${x(slipI)}" y1="${T}" y2="${T + ph}" class="slipm"/><text x="${x(slipI) + 4}" y="${T + 24}" class="slipt">Slipped +${slip} d</text>` : '';
+  const planM = `<text x="${L + 5}" y="${(T + ph * 0.5).toFixed(0)}" class="plant">Planned</text>`;
+  // Name one valley so the rhythm reads without the details: the lowest Sun point between the first two peaks.
+  let nightM = '';
+  {
+    let lo = -1;
+    for (let i = 0; i < Math.min(s.n, Math.round(45 * perDay)); i++) if (Number.isFinite(s.sun[i]) && (lo < 0 || s.sun[i] < s.sun[lo])) lo = i;
+    if (lo > 0 && s.sun[lo] < 0.2 * maxH && Math.max(...Array.from(s.sun.slice(0, Math.round(45 * perDay))).filter(Number.isFinite)) > 0.6 * maxH) {
+      let hiI = lo; while (hiI < s.n - 1 && s.sun[hiI + 1] <= s.sun[lo] + 0.5) hiI++;
+      nightM = `<text x="${((x(lo) + x(hiI)) / 2).toFixed(1)}" y="${y(0) - 8}" text-anchor="middle" class="nightt">lunar night</text>`;
+    }
+  }
   // Annotations on the chart itself: the day-night rhythm as a bracket between two peaks, the season range as one line.
   let notes = '';
   const rhythm = rhythmDays(s, 'sun') ?? rhythmDays(s, 'both');
@@ -354,8 +390,9 @@ function drawDates() {
       aria-label="Landing date. Arrow keys move one day, Page Up and Page Down one week, Enter applies." aria-valuemin="0" aria-valuemax="${SPAN_D}" aria-valuenow="${cursor}" aria-valuetext="${esc(readText(s, cursor))}">
     ${beyond}${grid}
     <line x1="${L}" x2="${L}" y1="${T}" y2="${T + ph}" class="basem"/>
+    <path d="${area(s.both)}" class="ar-both"/>
     <path d="${path(s.sun)}" class="ln-sun"/><path d="${path(s.earth)}" class="ln-earth"/><path d="${path(s.both)}" class="ln-both"/>
-    ${slipM}${bestM}${notes}
+    ${slipM}${planM}${nightM}${bestM}${notes}
     <g class="cur"><line x1="${x(ci)}" x2="${x(ci)}" y1="${T}" y2="${T + ph}"/>${Number.isFinite(s.both[ci]) ? `<circle cx="${x(ci)}" cy="${y(s.both[ci])}" r="4"/>` : ''}</g>
   </svg>`;
   document.getElementById('dates-read')!.textContent = readText(s, cursor);
@@ -429,7 +466,7 @@ function wireChart(s: DateSeries, x0: number, x1: number) {
     const i = Math.min(s.n - 1, Math.round(d * perDay));
     if (!Number.isFinite(s.both[i])) { setDatesStatus('That date is past the end of the ephemeris.'); return; }
     if (mode === 'slip') {
-      if (d > 90) { setDatesStatus('Slips are limited to 90 days. Choose “baseline date” (or Shift) to move the baseline here.'); return; }
+      if (d > 90) { setDatesStatus('Slips are limited to 90 days. Choose “planned date” (or Shift) to move the planned landing here.'); return; }
       ctx.setState({ slip: d });
     } else {
       cursor = 0;

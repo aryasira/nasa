@@ -42,27 +42,29 @@ export function verdict(v: VerdictInput): string {
   const cell = (label: string, big: string, small = '', cls = '') => `<div class="vd ${cls}"><div class="vd-k">${label}</div><div class="vd-n">${big}</div>${small ? `<div class="vd-s">${small}</div>` : ''}</div>`;
   const tag = v.illustrative ? '<span class="tagx">illustrative date</span>' : '';
   if (!slip) {
-    return `<div class="verdict" role="group" aria-label="Result">${cell('Sun + Earth in view', `${h1(base.metrics.both_visible_h)}<small> h</small>`, `of a ${v.stay}-day stay`)}</div>
-      <p class="vd-line">No slip set. Step the slip to see what changes. ${tag}</p>`;
+    return `<div class="verdict" role="group" aria-label="Result">${cell('Sun + Earth hours', `${h1(base.metrics.both_visible_h)}<small> h</small>`, `of a ${v.stay}-day stay, landing as planned`)}</div>
+      <p class="vd-line">No slip set. Use − and + under “Landing slips by” to see what a delay costs. ${tag}</p>`;
   }
   const d = slip.metrics.both_visible_h - base.metrics.both_visible_h;
   const band = deltaRange(slip.metrics, base.metrics, 'both_visible_h');
   const changes = bodyChanges(base, slip);
   const top = changes[0]?.cause ?? slip.causes[0] ?? null;
   const tok = top ? causeToken(top) : null;
+  const late = v.slip >= 0;
+  const lead = `<p class="vd-lead">A ${v.stay}-day stay at ${esc(v.site.name.replace(/ \(.*$/, ''))}: landing as planned on <b>${shortDate(base.start_utc)}</b> compared with <b>${Math.abs(v.slip)} day${Math.abs(v.slip) === 1 ? '' : 's'} ${late ? 'later' : 'earlier'}</b>, on ${shortDate(slip.start_utc)}.</p>`;
   const cells = [
-    cell('Sun + Earth in view', `${h1(base.metrics.both_visible_h)}<span class="arrow" aria-hidden="true"> → </span><span class="sr-only"> to </span>${h1(slip.metrics.both_visible_h)}<small> h</small>`, `${v.stay}-day stay, ${slipWords(v.slip)}`),
-    cell('Change', `${signed(d)}<small> h</small>`, band ? esc(withBand('', band, true).trim()) + ' with terrain error' : '', Math.abs(d) < 0.05 ? '' : d < 0 ? 'neg' : 'pos'),
-    tok ? cell('Main cause', `${icon(tok.kind, top!.az_deg)}<span class="vd-word">${esc(tok.text)}</span>`, `${tok.kind === 'terrain' ? 'terrain' : 'orbit, not terrain'} · ${signed(top!.delta_h)} h`, 'cause') : '',
+    cell('Sun + Earth hours', `${h1(base.metrics.both_visible_h)}<span class="arrow" aria-hidden="true"> → </span><span class="sr-only"> to </span>${h1(slip.metrics.both_visible_h)}<small> h</small>`, `as planned → ${late ? 'after the slip' : 'landing earlier'}`),
+    cell(Math.abs(d) < 0.05 ? 'No change' : d < 0 ? (late ? 'Lost to the slip' : 'Lost') : (late ? 'Gained by the slip' : 'Gained'), `${signed(d)}<small> h</small>`, band ? esc(withBand('', band, true).trim()) + ' with terrain error' : '', Math.abs(d) < 0.05 ? '' : d < 0 ? 'neg' : 'pos'),
+    tok ? cell(d < 0 ? 'Main reason' : 'Main reason', `${icon(tok.kind, top!.az_deg)}<span class="vd-word">${esc(tok.text)}</span>`, `${tok.kind === 'terrain' ? 'terrain' : 'orbit, not terrain'} · ${signed(top!.delta_h)} h`, 'cause') : '',
   ];
   let line = '';
   if (rec) {
     const days = Math.round((parseUtc(rec.start_utc) - parseUtc(base.start_utc)) / DAY);
     const exact = rec.label.startsWith('Next');
-    cells.push(cell(exact ? 'Next equally good date' : 'Best date within 60 d', `+${days}<small> d</small>`, shortDate(rec.start_utc), 'next'));
+    cells.push(cell(exact ? 'Next date as good' : 'Best date within 60 d', `+${days}<small> d</small>`, `land on ${shortDate(rec.start_utc)}`, 'next'));
     if (exact && v.slip > 0) line = `A ${slipWords(v.slip)} becomes a ${days}-day wait.`;
   }
-  return `<div class="verdict" role="group" aria-label="Result">${cells.join('')}</div><p class="vd-line">${line} ${tag}</p>`;
+  return `${lead}<div class="verdict" role="group" aria-label="Result">${cells.join('')}</div><p class="vd-line">${line} ${tag}</p>`;
 }
 
 /** The full sentences behind the verdict, for the Context disclosure. */
@@ -81,7 +83,7 @@ export function verdictContext(opts: SlipOptionEx[]): string {
   ].join('');
 }
 
-/** 04 Options as ranked horizontal bars. Bar length = Sun + Earth hours; the tick is the baseline. */
+/** 04 Options as ranked horizontal bars. Bar length = Sun + Earth hours; the tick is the planned landing. */
 export function optionBars(opts: SlipOptionEx[], horizons: Map<string, HorizonFile>, stay: number): string {
   const base = opts[0].metrics;
   const max = stay * 24;
@@ -95,14 +97,14 @@ export function optionBars(opts: SlipOptionEx[], horizons: Map<string, HorizonFi
       const t = causeToken(c, o.kind === 'alternate');
       return `<span class="ci ${c.delta_h < 0 ? 'neg' : 'pos'}" title="${esc(c.text)}">${icon(t.kind, c.az_deg)}<span class="ci-t">${c.body === 'sun' ? 'Sun' : 'Earth'} ${signed(c.delta_h)}</span></span>`;
     }).join('');
-    const name = o.kind === 'recover' ? (o.label.startsWith('Next') ? 'Next equally good date' : 'Best date within 60 d') : o.label;
+    const name = isBase ? 'Planned landing' : o.kind === 'recover' ? (o.label.startsWith('Next') ? 'Next date as good' : 'Best date within 60 days') : o.label;
     const why = isBase ? '' : `<div class="ob-why" id="ob-why-${i}" hidden>${o.note ? `<p class="fine">${esc(o.note)}</p>` : ''}
         ${o.causes.length ? `<ul class="cause">${o.causes.map((c) => `<li class="${c.delta_h < 0 ? 'lost' : 'gained'}">${esc(c.text)}</li>`).join('')}</ul>` : '<p class="fine">No change of half an hour or more in Sun or Earth visibility.</p>'}</div>`;
     return `<li class="ob r-${o.kind}">
       <div class="ob-name"><span class="ob-rank">${isBase ? '—' : i}</span><strong>${esc(name)}</strong><span class="ob-date num">${dayTime(o.start_utc)}</span></div>
-      <div class="ob-bar" role="img" aria-label="Sun and Earth both in view ${h1(m.both_visible_h)} of ${max} hours"><i style="width:${pct(m.both_visible_h)}"></i><b style="left:${pct(base.both_visible_h)}" title="baseline"></b></div>
+      <div class="ob-bar" role="img" aria-label="Sun and Earth both in view ${h1(m.both_visible_h)} of ${max} hours"><i style="width:${pct(m.both_visible_h)}"></i><b style="left:${pct(base.both_visible_h)}" title="planned landing"></b></div>
       <div class="ob-h num"><strong>${h1(m.both_visible_h)}</strong><small> h</small></div>
-      <div class="ob-d num ${dc}">${isBase ? 'baseline' : esc(withBand(signed(d), B ? deltaRange(m, base, 'both_visible_h') : null, true))}</div>
+      <div class="ob-d num ${dc}">${isBase ? 'the plan' : esc(withBand(signed(d), B ? deltaRange(m, base, 'both_visible_h') : null, true))}</div>
       <div class="ob-ic">${icons}</div>
       ${isBase ? '<span></span>' : `<button type="button" class="ob-x" aria-expanded="false" aria-controls="ob-why-${i}" data-why="${i}"><span class="sr-only">Causes for ${esc(name)}</span><span aria-hidden="true">why</span></button>`}
       ${why}
