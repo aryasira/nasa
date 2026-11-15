@@ -23,6 +23,7 @@ describe.skipIf(!existsSync(root + D + '/ephem.bin'))('cause lines and slip opti
   const features = json<FeaturesFile>(D + '/features.json');
   const site = (id: string) => sites.find((s) => s.id === id)!;
   const run = (id: string, t: string, stayDays: number, slipDays: number) => slipOptions({
+    alternateRangeKm: 1000, // wide range so alternates exist before the nearby terrain sites arrive (round 2 default is 150 km for polar sites)
     ephem, site: site(id), horizons, sites, features, tStart: parseUtc(t), stayDays, slipDays, mode: 'limb' });
   const win = (id: string, t: number, days: number) => windowMetrics(ephem, siteFrame(site(id)), horizons.get(id)!, t, t + days * 86400, 'limb');
   const sumBody = (ls: CauseLine[], body: string) => ls.filter((l) => l.body === body).reduce((s, l) => s + l.delta_h, 0);
@@ -183,5 +184,62 @@ describe.skipIf(!existsSync(root + D + '/ephem.bin'))('cause lines and slip opti
     expect(why[0].causeFits).toBe(true);
     expect(causeName(why[0].cause!)).toBe('lunar day/night cycle');
     expect(why[0].cause!.delta_h).toBeCloseTo(-69, 1);
+  });
+});
+
+// ---- Agent B, round 2: uncertainty bands on a synthetic horizon, alternate-site rule ----
+import { readFileSync as rf2 } from 'node:fs';
+import { fileURLToPath as fu2 } from 'node:url';
+import { Ephem as Ephem2, parseUtc as parseUtc2 } from './ephem';
+import { siteFrame as siteFrame2 } from './geometry';
+import { hasBand as hasBand2, windowMetrics as windowMetrics2 } from './metrics';
+import { alternateSites as alternateSites2 } from './slip';
+import { bandRange, deltaRange, withBand } from '../ui/format';
+
+describe('round 2: bands and alternates', () => {
+  const root2 = fu2(new URL('../../..', import.meta.url));
+  const J = (p: string) => JSON.parse(rf2(root2 + 'app/public/data/' + p, 'utf8'));
+  const buf = rf2(root2 + 'app/public/data/ephem.bin');
+  const ephem = new Ephem2(J('ephem.header.json'), buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+  const sites: any[] = J('sites.json').sites;
+  const site = (id: string) => sites.find((s) => s.id === id);
+
+  it('synthetic ±0.1° band: lowered terrain never shows less, raised never more; formatting', () => {
+    const hz = J('horizon/im2.json');
+    hz.elev_lo_deg = hz.elev_deg.map((v: number) => v - 0.1);
+    hz.elev_hi_deg = hz.elev_deg.map((v: number) => v + 0.1);
+    hz.dem.sigma_m = 0.4;
+    expect(hasBand2(hz)).toBe(true);
+    const t0 = ephem.t0 + 430 * 86400;
+    const a = windowMetrics2(ephem, siteFrame2(site('im2')), hz, t0, t0 + 10 * 86400, 'limb', { band: true }).metrics;
+    const b = windowMetrics2(ephem, siteFrame2(site('im2')), hz, t0 + 7 * 86400, t0 + 17 * 86400, 'limb', { band: true }).metrics;
+    for (const m of [a, b]) for (const k of ['sunlit_h', 'both_visible_h', 'earth_visible_pct'] as const) {
+      expect(m.band!.lo[k]!).toBeGreaterThanOrEqual(m[k]);
+      expect(m.band!.hi[k]!).toBeLessThanOrEqual(m[k]);
+      const r = bandRange(m, k)!;
+      expect(r[0]).toBeLessThanOrEqual(m[k]);
+      expect(r[1]).toBeGreaterThanOrEqual(m[k]);
+    }
+    const dr = deltaRange(b, a, 'both_visible_h')!;
+    const d = b.both_visible_h - a.both_visible_h;
+    expect(dr[0]).toBeLessThanOrEqual(d);
+    expect(dr[1]).toBeGreaterThanOrEqual(d);
+    expect(withBand('82.0', [78.2, 85.4])).toBe('82.0 (78–85)');
+    expect(withBand('−73.3 h', [-78.4, -70.1], true)).toBe('−73.3 h (−78 to −70)');
+    expect(withBand('82.0', null)).toBe('82.0');
+    void parseUtc2;
+  });
+
+  it('polar sites only get terrain-modelled alternates within 150 km', () => {
+    const horizons = new Map<string, any>();
+    for (const s of sites) { try { horizons.set(s.id, J(`horizon/${s.id}.json`)); } catch { /* horizon not built yet */ } }
+    const have = sites.filter((s) => horizons.has(s.id));
+    for (const id of ['im1', 'im2', 'connecting_ridge', 'chandrayaan3']) {
+      const r = alternateSites2({ site: site(id), sites: have, horizons });
+      for (const x of r.alts) { expect(x.s.terrain).toBe('lola'); expect(x.km).toBeLessThanOrEqual(150); }
+      if (!r.alts.length) expect(r.note).toContain('No terrain-modelled site within 150 km');
+    }
+    const eq = alternateSites2({ site: site('apollo11'), sites: have, horizons });
+    for (const x of eq.alts) expect(x.km).toBeLessThanOrEqual(1000);
   });
 });

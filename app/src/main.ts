@@ -5,10 +5,11 @@ import type { EphemHeader, FeaturesFile, FixturesFile, HorizonFile, Site, SitesF
 import { Ephem, fmtUtc, parseUtc } from './engine/ephem';
 import { observe, siteFrame } from './engine/geometry';
 import { scanWindow, hasBand } from './engine/metrics';
-import { bodyChanges, slipOptions, type SlipOptionEx } from './engine/slip';
+import { alternateSites, bodyChanges, slipOptions, type SlipOptionEx } from './engine/slip';
 import { causeName } from './engine/causes';
 import type { Mode } from './engine/visibility';
-import { panoramaSvg, timelineSvg, type TimelineWindow } from './ui/charts';
+import { panoramaSvg, timelineSvg, timelineTable, type TimelineWindow } from './ui/charts';
+import { bandRange, deltaRange, withBand } from './ui/format';
 import { mountSim } from './sim'; // SIM HOOK (Agent C): 3D mission simulator, see src/sim/
 
 interface State { site: string; t: string; stay: number; slip: number; mode: Mode; data: 'real' | 'mock' }
@@ -147,20 +148,19 @@ function optionRows(opts: SlipOptionEx[], d: Data): string {
   return opts.map((o) => {
     const m = o.metrics, isBase = o.kind === 'baseline';
     const hz = d.horizons.get(o.site_id)!;
-    const band = m.band && hasBand(hz)
-      ? `<br><small>terrain ±σ: ${(m.band.hi.both_visible_h ?? 0).toFixed(0)}–${(m.band.lo.both_visible_h ?? 0).toFixed(0)} h</small>` : '';
+    const B = hasBand(hz) && hasBand(d.horizons.get(opts[0].site_id)!); // show bands only when the terrain sigma is real
     const dBoth = m.both_visible_h - base.both_visible_h;
     const shown = o.causes.slice(0, 4), more = o.causes.slice(4);
     const li = (c: SlipOptionEx['causes'][number]) => `<li class="${c.delta_h < 0 ? 'lost' : 'gained'}">${esc(c.text)}${c.kind === 'orbital' ? `<span class="tag">${o.kind === 'alternate' ? 'location' : 'orbit'}, not terrain</span>` : c.kind === 'dip' ? '<span class="tag">site height</span>' : '<span class="tag">terrain</span>'}</li>`;
-    const causes = isBase ? '' : `<tr class="causes"><td colspan="7">${o.note ? `<small>${esc(o.note)}</small>` : ''}
+    const causes = isBase ? '' : `<tr class="causes k-${o.kind}"><td colspan="7">${o.note ? `<small>${esc(o.note)}</small>` : ''}
       ${shown.length ? `<ul class="cause" aria-label="Causes for ${esc(o.label)}">${shown.map(li).join('')}</ul>` : '<small> No change of half an hour or more in Sun or Earth visibility.</small>'}
       ${more.length ? `<details class="extra"><summary>${more.length} smaller cause${more.length > 1 ? 's' : ''}</summary><ul class="cause">${more.map(li).join('')}</ul></details>` : ''}</td></tr>`;
     return `<tr class="${isBase ? 'base' : ''}"><td><strong>${esc(o.label)}</strong></td>
       <td class="num">${when(o.start_utc)}</td>
-      <td class="num">${h1(m.sunlit_h)}</td><td class="num">${m.earth_visible_pct.toFixed(0)}%</td>
-      <td class="num"><strong>${h1(m.both_visible_h)}</strong>${band}</td>
-      <td class="num">${h1(m.longest_dark_gap_h)}</td>
-      <td class="num delta ${cls(dBoth)}">${isBase ? '—' : signed(dBoth, ' h')}</td></tr>${causes}`;
+      <td class="num">${withBand(h1(m.sunlit_h), B ? bandRange(m, 'sunlit_h') : null)}</td><td class="num">${withBand(m.earth_visible_pct.toFixed(0) + '%', B ? bandRange(m, 'earth_visible_pct') : null)}</td>
+      <td class="num"><strong>${h1(m.both_visible_h)}</strong>${withBand('', B ? bandRange(m, 'both_visible_h') : null)}</td>
+      <td class="num">${withBand(h1(m.longest_dark_gap_h), B ? bandRange(m, 'longest_dark_gap_h') : null)}</td>
+      <td class="num delta ${cls(dBoth)}">${isBase ? '—' : withBand(signed(dBoth, ' h'), B ? deltaRange(m, base, 'both_visible_h') : null, true)}</td></tr>${causes}`;
   }).join('');
 }
 
@@ -170,11 +170,13 @@ function headline(opts: SlipOptionEx[], site: Site, s: State): string {
   const d = slip.metrics.both_visible_h - base.metrics.both_visible_h;
   const verb = Math.abs(d) < 0.05 ? 'does not change' : d < 0 ? 'cuts' : 'adds to';
   let txt = `<p class="headline">A <strong>${Math.abs(s.slip)}-day ${s.slip < 0 ? 'advance' : 'slip'}</strong> at ${esc(site.name)} ${verb} the time with both Sun and Earth in view`
-    + (Math.abs(d) < 0.05 ? ` (${h1(base.metrics.both_visible_h)} h of a ${s.stay}-day stay).` : `: <strong>${h1(base.metrics.both_visible_h)} h → ${h1(slip.metrics.both_visible_h)} h</strong> (<strong class="${d < 0 ? 'loss' : 'gain'}">${signed(d, ' h')}</strong>) over a ${s.stay}-day stay.`) + '</p>';
+    + (Math.abs(d) < 0.05 ? ` (${h1(base.metrics.both_visible_h)} h of a ${s.stay}-day stay).` : `: <strong>${h1(base.metrics.both_visible_h)} h → ${h1(slip.metrics.both_visible_h)} h</strong> (<strong class="${d < 0 ? 'loss' : 'gain'}">${withBand(signed(d, ' h'), deltaRange(slip.metrics, base.metrics, 'both_visible_h'), true)}</strong>) over a ${s.stay}-day stay.`) + '</p>';
   // Per body: net change in visible hours and its largest same-sign cause; the cause's hours are quoted only if not larger than the change.
   const why = bodyChanges(base, slip).map((x) => `${x.body === 'sun' ? 'Sun' : 'Earth'} in view ${h1(x.before_h)} h → ${h1(x.after_h)} h (${signed(x.delta_h, ' h')})`
     + (!x.cause ? '' : x.causeFits ? `; main cause: ${esc(causeName(x.cause))} (${signed(x.cause.delta_h, ' h')})` : `; main cause: ${esc(causeName(x.cause))}, partly offset by other changes`));
-  if (why.length) txt += `<p><strong>Why:</strong> ${why.join('. ')}.</p>`;
+  const terr = slip.causes.filter((c) => c.kind === 'terrain').slice(0, 2).map((c) => esc(c.text));
+  if (why.length) txt += `<p class="headline why"><strong>Why:</strong> ${why.join('. ')}.</p>`;
+  txt += `<p><strong>Terrain:</strong> ${terr.length ? terr.join('. ') + '.' : 'no terrain change of half an hour or more.'}</p>`;
   if (rec) {
     const days = Math.round((parseUtc(rec.start_utc) - parseUtc(base.start_utc)) / DAY);
     txt += rec.label.startsWith('Next')
@@ -206,24 +208,27 @@ function render(d: Data, s: State) {
       .map((c) => ({ az: c.az_deg as number, label: `${c.body === 'sun' ? 'Sun' : 'Earth'} ${c.delta_h < 0 ? '−' : '+'}${Math.abs(c.delta_h).toFixed(0)} h` }));
     const sphere = hz.dem.product === 'sphere';
     results = `
-    <section aria-labelledby="h-sum"><h2 id="h-sum">What the slip does</h2>${headline(opts, site, s)}
+    <section aria-labelledby="h-sum" aria-live="polite"><h2 id="h-sum">What the slip does</h2>${headline(opts, site, s)}
       ${preset ? `<p class="note">${esc(preset.note)}${site.story ? ' ' + esc(site.story) : ''}</p>` : ''}</section>
     <section aria-labelledby="h-opt"><h2 id="h-opt">Options, ranked by time with both Sun and Earth in view</h2>
       <div style="overflow-x:auto"><table><thead><tr><th scope="col">Option</th><th scope="col">Landing</th><th scope="col">Sunlit (h)</th><th scope="col">Earth in view</th><th scope="col">Sun + Earth (h)</th><th scope="col">Longest dark gap (h)</th><th scope="col">Change vs baseline</th></tr></thead>
       <tbody>${optionRows(opts, d)}</tbody></table></div>
       <p class="note">Each stay is ${s.stay} days from landing, sampled every 10 minutes. Per body, the cause lines sum to the change in that body's visible hours, apart from pieces under half an hour, which are not listed.
       Sunlit hours include time when Earth covers part or all of the Sun.${opts.some((o) => o.metrics.eclipse_h > 0) ? ` Eclipse (Earth covers the Sun): ${opts.filter((o) => o.metrics.eclipse_h > 0).map((o) => `${esc(o.label)} ${h1(o.metrics.eclipse_h)} h`).join(', ')}.` : ''}
-      ${hasBand(hz) ? '' : 'No terrain-error band is shown yet: the horizon file carries no terrain sigma.'}</p></section>
+      ${hasBand(hz) ? `Figures in brackets are the range when the terrain is lowered or raised by its published height error (σ = ${hz.dem.sigma_m} m).` : 'No terrain-error band is shown: the horizon file carries no terrain height error.'}
+      ${s.slip !== 0 ? esc(alternateSites({ site, sites: d.sites, horizons: d.horizons }).note ?? '') : ''}</p></section>
     <section aria-labelledby="h-tl"><h2 id="h-tl">Timeline at ${esc(site.name)}</h2>
-      ${timelineSvg(wide, wins, `Sun, Earth and both visible at ${site.name} from ${fmtUtc(t0).slice(0, 10)} to ${fmtUtc(t1).slice(0, 10)}, with the baseline and slipped stays marked`)}
+      ${timelineSvg(wide, wins, `Sun, Earth and both visible at ${site.name} from ${fmtUtc(t0).slice(0, 10)} to ${fmtUtc(t1).slice(0, 10)}, with the baseline and slipped stays marked`, 'Three rows show when the Sun, Earth and both are above the local horizon. Bars underneath mark each stay. The same intervals are listed in the table below the chart.')}
+      <details class="extra"><summary>Timeline as a table</summary><div style="overflow-x:auto">${timelineTable(wide)}</div></details>
       <div class="legend"><span><span class="sw" style="background:#e69f00"></span>Sun above the local horizon</span><span><span class="sw" style="background:repeating-linear-gradient(45deg,#56b4e9 0 3px,#0b3d5c 3px 5px)"></span>Earth above the local horizon (hatched)</span><span><span class="sw" style="background:#009e73"></span>both (cross-hatched)</span><span><span class="sw" style="background:#cc79a7"></span>Earth covers part of the Sun</span><span><span class="sw" style="background:#f0e442"></span>slipped stay</span></div></section>
     <section aria-labelledby="h-pan"><h2 id="h-pan">Local horizon, all the way round</h2>
-      ${panoramaSvg(hz, tracks, markers, `Terrain horizon at ${site.name} over 360 degrees of azimuth with the Sun and Earth paths for the baseline and slipped stays`)}
-      <div class="legend"><span><span class="sw" style="background:#6b7686"></span>${sphere ? 'smooth-sphere horizon (no terrain model for this site)' : 'terrain (LOLA)'}</span><span><span class="sw" style="background:#e69f00"></span>Sun path</span><span><span class="sw" style="background:#56b4e9"></span>Earth path</span><span>solid = baseline stay, dashed = slipped stay</span><span>yellow line = a terrain cause from the table</span></div>
+      ${panoramaSvg(hz, tracks, markers, `Terrain horizon at ${site.name} over 360 degrees of azimuth with the Sun and Earth paths for the baseline and slipped stays`, 'The grey shape is the horizon by compass direction. A body is in view where its path is above the grey shape.', hasBand(hz))}
+      <div class="legend"><span><span class="sw" style="background:#6b7686"></span>${sphere ? 'smooth-sphere horizon (no terrain model for this site)' : 'terrain (LOLA)'}</span><span><span class="sw" style="background:#e69f00"></span>Sun path</span><span><span class="sw" style="background:#56b4e9"></span>Earth path</span><span>solid = baseline stay, dashed = slipped stay</span>${hasBand(hz) ? '<span><span class="sw" style="background:#f0e44259"></span>horizon with terrain lowered or raised by its height error</span>' : ''}<span>yellow line = a terrain cause from the table</span></div>
       <p class="note">Vertical scale is stretched; paths above the top of the plot are cut off.</p></section>`;
   } catch (e) {
     results = `<div class="error" role="alert">${esc((e as Error).message)} Ephemeris covers ${when(fmtUtc(d.ephem.t0))} to ${when(fmtUtc(d.ephem.tLast))}.</div>`;
   }
+  document.title = `${site.name}, ${s.slip > 0 ? '+' : ''}${s.slip} d slip — Slip Impact Brief`;
   const res = residuals(d);
   const bench = !d.mock && BENCH[site.id] ? { ...BENCH[site.id], ...longRunSunlit(d, site, s.mode) } : null;
   const altUsed = site.elev_m == null ? ' (catalogue elevation not published; 0 m used for the site vector)' : '';
@@ -241,13 +246,13 @@ function render(d: Data, s: State) {
       <dt>Name</dt><dd>${esc(site.name)} <span class="tag">${site.name_status === 'iau' ? 'IAU name' : 'informal name'}</span></dd>
       <dt>Position</dt><dd class="mono">${Math.abs(site.lat).toFixed(4)}°${site.lat < 0 ? 'S' : 'N'}, ${site.lon_e.toFixed(4)}°E${site.elev_m != null ? `, ${site.elev_m} m` : ''}</dd>
       <dt>Source</dt><dd><a href="${esc(site.source.url)}" rel="noopener">${esc(site.source.org)}</a>${altUsed}</dd>
-      <dt>Horizon</dt><dd>${esc(hz.dem.product)}${hz.dem.res_m ? `, ${hz.dem.res_m} m grid` : ''}${hz.dem.max_range_km ? `, out to ${hz.dem.max_range_km} km` : ''}; observer ${hz.mast_m} m above ground</dd>
+      <dt class="ph">Horizon</dt><dd class="ph">${esc(hz.dem.product)}${hz.dem.res_m ? `, ${hz.dem.res_m} m grid` : ''}${hz.dem.max_range_km ? `, out to ${hz.dem.max_range_km} km` : ''}; observer ${hz.mast_m} m above ground</dd>
       ${site.landing_utc ? `<dt>Landed</dt><dd class="mono">${when(site.landing_utc)}</dd>` : ''}</dl></section>
     <section aria-labelledby="h-val"><h2 id="h-val">How far to trust this</h2><dl>
       <dt>Checked against</dt><dd>${res ? `NASA JPL Horizons, ${res.n} Sun and Earth positions at ${res.sites} landing sites, recomputed in your browser just now: largest gap <span class="mono">${res.az.toFixed(4)}°</span> in azimuth and <span class="mono">${res.el.toFixed(4)}°</span> in elevation.` : 'No Horizons fixtures loaded for this data set.'}</dd>
-      ${bench ? `<dt>Published benchmark</dt><dd>Sunlit <span class="mono">${bench.pct.toFixed(1)}%</span> of the time here over ${bench.years.toFixed(0)} years (2024–2030, ${s.mode === 'limb' ? 'any part of the disc' : 'half the disc'}), computed just now. Published: ${esc(BENCH[site.id].pct)} (${esc(bench.cite)}). A different time span and a newer terrain model, so a close match is the test, not an exact one.</dd>` : ''}
-      <dt>Ephemeris</dt><dd>${esc(d.header.spice_version)}, frame ${esc(d.header.frame)}, hourly, ${esc(d.header.kernels.join(', '))}</dd>
-      <dt>Earth</dt><dd>Seen from the site, not from the Moon's centre (the difference reaches about 0.28°, hours of Earthrise time near the poles).</dd>
+      ${bench ? `<dt>Published benchmark</dt><dd>Sunlit <span class="mono">${bench.pct.toFixed(1)}%</span> of the time here over ${bench.years.toFixed(0)} years (${fmtUtc(d.ephem.t0).slice(0, 4)}–${fmtUtc(d.ephem.tLast).slice(0, 4)}, ${s.mode === 'limb' ? 'any part of the disc' : 'half the disc'}), computed just now. Published: ${esc(BENCH[site.id].pct)} (${esc(bench.cite)}). A different time span and a newer terrain model, so a close match is the test, not an exact one.</dd>` : ''}
+      <dt class="ph">Ephemeris</dt><dd class="ph">${esc(d.header.spice_version)}, frame ${esc(d.header.frame)}, hourly, ${esc(d.header.kernels.join(', '))}</dd>
+      <dt class="ph">Earth</dt><dd class="ph">Seen from the site, not from the Moon's centre (the difference reaches about 0.28°, hours of Earthrise time near the poles).</dd>
       <dt>Not modelled</dt><dd>Lander tilt and attitude, solar-panel pointing, thermal limits, radio link budget, relay satellites. "In view" means line of sight only.</dd></dl></section>
   </div>
   </main>

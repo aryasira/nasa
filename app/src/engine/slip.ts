@@ -25,7 +25,7 @@ export interface SlipInput {
   mode: Mode;
   searchDays?: number; // default 60
   maxAlternates?: number; // default 3
-  alternateRangeKm?: number; // default 1000
+  alternateRangeKm?: number; // default: 150 for polar sites, 1000 otherwise
 }
 
 const DAY = 86400;
@@ -88,20 +88,40 @@ export function slipOptions(inp: SlipInput): SlipOptionEx[] {
         `No date within ${search} days after the slip matches the baseline; this is the best one found.`));
     }
 
-    // Alternate catalogue sites on the slipped date.
-    const alts = inp.sites
-      .filter((s) => s.id !== site.id && horizons.has(s.id))
-      .map((s) => ({ s, km: surfaceDistanceKm(site, s) }))
-      .filter((x) => x.km <= (inp.alternateRangeKm ?? 1000))
-      .sort((x, y) => x.km - y.km)
-      .slice(0, inp.maxAlternates ?? 3);
-    for (const { s, km } of alts) {
+    // Alternate catalogue sites on the slipped date (see alternateSites below).
+    for (const { s, km } of alternateSites(inp).alts) {
       rest.push(mk('alternate', `Alternate site: ${s.name}`, s, horizons.get(s.id)!, tSlip,
         `${km.toFixed(0)} km from ${site.name}, same slipped date.`));
     }
   }
   rest.sort((a, b) => (b.delta.both_visible_h ?? 0) - (a.delta.both_visible_h ?? 0));
   return out.concat(rest);
+}
+
+export const POLAR_LAT_DEG = 60;
+export const POLAR_ALT_RANGE_KM = 150;
+
+/**
+ * Which catalogue sites are offered as alternates.
+ * Polar site (|lat| >= 60°): only terrain-modelled sites within 150 km, because a smooth-sphere horizon is not
+ * good enough near the poles and a far site is not a real alternative. Otherwise: nearest sites within 1000 km.
+ * `note` says why nothing is offered.
+ */
+export function alternateSites(inp: Pick<SlipInput, 'site' | 'sites' | 'horizons' | 'maxAlternates' | 'alternateRangeKm'>):
+  { alts: { s: Site; km: number }[]; note: string | null } {
+  const polar = Math.abs(inp.site.lat) >= POLAR_LAT_DEG;
+  const range = inp.alternateRangeKm ?? (polar ? POLAR_ALT_RANGE_KM : 1000);
+  const alts = inp.sites
+    .filter((s) => s.id !== inp.site.id && inp.horizons.has(s.id))
+    .filter((s) => !polar || (s.terrain === 'lola' && inp.horizons.get(s.id)!.dem.product !== 'sphere'))
+    .map((s) => ({ s, km: surfaceDistanceKm(inp.site, s) }))
+    .filter((x) => x.km <= range)
+    .sort((x, y) => x.km - y.km)
+    .slice(0, inp.maxAlternates ?? 3);
+  const note = alts.length ? null
+    : polar ? `No terrain-modelled site within ${range} km, so no alternate site is offered.`
+      : `No catalogue site within ${range} km, so no alternate site is offered.`;
+  return { alts, note };
 }
 
 export interface BodyChange {

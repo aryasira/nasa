@@ -1,8 +1,61 @@
 # STATUS-B
 
-_Updated: Sat 14 Nov 2026, 17:10 CT_
+_Updated: Sun 15 Nov 2026, 11:45 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
+
+## Round 2 (Sun 11:15 to 11:45 CT)
+Merged `origin/main` (d509614, includes the simulator) and `origin/c/work` (1eb4a2d, C's cause-line and slip
+fixes in B's files) into `b/app`. **`main.ts` was not restructured**: only small in-place edits; the SIM HOOK
+lines and `app/src/sim/**` are untouched.
+
+### REVIEW items 1 to 5 (cause-line correctness)
+Already fixed by C in `c/fix-causes`; B checked each on real data and kept C's code:
+1. One net non-terrain line per body. IM-2, 10-day stay, +7 d: "Earth in view 240.0 h → 157.7 h (−82.3 h);
+   main cause: Earth's libration, net of site height (−82.3 h)". No cancelling pair.
+2. Negative slip: no recovery option, no "0-day wait" (checked with −4 d).
+3. Alternate sites: the non-terrain line says "different location and date".
+4. Note now reads "Per body, the cause lines sum to the change in that body's visible hours, apart from
+   pieces under half an hour".
+5. Unnamed terrain is keyed by azimuth runs across both windows; distances under 3 grid cells print "< 0.5 km".
+
+### Round-2 tasks
+1. **Uncertainty bands: done, waiting for real sigma.** With `dem.sigma_m` set, the table shows
+   `82.0 (78–85)` for sunlit, Earth %, Sun + Earth and dark gap, the change shows `−73.3 h (−78 to −70)`, the
+   headline carries the same band, and the panorama draws the lowered/raised horizon as a light band.
+   Tested in Vitest on a synthetic ±0.1° horizon. No real horizon file has `sigma_m` yet, so nothing shows today.
+2. **Accessibility: axe-core 4 (WCAG 2 A/AA + best practice) run in headless Chrome on three states.**
+   Lighthouse was not available. B's parts: **0 violations**, 53 to 54 rules passing. Added: `aria-live` on the
+   summary, a page title per state, `<title>` + `<desc>` on both charts, a "Timeline as a table" alternative.
+   Remaining violations are in the simulator / hook (**C**):
+   - critical `aria-allowed-attr`: `<div class="sim-view" aria-pressed="true">` (needs `role="button"` or a `<button>`);
+   - serious `color-contrast`: the sim label `<span>Slipped · 03/13</span>` (seen on the IM-2 state);
+   - moderate `region`: `<h2 class="brief-h" id="h-brief">` sits outside any landmark (move it inside `<main>`).
+3. **Alternate sites: done.** Polar sites (|lat| ≥ 60°) only get terrain-modelled sites within 150 km; otherwise
+   the page says "No terrain-modelled site within 150 km, so no alternate site is offered." Non-polar sites keep
+   the nearest catalogue sites within 1000 km. Today no polar site has a terrain neighbour within 150 km
+   (IM-1 to IM-2 is 175 km), so polar scenarios show no alternates until `shackleton_sr1/sr2` horizons land.
+4. **Cause line as the hero: done.** Under the headline: "Why:" (one net sentence per body, C's) plus a new
+   "Terrain:" sentence with the two largest terrain lines, or "no terrain change of half an hour or more".
+5. **Print brief: done.** One page on Letter and A4 for IM-1, IM-2, Connecting Ridge, SLIM and Apollo 11
+   scenarios (checked by PDF page count). Includes the permalink as text, sources and the AI-use line. Print
+   hides the simulator, legends, notes and the cause rows of recovery/alternate options.
+6. COULD items: not started (need the human's OK after the 13:00 gate).
+
+Also: no hard-coded 2024 left in the trust panel (years come from the ephemeris header).
+Tests: `npm test` 29 passing; `npm run build` passes.
+
+### Blocked / needs other agent (round 2)
+- **A:** `sites.json` lists sites with no horizon file yet (`shackleton_sr1`, and others); the app hides any
+  site without a horizon. Ephemeris header still starts 2024-01-01. Bands need `dem.sigma_m`.
+- **C:** the three simulator accessibility items above. One of C's tests assumed far alternates; B passes
+  `alternateRangeKm: 1000` in that test so it still exercises alternates.
+- **Human:** IM-1 now shows no alternate site at all (nearest terrain site is 175 km away). If you would rather
+  keep IM-2 as an alternate for IM-1, say so and B will widen the range to 200 km.
+
+---
+## Round 1 notes (Sat) — kept for reference; several items below are now resolved
+
 
 ## Done
 - Merged `a/data` (7d4de7c, which already contains `c/work`) into `b/app` to build on the real data,

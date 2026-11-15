@@ -25,7 +25,7 @@ function runs(v: (k: number) => boolean, n: number): [number, number][] {
 
 export interface TimelineWindow { label: string; tStart: number; tEnd: number; emphasis?: boolean }
 
-export function timelineSvg(scan: Scan, windows: TimelineWindow[], title: string): string {
+export function timelineSvg(scan: Scan, windows: TimelineWindow[], title: string, desc = ''): string {
   const W = 1000, L = 78, R = 12, top = 18, rowH = 20, gap = 6;
   const span = scan.tEnd - scan.tStart;
   const x = (t: number) => L + ((t - scan.tStart) / span) * (W - L - R);
@@ -58,13 +58,13 @@ export function timelineSvg(scan: Scan, windows: TimelineWindow[], title: string
     body += `<line x1="${x(t).toFixed(1)}" x2="${x(t).toFixed(1)}" y1="${top}" y2="${y}" stroke="#ffffff22"/><text x="${x(t).toFixed(1)}" y="${y + 12}" text-anchor="middle" class="muted">${day(t)}</text>`;
   }
   const H = y + 18;
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title>${DEFS}${body}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title><desc>${esc(desc)}</desc>${DEFS}${body}</svg>`;
 }
 
 export interface Track { label: string; scan: Scan; dashed: boolean }
 export interface Marker { az: number; label: string }
 
-export function panoramaSvg(hz: HorizonFile, tracks: Track[], markers: Marker[], title: string): string {
+export function panoramaSvg(hz: HorizonFile, tracks: Track[], markers: Marker[], title: string, desc = '', band = false): string {
   const W = 1000, H = 300, L = 34, R = 8, T = 10, B = 26;
   const h = hz.elev_deg;
   let hMin = Infinity, hMax = -Infinity, tMax = -Infinity;
@@ -86,6 +86,14 @@ export function panoramaSvg(hz: HorizonFile, tracks: Track[], markers: Marker[],
   for (let i = 0; i <= 720; i++) pts += ` ${x(i * 0.5).toFixed(1)},${y(Math.max(lo, h[i % 720])).toFixed(1)}`;
   pts += ` ${x(360)},${y(lo)}`;
   body += `<polygon points="${pts}" fill="#6b7686" stroke="#cfd6df" stroke-width="1" clip-path="url(#pc)"/>`;
+  if (band) { // terrain raised / lowered by one sigma
+    let up = '', down = '';
+    for (let i = 0; i <= 720; i++) {
+      up += ` ${x(i * 0.5).toFixed(1)},${y(Math.max(lo, hz.elev_hi_deg[i % 720])).toFixed(1)}`;
+      down = ` ${x(i * 0.5).toFixed(1)},${y(Math.max(lo, hz.elev_lo_deg[i % 720])).toFixed(1)}` + down;
+    }
+    body += `<polygon points="${up}${down}" fill="#f0e442" fill-opacity="0.35" stroke="#f0e442" stroke-opacity="0.6" stroke-width="0.5" clip-path="url(#pc)"/>`;
+  }
   const line = (az: Float32Array, el: Float32Array, n: number, colour: string, dashed: boolean, width: number) => {
     let d = '', prev = NaN;
     for (let k = 0; k <= n; k += 3) {
@@ -102,5 +110,20 @@ export function panoramaSvg(hz: HorizonFile, tracks: Track[], markers: Marker[],
   for (const m of markers) {
     body += `<line x1="${x(m.az)}" x2="${x(m.az)}" y1="${T}" y2="${H - B}" stroke="#f0e442" stroke-dasharray="2 3"/><text x="${x(m.az) + 4}" y="${T + 12}" fill="#f0e442">${esc(m.label)}</text>`;
   }
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title>${body}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title><desc>${esc(desc)}</desc>${body}</svg>`;
+}
+
+/** Text alternative to the timeline: every interval when the Sun, Earth or both are in view. */
+export function timelineTable(scan: Scan): string {
+  const stamp = (k: number) => new Date((scan.tStart + k * STEP_S) * 1000).toISOString().slice(0, 16).replace('T', ' ');
+  const rows: string[] = [];
+  const add = (name: string, fn: (k: number) => boolean) => {
+    for (const [a, b] of runs(fn, scan.n)) {
+      rows.push(`<tr><td>${name}</td><td class="num">${stamp(a)}${a === 0 ? ' or earlier' : ''}</td><td class="num">${stamp(b)}${b === scan.n ? ' or later' : ''}</td><td class="num">${(((b - a) * STEP_S) / 3600).toFixed(1)}</td></tr>`);
+    }
+  };
+  add('Sun', (k) => !!scan.sunVis[k]);
+  add('Earth', (k) => !!scan.earthVis[k]);
+  add('Sun + Earth', (k) => !!(scan.sunVis[k] & scan.earthVis[k]));
+  return `<table><caption class="note">Intervals in view (UTC) over the span shown in the chart</caption><thead><tr><th scope="col">In view</th><th scope="col">From</th><th scope="col">To</th><th scope="col">Hours</th></tr></thead><tbody>${rows.join('') || '<tr><td colspan="4">Nothing in view in this span.</td></tr>'}</tbody></table>`;
 }
