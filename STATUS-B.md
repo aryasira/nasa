@@ -1,8 +1,27 @@
 # STATUS-B
 
-_Updated: Sun 15 Nov 2026, 11:45 CT_
+_Updated: Sun 15 Nov 2026, 12:25 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
+
+## Live-review fixes (Sun 12:00 to 12:25 CT)
+Merged `origin/c/work` at 081756a (the head of **open PR #6**) so the cause wording in `causes.ts` matches what
+will land on main; merge `main` again once PR #6 is merged. `main.ts` edits are in place; hooks untouched.
+- (1) A link to a site with no data (e.g. `site=shackleton_sr1`) now shows a message naming the site and the
+  one shown instead. It clears when the user picks a site.
+- (5) Alternate-site rows no longer repeat the baseline site's terrain line: for a different site, the
+  baseline's terrain is part of the "different location" line; only the alternate's own terrain is listed.
+- (6) `mode=center` (US spelling) is accepted and kept as centre.
+- (7) One rounding rule: hours are shown to one decimal everywhere (summary, cause lines, chart markers).
+- (8) One wording: "10-day slip" / "10-day advance" in the headline, the table and the page title.
+- Gloss lines for "libration" and "net of site height" appear under the summary when those words are used.
+- Alternate rows are shorter: "Alternate: <site>", "379 km away, same date.", two cause lines.
+- The date field is a text field in 24-hour UTC (`YYYY-MM-DD HH:MM`); links accept a space or `T`.
+- After PR #6 merged (12:06 CT), merged `origin/main` (d19e68e) as asked. C's new feature sections had pushed the
+  print brief to two pages; print now leaves out the landing-date explorer, site comparison and alternate rows
+  (with a line pointing to the on-screen version) and is back to one page on Letter and A4 for five scenarios.
+- Checks: `npm test` 42 passing, build passes, each item checked in headless Chrome; axe-core on the IM-2
+  state: no new violations in B's parts.
 
 ## Round 2 (Sun 11:15 to 11:45 CT)
 Merged `origin/main` (d509614, includes the simulator) and `origin/c/work` (1eb4a2d, C's cause-line and slip
@@ -178,3 +197,16 @@ Vitest 47 passed, Python 34 passed, build ok, no console errors.
 Not done: mast selector (no mast files yet), Sun fraction (frozen contract), DSN view (new data),
 IAU features near IM-1 and Chandrayaan-3 (no Gazetteer ID found for Malapert A; IM-1's skyline is
 set by ground within 500 m, so a crater name 26 km away would not name anything).
+
+### Merge state of `b/a-fixes` (Sun 15 Nov, 12:40 CT, real clock)
+Correction: the clock times in the three sections above were guesses and are wrong. All of that
+work was done between about 12:00 and 12:40 CT.
+`b/a-fixes` now contains `main` (9afba58) and `b/app` (854ffe6), merged and conflict-free.
+Where B or C had already fixed the same thing, their version was kept: C's scroll fix, round globe,
+lander default and blocker names; B's link notice, mode alias, text date input, one-decimal hours
+and "N-day advance" label. Kept from this session: new-data compatibility, Earth link margin,
+CSV/JSON export, site-by-date map, Earth clearance plot, longest-night line, confidence-tag hook,
+"(the baseline site)", empty-band hiding, DEM heights in sites.yaml, updated lead numbers.
+Vitest 47 passed, Python 34 passed, build ok, headless Chrome check ok.
+One thing seen: in headless Chrome the plain wheel over the 3D view did not scroll the page with
+C's fix. It may behave differently in a real browser. Check it on the live site.

@@ -164,8 +164,8 @@ describe.skipIf(!existsSync(root + D + '/ephem.bin'))('cause lines and slip opti
 
   it('11. an earlier landing is labelled as earlier, not as a negative slip', () => {
     const o = of(run('connecting_ridge', '2027-06-10T00:00:00Z', 14, -10), 'slip');
-    expect(o.label).toBe('10 d earlier');
-    expect(of(run(...IM2), 'slip').label).toBe('+7 d slip');
+    expect(o.label).toBe('10-day advance');
+    expect(of(run(...IM2), 'slip').label).toBe('7-day slip');
   });
 
   it('10. eclipse hours are counted inside the sunlit hours', () => {

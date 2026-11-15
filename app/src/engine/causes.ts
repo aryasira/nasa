@@ -7,7 +7,8 @@
 // below the real one), attributed to the occluder the pipeline stored at the azimuth where the body was hidden.
 // The non-terrain piece is what is left: visible(b) − visible(a) − Σ terrain. For the same site it is the Moon's
 // own day/night cycle (Sun) or Earth's libration (Earth), net of the hours a high site sees below the flat
-// horizon ("site height"). For a different site it is the difference of location (and date).
+// horizon ("site height"). For a different site it is the difference of location (and date), which also
+// absorbs the baseline site's own terrain: only the alternate site's terrain is listed separately.
 // Pieces under MIN_H are not listed, but they are still in the sum, so the non-terrain piece stays exact.
 import type { CauseLine, Feature, FeaturesFile, HorizonFile } from '@contracts/types';
 import { R_MOON_KM } from './geometry';
@@ -155,7 +156,7 @@ export function hostFeature(hz: HorizonFile, azDeg: number, features: FeaturesFi
   return (features?.features ?? []).find((f) => siteIsOn(hz, f) && f.radius_km != null && gcKm(lat, lon, f.lat, f.lon_e) <= f.radius_km);
 }
 
-// One decimal, like every other hour figure in the brief, so "lost 18.5 h" matches the "−18.5 h" beside it.
+/** One rounding rule for hours everywhere on the page: one decimal. */
 const fmtH = (h: number) => Math.abs(h).toFixed(1);
 const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
 export const compass = (az: number) => COMPASS[Math.round(az / 22.5) % 16];
@@ -193,6 +194,9 @@ export function causeLines(a: CauseInput, b: CauseInput, features: FeaturesFile 
       const ba = sid === a.hz.site_id ? A.get(k) : undefined;
       const bb = sid === b.hz.site_id ? B.get(k) : undefined;
       const d = (ba?.hours ?? 0) - (bb?.hours ?? 0); // more hidden hours in b = lost
+      // Different site: terrain at the baseline site is part of "different location", not a line of its own
+      // (otherwise every alternate row repeats the baseline site's terrain line).
+      if (!sameSite && sid === a.hz.site_id) continue;
       terrainSum += d;
       if (Math.abs(d) < minH || d === 0) continue;
       const lost = d < 0;

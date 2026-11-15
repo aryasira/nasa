@@ -9,7 +9,7 @@ import type { EphemHeader, FeaturesFile, FixturesFile, HorizonFile, Site, SitesF
 import { Ephem, fmtUtc, parseUtc } from './engine/ephem';
 import { observe, siteFrame } from './engine/geometry';
 import { scanWindow, hasBand } from './engine/metrics';
-import { alternateSites, bodyChanges, slipOptions, type SlipOptionEx } from './engine/slip';
+import { alternateSites, bodyChanges, slipOptions, slipWords, type SlipOptionEx } from './engine/slip';
 import { causeName } from './engine/causes';
 import type { Mode } from './engine/visibility';
 import { panoramaSvg, timelineSvg, timelineTable, type TimelineWindow } from './ui/charts';
@@ -42,9 +42,11 @@ const PRESETS: { id: string; label: string; state: Partial<State>; note: string 
     note: 'Illustration: Earth sets at Mons Mouton for part of each month.' },
 ];
 
-/** Set when the link asked for something that could not be honoured; shown once above the brief. */
-let linkNote = '';
+const T_RE = /^\d{4}-\d\d-\d\d[T ]\d\d:\d\d$/;
+/** Message shown when a link asks for something this build cannot show (for example a site with no data yet). */
+let linkNotice = '';
 let lastExport: { scenario: ExportScenario; rows: ExportRow[] } | null = null;
+
 function readState(sites: Site[] | null): State {
   const q = new URLSearchParams(location.search);
   const num = (k: string, d: number, lo: number, hi: number) => {
@@ -52,20 +54,12 @@ function readState(sites: Site[] | null): State {
     return q.has(k) && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d;
   };
   const site = q.get('site') ?? 'im1';
-  const known = !sites || sites.some((s) => s.id === site);
-  const mode = q.get('mode');
-  if (sites) {
-    linkNote = !known
-      ? `The link asked for site "${site}", which has no data here yet. Showing ${sites[0].name} instead.`
-      : mode !== null && !['limb', 'centre', 'center'].includes(mode)
-        ? `The link asked for visibility rule "${mode}", which is not known. Using "any part of the disc shows".` : '';
-  }
   return {
-    site: known ? site : sites![0].id,
-    t: /^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(q.get('t') ?? '') ? q.get('t')! : '2024-01-19T23:24',
+    site: !sites || sites.some((s) => s.id === site) ? site : sites[0].id,
+    t: T_RE.test(q.get('t') ?? '') ? q.get('t')!.replace(' ', 'T') : '2024-01-19T23:24',
     stay: num('stay', 7, 1, 60),
     slip: Math.round(num('slip', 10, -90, 90)),
-    mode: mode === 'centre' || mode === 'center' ? 'centre' : 'limb',
+    mode: /^cent(re|er)$/i.test(q.get('mode') ?? '') ? 'centre' : 'limb',
     margin: Math.round(num('margin', 0, 0, 10)),
     data: q.get('data') === 'mock' ? 'mock' : 'real',
   };
@@ -154,7 +148,7 @@ function controls(d: Data, s: State): string {
     `<option value="${esc(x.id)}" ${x.id === s.site ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</optgroup>`).join('');
   return `<form class="controls" id="f" aria-label="Scenario">
     <div class="wide"><label for="site">Landing site</label><select id="site" name="site">${opts}</select></div>
-    <div class="wide"><label for="t">Baseline landing (UTC) · ${esc(s.t.replace('T', ' '))} in 24-hour time</label><input id="t" name="t" type="datetime-local" value="${s.t}" min="${fmtUtc(d.ephem.t0).slice(0, 16)}" max="${fmtUtc(d.ephem.tLast).slice(0, 16)}" required></div>
+    <div class="wide"><label for="t">Baseline landing (UTC)</label><input id="t" name="t" type="text" inputmode="numeric" autocomplete="off" value="${s.t.replace('T', ' ')}" pattern="\\d{4}-\\d\\d-\\d\\d[ T]\\d\\d:\\d\\d" title="Year-month-day and 24-hour time in UTC, for example 2024-01-19 23:24" placeholder="YYYY-MM-DD HH:MM" aria-describedby="t-help" required><small id="t-help">24-hour UTC, YYYY-MM-DD HH:MM</small></div>
     <div><label for="stay">Surface stay (days)</label><input id="stay" name="stay" type="number" min="1" max="60" step="1" value="${s.stay}" required></div>
     <div><label for="slip">Slip (days)</label><input id="slip" name="slip" type="number" min="-90" max="90" step="1" value="${s.slip}" required></div>
     <div class="wide"><label for="mode">Counts as visible when</label><select id="mode" name="mode">
@@ -175,12 +169,13 @@ function optionRows(opts: SlipOptionEx[], d: Data): string {
     const hz = d.horizons.get(o.site_id)!;
     const B = hasBand(hz) && hasBand(d.horizons.get(opts[0].site_id)!); // show bands only when the terrain sigma is real
     const dBoth = m.both_visible_h - base.both_visible_h;
-    const shown = o.causes.slice(0, 4), more = o.causes.slice(4);
+    const nShown = o.kind === 'alternate' ? 2 : 4; // alternates stay short
+    const shown = o.causes.slice(0, nShown), more = o.causes.slice(nShown);
     const li = (c: SlipOptionEx['causes'][number]) => `<li class="${c.delta_h < 0 ? 'lost' : 'gained'}">${esc(c.text)}${c.kind === 'orbital' ? `<span class="tag">${o.kind === 'alternate' ? 'location' : 'orbit'}, not terrain</span>` : c.kind === 'dip' ? '<span class="tag">site height</span>' : '<span class="tag">terrain</span>'}</li>`;
     const causes = isBase ? '' : `<tr class="causes k-${o.kind}"><td colspan="7">${o.note ? `<small>${esc(o.note)}</small>` : ''}
       ${shown.length ? `<ul class="cause" aria-label="Causes for ${esc(o.label)}">${shown.map(li).join('')}</ul>` : '<small> No change of half an hour or more in Sun or Earth visibility.</small>'}
       ${more.length ? `<details class="extra"><summary>${more.length} smaller cause${more.length > 1 ? 's' : ''}</summary><ul class="cause">${more.map(li).join('')}</ul></details>` : ''}</td></tr>`;
-    return `<tr class="${isBase ? 'base' : ''}"><td><strong>${esc(o.label)}</strong></td>
+    return `<tr class="${isBase ? 'base' : ''} r-${o.kind}"><td><strong>${esc(o.label)}</strong></td>
       <td class="num">${when(o.start_utc)}</td>
       <td class="num">${withBand(h1(m.sunlit_h), B ? bandRange(m, 'sunlit_h') : null)}</td><td class="num">${withBand(m.earth_visible_pct.toFixed(0) + '%', B ? bandRange(m, 'earth_visible_pct') : null)}</td>
       <td class="num"><strong>${h1(m.both_visible_h)}</strong>${withBand('', B ? bandRange(m, 'both_visible_h') : null)}</td>
@@ -194,7 +189,7 @@ function headline(opts: SlipOptionEx[], site: Site, s: State): string {
   if (!slip) return `<p class="headline">At <strong>${esc(site.name)}</strong>, a ${s.stay}-day stay from ${when(base.start_utc)} has <strong>${h1(base.metrics.both_visible_h)} h</strong> with both the Sun and Earth in view. Enter a slip to see what changes.</p>`;
   const d = slip.metrics.both_visible_h - base.metrics.both_visible_h;
   const verb = Math.abs(d) < 0.05 ? 'does not change' : d < 0 ? 'cuts' : 'adds to';
-  let txt = `<p class="headline">A <strong>${Math.abs(s.slip)}-day ${s.slip < 0 ? 'advance' : 'slip'}</strong> at ${esc(site.name)} ${verb} the time with both Sun and Earth in view`
+  let txt = `<p class="headline">A <strong>${slipWords(s.slip)}</strong> at ${esc(site.name)} ${verb} the time with both Sun and Earth in view`
     + (Math.abs(d) < 0.05 ? ` (${h1(base.metrics.both_visible_h)} h of a ${s.stay}-day stay).` : `: <strong>${h1(base.metrics.both_visible_h)} h → ${h1(slip.metrics.both_visible_h)} h</strong> (<strong class="${d < 0 ? 'loss' : 'gain'}">${withBand(signed(d, ' h'), deltaRange(slip.metrics, base.metrics, 'both_visible_h'), true)}</strong>) over a ${s.stay}-day stay.`) + '</p>';
   // Per body: net change in visible hours and its largest same-sign cause; the cause's hours are quoted only if not larger than the change.
   const why = bodyChanges(base, slip).map((x) => `${x.body === 'sun' ? 'Sun' : 'Earth'} in view ${h1(x.before_h)} h → ${h1(x.after_h)} h (${signed(x.delta_h, ' h')})`
@@ -205,6 +200,12 @@ function headline(opts: SlipOptionEx[], site: Site, s: State): string {
   txt += `<p><strong>Longest stretch without Sun:</strong> ${Math.abs(n1 - n0) < 0.05 ? `${h1(n0)} h in both stays` : `${h1(n0)} h → <strong class="${n1 > n0 ? 'loss' : 'gain'}">${h1(n1)} h</strong>`}${n0 === 0 && n1 === 0 ? ' (the Sun never sets in either stay)' : ''}. This is the gap a battery has to cover.</p>`;
   if (why.length) txt += `<p class="headline why"><strong>Why:</strong> ${why.join('. ')}.</p>`;
   txt += `<p><strong>Terrain:</strong> ${terr.length ? terr.join('. ') + '.' : 'no terrain change of half an hour or more.'}</p>`;
+  const said = why.join(' ') + slip.causes.map((c) => c.text).join(' ');
+  const gloss = [
+    /libration/.test(said) ? '<strong>Libration</strong>: the Moon rocks slightly as it orbits, so Earth drifts up and down in the lunar sky; near the poles that takes Earth below the horizon for days each month.' : '',
+    /net of site height/.test(said) ? '<strong>Net of site height</strong>: a site that stands above its surroundings sees a little below a flat horizon; those extra hours are already included in the figure.' : '',
+  ].filter(Boolean);
+  if (gloss.length) txt += `<p class="note gloss">${gloss.join(' ')}</p>`;
   if (rec) {
     const days = Math.round((parseUtc(rec.start_utc) - parseUtc(base.start_utc)) / DAY);
     txt += rec.label.startsWith('Next')
@@ -240,14 +241,14 @@ function render(d: Data, s: State) {
     const tracks = [{ label: 'Baseline', scan: opts[0].scan, dashed: false }];
     if (slip) tracks.push({ label: 'Slipped', scan: slip.scan, dashed: true });
     const markers = (slip?.causes ?? []).filter((c) => c.kind === 'terrain' && c.az_deg != null && Math.abs(c.delta_h) >= 1).slice(0, 3)
-      .map((c) => ({ az: c.az_deg as number, label: `${c.body === 'sun' ? 'Sun' : 'Earth'} ${c.delta_h < 0 ? '−' : '+'}${Math.abs(c.delta_h).toFixed(0)} h` }));
+      .map((c) => ({ az: c.az_deg as number, label: `${c.body === 'sun' ? 'Sun' : 'Earth'} ${c.delta_h < 0 ? '−' : '+'}${Math.abs(c.delta_h).toFixed(1)} h` }));
     const sphere = hz.dem.product === 'sphere';
     results = `
     <section aria-labelledby="h-sum" aria-live="polite"><h2 id="h-sum">What the slip does</h2>${headline(opts, site, s)}
       ${preset ? `<p class="note">${esc(preset.note)}${site.story ? ' ' + esc(site.story) : ''}</p>` : ''}</section>
     <section aria-labelledby="h-opt"><h2 id="h-opt">Options, ranked by time with both Sun and Earth in view</h2>
       <div style="overflow-x:auto"><table><thead><tr><th scope="col">Option</th><th scope="col">Landing</th><th scope="col">Sunlit (h)</th><th scope="col">Earth in view</th><th scope="col">Sun + Earth (h)</th><th scope="col">Longest dark gap (h)</th><th scope="col">Change vs baseline</th></tr></thead>
-      <tbody>${optionRows(opts, d)}</tbody></table></div>
+      <tbody>${optionRows(opts, d)}</tbody></table></div>${opts.some((o) => o.kind === 'alternate') ? '<p class="printonly">Alternate sites are listed in the on-screen version (open the link above).</p>' : ''}
       <p class="note">Each stay is ${s.stay} days from landing, sampled every 10 minutes. Per body, the cause lines sum to the change in that body's visible hours, apart from pieces under half an hour, which are not listed.
       ${s.margin > 0 ? `<strong>Earth counts as in view only when it clears the skyline by ${s.margin}° (link margin).</strong>` : ''}
       Sunlit hours include time when Earth covers part or all of the Sun.${opts.some((o) => o.metrics.eclipse_h > 0) ? ` Eclipse (Earth covers the Sun): ${opts.filter((o) => o.metrics.eclipse_h > 0).map((o) => `${esc(o.label)} ${h1(o.metrics.eclipse_h)} h`).join(', ')}.` : ''}
@@ -272,15 +273,15 @@ function render(d: Data, s: State) {
   } catch (e) {
     results = `<div class="error" role="alert">${esc((e as Error).message)} Ephemeris covers ${when(fmtUtc(d.ephem.t0))} to ${when(fmtUtc(d.ephem.tLast))}.</div>`;
   }
-  document.title = `${site.name}, ${s.slip > 0 ? '+' : ''}${s.slip} d slip — Slip Impact Brief`;
+  document.title = `${site.name}, ${slipWords(s.slip)} — Slip Impact Brief`;
   const res = residuals(d);
   const bench = !d.mock && BENCH[site.id] ? { ...BENCH[site.id], ...longRunSunlit(d, site, s.mode) } : null;
   const altUsed = site.elev_m == null ? ' (catalogue elevation not published; 0 m used for the site vector)' : '';
   app.innerHTML = `
   <header class="top"><h1>Slip Impact Brief</h1>
     <p>When a lunar landing slips, see which sunlight and direct-to-Earth windows a site gains or loses, and what causes each change: the terrain that blocks the view, its direction and its distance, or the Moon's own cycle.</p></header>
+  ${linkNotice ? `<div class="error" role="alert">${esc(linkNotice)}</div>` : ''}
   ${d.mock ? '<div class="banner" role="alert">MOCK DATA — synthetic values for development. Not results.</div>' : ''}
-  ${linkNote ? `<div class="error" role="alert">${esc(linkNote)}</div>` : ''}
   <div id="sim-slot"></div><h2 class="brief-h" id="h-brief">Mission brief</h2>
   ${controls(d, s)}
   <main id="main" tabindex="-1">
@@ -308,8 +309,8 @@ function render(d: Data, s: State) {
   f.addEventListener('change', () => {
     if (!f.reportValidity()) return;
     const fd = new FormData(f);
-    linkNote = '';
-    render(d, { ...s, site: String(fd.get('site')), t: String(fd.get('t')).slice(0, 16), stay: Number(fd.get('stay')), slip: Math.round(Number(fd.get('slip'))), mode: fd.get('mode') === 'centre' ? 'centre' : 'limb', margin: Number(fd.get('margin')) || 0 });
+    if (String(fd.get('site')) !== s.site) linkNotice = '';
+    render(d, { ...s, site: String(fd.get('site')), t: String(fd.get('t')).trim().slice(0, 16).replace(' ', 'T'), stay: Number(fd.get('stay')), slip: Math.round(Number(fd.get('slip'))), mode: fd.get('mode') === 'centre' ? 'centre' : 'limb', margin: Number(fd.get('margin')) || 0 });
     document.getElementById(document.activeElement?.id || 'site')?.focus();
   });
   f.addEventListener('submit', (e) => e.preventDefault());
@@ -354,7 +355,11 @@ function render(d: Data, s: State) {
   const s0 = readState(null);
   try {
     const d = await loadData(s0.data);
-    render(d, { ...readState(d.sites), data: s0.data });
+    const st = readState(d.sites);
+    if (s0.site !== st.site) {
+      linkNotice = `This link asks for the site "${s0.site}", which has no data in this build yet. Showing ${d.sites.find((x) => x.id === st.site)?.name ?? st.site} instead.`;
+    }
+    render(d, { ...st, data: s0.data });
   } catch (e) {
     app.innerHTML = `<div class="error" role="alert">${esc((e as Error).message)}. If the real data is not built yet, open <a href="?data=mock">the mock data</a>.</div>`;
   }
