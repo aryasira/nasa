@@ -8,6 +8,7 @@ import { scanWindow, hasBand } from './engine/metrics';
 import { slipOptions, type SlipOptionEx } from './engine/slip';
 import type { Mode } from './engine/visibility';
 import { panoramaSvg, timelineSvg, type TimelineWindow } from './ui/charts';
+import { mountSim } from './sim'; // SIM HOOK (Agent C): 3D mission simulator, see src/sim/
 
 interface State { site: string; t: string; stay: number; slip: number; mode: Mode; data: 'real' | 'mock' }
 interface Data {
@@ -226,6 +227,7 @@ function render(d: Data, s: State) {
   <header class="top"><h1>Slip Impact Brief</h1>
     <p>When a lunar landing slips, see which sunlight and direct-to-Earth windows a site gains or loses, and what causes each change: the terrain that blocks the view, its direction and its distance, or the Moon's own cycle.</p></header>
   ${d.mock ? '<div class="banner" role="alert">MOCK DATA — synthetic values for development. Not results.</div>' : ''}
+  <div id="sim-slot"></div><h2 class="brief-h" id="h-brief">Mission brief</h2>
   ${controls(d, s)}
   <main id="main" tabindex="-1">
   <p class="printonly"><strong>Scenario:</strong> ${esc(site.name)} · baseline landing ${when(s.t + ':00Z')} · ${s.stay}-day stay · slip ${s.slip} d · ${s.mode === 'limb' ? 'any part of the disc' : 'half the disc'} · ${esc(location.href)}</p>
@@ -266,6 +268,11 @@ function render(d: Data, s: State) {
     const p = PRESETS.find((x) => x.id === b.dataset.preset)!;
     render(d, { ...s, ...p.state });
   }));
+
+  // --- SIM HOOK (Agent C): mount the 3D mission simulator into #sim-slot; it reads and writes this same state. ---
+  mountSim(document.getElementById('sim-slot'), { ephem: d.ephem, sites: d.sites, horizons: d.horizons, features: d.features,
+    mock: d.mock, state: s, setState: (p) => render(d, { ...s, ...p }) });
+  // --- END SIM HOOK ---
 }
 
 (async () => {
