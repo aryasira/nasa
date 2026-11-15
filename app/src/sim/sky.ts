@@ -35,8 +35,8 @@ void main(){
   float land = smoothstep(0.515, 0.545, c);
   float lat = abs(q.y);
   float dry = smoothstep(0.45, 0.62, fbm(w * 2.7 + 5.0)) * (1.0 - smoothstep(0.25, 0.55, abs(lat - 0.33)));
-  vec3 ocean = mix(vec3(0.004, 0.018, 0.07), vec3(0.01, 0.05, 0.12), smoothstep(0.4, 0.52, c));
-  vec3 ground = mix(vec3(0.035, 0.06, 0.025), vec3(0.2, 0.15, 0.08), dry);
+  vec3 ocean = mix(vec3(0.01, 0.06, 0.22), vec3(0.03, 0.16, 0.38), smoothstep(0.4, 0.52, c));
+  vec3 ground = mix(vec3(0.06, 0.14, 0.05), vec3(0.32, 0.24, 0.12), dry);
   vec3 col = mix(ocean, ground, land);
   float ice = smoothstep(0.80, 0.86, lat + 0.05 * fbm(q * 9.0));
   col = mix(col, vec3(0.7), ice);
@@ -44,7 +44,7 @@ void main(){
   vec3 cq = rotY(normalize(vP), spin * 0.93 + 0.8);
   vec3 cw = cq * 3.0 + 0.9 * vec3(fbm(cq*2.5+4.0), fbm(cq*2.5+1.0), fbm(cq*2.5+7.0));
   float cloud = smoothstep(0.5, 0.78, fbm(cw * 1.6)) * (0.55 + 0.45 * smoothstep(0.1, 0.5, abs(cq.y)));
-  col = mix(col, vec3(0.78), cloud * 0.92);
+  col = mix(col, vec3(0.8), cloud * 0.7);
   vec3 L = normalize(sunDir), V = normalize(viewDir);
   float nl = dot(n, L);
   float day = smoothstep(-0.06, 0.22, nl);
@@ -55,7 +55,7 @@ void main(){
   // thin atmosphere: fresnel rim, blue on the day side, reddened at the terminator
   float fres = pow(1.0 - max(dot(n, V), 0.0), 3.0);
   vec3 atmo = mix(vec3(0.9, 0.35, 0.12), vec3(0.22, 0.5, 1.0), smoothstep(-0.05, 0.3, nl)) * fres * smoothstep(-0.25, 0.25, nl);
-  vec3 c3 = col * diff + vec3(1.0, 0.95, 0.85) * glint + atmo * 0.9;
+  vec3 c3 = col * diff + vec3(1.0, 0.95, 0.85) * glint * 0.5 + atmo * 0.6;
   gl_FragColor = vec4(c3 * gain, 1.0);
 }`;
 
@@ -176,7 +176,7 @@ export class Sky {
     this.glare.renderOrder = 10;
     this.earthMat = new THREE.ShaderMaterial({
       vertexShader: EARTH_VS, fragmentShader: EARTH_FS, depthTest: false, depthWrite: false,
-      uniforms: { sunDir: { value: new THREE.Vector3(0, 1, 0) }, viewDir: { value: new THREE.Vector3(0, 0, 1) }, spin: { value: 0 }, gain: { value: 3.2 } },
+      uniforms: { sunDir: { value: new THREE.Vector3(0, 1, 0) }, viewDir: { value: new THREE.Vector3(0, 0, 1) }, spin: { value: 0 }, gain: { value: 1.5 } },
     });
     this.earth = new THREE.Mesh(sphere, this.earthMat);
     this.earth.renderOrder = -11;
