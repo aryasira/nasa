@@ -397,20 +397,6 @@
      "used_res_m": 40.0
     },
     {
-     "file": "Site04_final_adj_5mpp_surf.tif",
-     "bytes": 40980806,
-     "width": 3200,
-     "height": 3200,
-     "native_res_m": 5.0,
-     "dtype": "float32",
-     "nodata": NaN,
-     "scale": 1.0,
-     "offset": 0.0,
-     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
-     "sphere_radius_m": 1737400.0,
-     "used_res_m": 5.0
-    },
-    {
      "file": "LDEM_80S_80MPP_ADJ.TIF",
      "bytes": 189158392,
      "width": 7600,
@@ -453,12 +439,6 @@
      "native_res_m": 40.0
     },
     {
-     "file": "Site04_final_adj_5mpp_toterr.tif",
-     "for": "Site04_final_adj_5mpp_surf.tif",
-     "median_m": 0.36,
-     "native_res_m": 5.0
-    },
-    {
      "file": "LDEM_80S_80MPP_ADJ_ERR.TIF",
      "for": "LDEM_80S_80MPP_ADJ.TIF",
      "median_m": 0.206,
@@ -472,7 +452,8 @@
    "band_flag": false,
    "point_from": "app/public/data/sites.json",
    "fine": "40",
-   "seconds": 7.5
+   "seconds": 7.5,
+   "note": "In this run the 40 m grid was read ahead of the Site04 5 m tile, so the 5 m tile set no sample. Fixed in the pipeline; these files describe what was actually used."
   },
   "shackleton_sr2": {
    "site_id": "shackleton_sr2",
@@ -502,20 +483,6 @@
      "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
      "sphere_radius_m": 1737400.0,
      "used_res_m": 40.0
-    },
-    {
-     "file": "Site04_final_adj_5mpp_surf.tif",
-     "bytes": 40980806,
-     "width": 3200,
-     "height": 3200,
-     "native_res_m": 5.0,
-     "dtype": "float32",
-     "nodata": NaN,
-     "scale": 1.0,
-     "offset": 0.0,
-     "crs_proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs +type=crs",
-     "sphere_radius_m": 1737400.0,
-     "used_res_m": 5.0
     },
     {
      "file": "LDEM_80S_80MPP_ADJ.TIF",
@@ -562,12 +529,6 @@
      "native_res_m": 40.0
     },
     {
-     "file": "Site04_final_adj_5mpp_toterr.tif",
-     "for": "Site04_final_adj_5mpp_surf.tif",
-     "median_m": 0.36,
-     "native_res_m": 5.0
-    },
-    {
      "file": "LDEM_80S_80MPP_ADJ_ERR.TIF",
      "for": "LDEM_80S_80MPP_ADJ.TIF",
      "median_m": 0.206,
@@ -581,7 +542,8 @@
    "band_flag": false,
    "point_from": "app/public/data/sites.json",
    "fine": "40",
-   "seconds": 7.2
+   "seconds": 7.2,
+   "note": "In this run the 40 m grid was read ahead of the Site04 5 m tile, so the 5 m tile set no sample. Fixed in the pipeline; these files describe what was actually used."
   }
  },
  "mast_m": 2.0,

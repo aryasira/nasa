@@ -267,6 +267,20 @@ def test_last_ephemeris_row_is_accepted():
             cv.vectors_at(hdr, rec, bad)
 
 
+def test_fine_layer_goes_after_a_finer_site_tile(tmp_path, monkeypatch):
+    seen = {}
+    import horizon_lib
+    def fake(lat, lon, paths, **kw):
+        seen["order"] = [p.name for p in paths]
+        raise RuntimeError("stop here")
+    monkeypatch.setattr(horizon_lib, "horizon", fake)
+    monkeypatch.setattr(mh, "find_dem", lambda n, dirs: tmp_path / n)
+    site = {"id": "shackleton_sr1", "lat": -89.7742, "lon_e": 203.4952, "elev_m": None, "terrain": "lola"}
+    with pytest.raises(RuntimeError):
+        mh.lola_doc(site, [], [], fine="40", bands=False)
+    assert seen["order"] == ["Site04_final_adj_5mpp_surf.tif", "LDEM_80S_40MPP_ADJ.TIF", "LDEM_80S_80MPP_ADJ.TIF"]
+
+
 def test_round2_sites_have_a_dem_plan():
     ids = {x["id"] for x in mh.ROUND2_SITES}
     assert ids == {"shackleton_sr1", "shackleton_sr2"} and ids <= set(mh.PLAN) and ids <= mh.FINE_SITES

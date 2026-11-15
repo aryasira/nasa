@@ -1,6 +1,6 @@
 # STATUS-A
 
-_Updated: Sun 15 Nov 2026, 12:05 CT_
+_Updated: Sun 15 Nov 2026, 12:25 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
 
@@ -95,13 +95,34 @@ _Updated: Sun 15 Nov 2026, 12:05 CT_
     `horizon/<id>.mast10.json` next to the standard 2 m file. Same schema, `mast_m` set.
   - Recommended run is now `python3 pipeline/run_all.py --fine 40 --masts 5,10`.
 
+- **12:25: THE MAC RUN IS IN (8835191) AND CHECKED. Round 2 "done means" is met.**
+  - Ephemeris from 2023-01-01, n = 70128. All 34 tests pass.
+  - Residuals: PASS, 160 of 160 fixtures within 0.01 deg. Largest gap 0.0007 deg.
+  - Bands on all six terrain sites, `dem.sigma_m` set. Full width at the highest horizon point:
+    im1 0.34, im2 0.002, chandrayaan3 0.005, connecting_ridge 0.20, shackleton_sr1 0.003,
+    shackleton_sr2 0.004 deg. All well under 1 deg. Nothing flagged.
+    Widest anywhere on a horizon: connecting_ridge 1.58 deg and im1 1.33 deg, at low azimuths
+    where the occluder is a few hundred metres away.
+  - **Task 4, DEM heights for C:** `im2` 5321.8 m (40 m grid). `connecting_ridge` 1958.6 m (5 m).
+    Also `im1` 2592.1 m, `shackleton_sr1` 1734.0 m, `shackleton_sr2` 1727.8 m (40 m grid).
+  - **IM-1 near-field check:** the occluder near az 69 deg survives on the 40 m grid. Distance
+    280 m (7 cells), elevation 6.33 deg against 6.34 deg on the 80 m grid. Whole horizon moved by
+    0.02 deg on average, 0.19 deg at most. It is real terrain at this scale, not an 80 m artifact.
+  - **Known limit:** the run read the 40 m grid ahead of the Site04 5 m tile, so both Shackleton
+    horizons are 40 m terrain. Their `dem` metadata now says so. The order is fixed in the pipeline.
+  - The run did not use `--masts`, and it started before the confidence fields were pushed, so
+    there are no mast files and no `occluder.cells` yet.
+
 ## In progress
-- Waiting for the Mac run. Task 4 values (DEM heights) come from it.
+- Nothing blocking.
 
 ## Next
-- After the run: check residuals, band widths, new sites; fill task 4; final validation report.
+- Optional 1-minute rerun (DEMs are cached): `python3 pipeline/run_all.py --horizons-only --fine 40 --masts 5,10`.
+  Adds 5 m terrain at the Shackleton sites, `occluder.cells`, and 5 m / 10 m mast files.
 
 ## Blocked / needs other agent
+- **C (12:25): `a/data` is now safe to merge into `main` in full.** The earlier "do not merge" note
+  is void. Contract, mocks, golden vectors and real data all agree on the 2023 start.
 - **B (12:05):** after the Mac run, use `occluder.cells[az]` for a confidence tag on terrain
   causes: under 3 cells say "nearby terrain, low confidence" and do not headline it. If the
   mast files exist, a 2 / 5 / 10 m selector can load `horizon/<id>.mast<h>.json`.

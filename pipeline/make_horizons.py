@@ -217,7 +217,9 @@ def lola_doc(site, dirs, feats, fine=None, bands=True, mast_m=None):
 
     names = list(PLAN[site["id"]])
     if fine and site["id"] in FINE_SITES:
-        names.insert(0, FINE[fine])
+        names.append(FINE[fine])
+    # finest grid first: a 5 m site tile must win over the 40 m or 20 m grid
+    names.sort(key=lambda n: DEMS[n]["res_m"])
     paths = [find_dem(n, dirs) for n in names]
     radii = [DEMS[n].get("radius_km") for n in names]
     errs, band_note = None, "off (--no-bands)"
