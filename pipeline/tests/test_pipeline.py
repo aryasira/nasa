@@ -241,6 +241,19 @@ def test_make_horizons_main_end_to_end(tmp_path, monkeypatch, capsys):
     assert "| t |" in text and "| extra |" in text and "Pending: no terrain horizon has a band" not in text
 
 
+def test_last_ephemeris_row_is_accepted():
+    import check_vs_horizons as cv
+    hdr = {"t0_utc": "2023-01-01T00:00:00Z", "step_s": 3600}
+    rec = np.array([[1, 0, 0, 1, 1, 2, 3], [0, 1, 0, 1, 4, 5, 6], [0, 0, 1, 1, 7, 8, 9]], dtype="float64")
+    sun, earth = cv.vectors_at(hdr, rec, "2023-01-01T02:00:00Z")
+    assert np.allclose(sun, (0, 0, 1)) and np.allclose(earth, (7, 8, 9))
+    sun, earth = cv.vectors_at(hdr, rec, "2023-01-01T00:00:00Z")
+    assert np.allclose(sun, (1, 0, 0))
+    for bad in ("2022-12-31T23:59:59Z", "2023-01-01T02:00:01Z"):
+        with pytest.raises(ValueError):
+            cv.vectors_at(hdr, rec, bad)
+
+
 def test_round2_sites_have_a_dem_plan():
     ids = {x["id"] for x in mh.ROUND2_SITES}
     assert ids == {"shackleton_sr1", "shackleton_sr2"} and ids <= set(mh.PLAN) and ids <= mh.FINE_SITES

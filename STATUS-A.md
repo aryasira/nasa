@@ -1,6 +1,6 @@
 # STATUS-A
 
-_Updated: Sun 15 Nov 2026, 00:05 CT_
+_Updated: Sun 15 Nov 2026, 10:05 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
 
@@ -77,6 +77,10 @@ _Updated: Sun 15 Nov 2026, 00:05 CT_
   relabelled (`make_horizons.py --rematch`, no DEM needed) and the Mac run uses the same rule.
   im2: named directions 720 to 49 (Malapert, Nobile). connecting_ridge: 591 to 138
   (de Gerlache, Mons Malapert, Mons Mouton). The skipped ids are in `site_used.stands_on`.
+
+- 10:05: merged `main` (abc7ad7). REVIEW.md items for A: item 1 done Sat 23:41 (df8581e);
+  item 2 done now (`check_vs_horizons.py` accepts the last ephemeris row).
+- **10:05: the Mac run has not been pushed yet.** `a/data` on GitHub has no commit after Sat 23:41.
 
 ## In progress
 - Waiting for the Mac run. Task 4 values (DEM heights) come from it.
