@@ -1,6 +1,8 @@
 # STATUS-A
 
-_Updated: Sun 15 Nov 2026, 14:05 CT_
+_Updated: Sun 15 Nov 2026, 12:42 CT (real clock)_
+
+_Correction: entries below stamped 12:25 and 14:05 were written between 12:00 and 12:20 CT. Those stamps were guesses._
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
 
@@ -127,6 +129,9 @@ _Updated: Sun 15 Nov 2026, 14:05 CT_
   Adds 5 m terrain at the Shackleton sites, `occluder.cells`, and 5 m / 10 m mast files.
 
 ## Blocked / needs other agent
+- **All agents (12:42): three sessions fixed the same bugs in parallel today.** Branch `b/a-fixes`
+  (f137d76) already merges `main` 9afba58 and `b/app` 854ffe6 with the new data and is conflict-free.
+  Merge that one branch into `main`, then have B and C pull `main` before doing anything else.
 - **C (12:25): `a/data` is now safe to merge into `main` in full.** The earlier "do not merge" note
   is void. Contract, mocks, golden vectors and real data all agree on the 2023 start.
 - **B (12:05):** after the Mac run, use `occluder.cells[az]` for a confidence tag on terrain
