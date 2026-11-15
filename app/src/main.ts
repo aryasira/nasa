@@ -5,14 +5,16 @@ import type { EphemHeader, FeaturesFile, FixturesFile, HorizonFile, Site, SitesF
 import { Ephem, fmtUtc, parseUtc } from './engine/ephem';
 import { observe, siteFrame } from './engine/geometry';
 import { scanWindow, hasBand } from './engine/metrics';
-import { bodyChanges, slipOptions, type SlipOptionEx } from './engine/slip';
-import { causeName } from './engine/causes';
+import { alternateSites, slipOptions, slipWords } from './engine/slip';
+import { compass, fmtKm } from './engine/causes';
 import type { Mode } from './engine/visibility';
-import { panoramaSvg, timelineSvg, type TimelineWindow } from './ui/charts';
+import { panoramaSvg, timelineSvg, timelineTable, type TimelineWindow } from './ui/charts';
+import { badges, optionBars, verdict, verdictContext } from './ui/brief';
 import { mountSim } from './sim'; // SIM HOOK (Agent C): 3D mission simulator, see src/sim/
 // --- FEATURE HOOK (C): imports for the challenge-coverage panels, see src/features/
 import { addSphereAndCustomSites, mountFeatures, writeFeatureParams } from './features';
 // --- END
+import './ui/brief.css'; // round 3 design layer; loaded last so it wins over sim.css / features.css
 
 interface State { site: string; t: string; stay: number; slip: number; mode: Mode; data: 'real' | 'mock' }
 interface Data {
@@ -25,17 +27,19 @@ const app = document.getElementById('app')!;
 const esc = (s: unknown) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 const h1 = (v: number) => v.toFixed(1);
 const when = (iso: string | null) => (iso ? iso.slice(0, 16).replace('T', ' ') + ' UTC' : '—');
-const signed = (v: number, unit: string) => `${v > 0 ? '+' : v < 0 ? '−' : '±'}${Math.abs(v).toFixed(1)}${unit}`;
-const cls = (v: number, goodIsUp = true) => (Math.abs(v) < 0.05 ? '' : (v > 0) === goodIsUp ? 'pos' : 'neg');
 
 const PRESETS: { id: string; label: string; state: Partial<State>; note: string }[] = [
-  { id: 'im1-slip', label: 'IM-1: a 10-day slip', state: { site: 'im1', t: '2024-01-19T23:24', stay: 7, slip: 10, mode: 'limb' },
+  { id: 'im1-slip', label: 'IM-1 +10 d', state: { site: 'im1', t: '2024-01-19T23:24', stay: 7, slip: 10, mode: 'limb' },
     note: 'Illustration with a 7-day surface stay. The January landing is an illustrative baseline date (original launch window 12–16 Jan 2024); the real mission landed 22 Feb 2024.' },
-  { id: 'im1-actual', label: 'IM-1: January plan vs actual landing', state: { site: 'im1', t: '2024-01-19T23:24', stay: 7, slip: 34, mode: 'limb' },
+  { id: 'im1-actual', label: 'IM-1 plan vs actual', state: { site: 'im1', t: '2024-01-19T23:24', stay: 7, slip: 34, mode: 'limb' },
     note: 'Compares an illustrative January baseline date (original launch window 12–16 Jan 2024) with the actual landing, 22 Feb 2024 23:24 UTC.' },
-  { id: 'im2-slip', label: 'IM-2: a 7-day slip', state: { site: 'im2', t: '2025-03-06T17:29', stay: 10, slip: 7, mode: 'limb' },
+  { id: 'im2-slip', label: 'IM-2 +7 d', state: { site: 'im2', t: '2025-03-06T17:29', stay: 10, slip: 7, mode: 'limb' },
     note: 'Illustration: Earth sets at Mons Mouton for part of each month.' },
 ];
+
+const T_RE = /^\d{4}-\d\d-\d\d[T ]\d\d:\d\d$/;
+/** Message shown when a link asks for something this build cannot show (for example a site with no data yet). */
+let linkNotice = '';
 
 function readState(sites: Site[] | null): State {
   const q = new URLSearchParams(location.search);
@@ -46,10 +50,10 @@ function readState(sites: Site[] | null): State {
   const site = q.get('site') ?? 'im1';
   return {
     site: !sites || sites.some((s) => s.id === site) ? site : sites[0].id,
-    t: /^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(q.get('t') ?? '') ? q.get('t')! : '2024-01-19T23:24',
+    t: T_RE.test(q.get('t') ?? '') ? q.get('t')!.replace(' ', 'T') : '2024-01-19T23:24',
     stay: num('stay', 7, 1, 60),
     slip: Math.round(num('slip', 10, -90, 90)),
-    mode: q.get('mode') === 'centre' ? 'centre' : 'limb',
+    mode: /^cent(re|er)$/i.test(q.get('mode') ?? '') ? 'centre' : 'limb',
     data: q.get('data') === 'mock' ? 'mock' : 'real',
   };
 }
@@ -134,61 +138,24 @@ function controls(d: Data, s: State): string {
   const names: Record<string, string> = { landed: 'Landed missions', planned: 'Planned', candidate: 'Candidate sites' };
   const opts = Object.entries(groups).map(([k, v]) => `<optgroup label="${esc(names[k] ?? k)}">${v.map((x) =>
     `<option value="${esc(x.id)}" ${x.id === s.site ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</optgroup>`).join('');
-  return `<form class="controls" id="f" aria-label="Scenario">
-    <div class="wide"><label for="site">Landing site</label><select id="site" name="site">${opts}</select></div>
-    <div class="wide"><label for="t">Baseline landing (UTC)</label><input id="t" name="t" type="datetime-local" value="${s.t}" min="${fmtUtc(d.ephem.t0).slice(0, 16)}" max="${fmtUtc(d.ephem.tLast).slice(0, 16)}" required></div>
-    <div><label for="stay">Surface stay (days)</label><input id="stay" name="stay" type="number" min="1" max="60" step="1" value="${s.stay}" required></div>
-    <div><label for="slip">Slip (days)</label><input id="slip" name="slip" type="number" min="-90" max="90" step="1" value="${s.slip}" required></div>
-    <div class="wide"><label for="mode">Counts as visible when</label><select id="mode" name="mode">
-      <option value="limb" ${s.mode === 'limb' ? 'selected' : ''}>any part of the disc shows</option>
-      <option value="centre" ${s.mode === 'centre' ? 'selected' : ''}>at least half the disc shows</option></select></div>
-    <div class="wide row"><button type="button" id="print">Print one-page brief</button><button type="button" id="copy">Copy link</button><span id="copied" role="status" class="note"></span></div>
-    <div class="wide" style="grid-column:1/-1"><span class="note">Examples:</span>
-      <span class="row" style="display:inline-flex">${PRESETS.filter((p) => d.sites.some((x) => x.id === p.state.site)).map((p) => `<button type="button" data-preset="${p.id}">${esc(p.label)}</button>`).join('')}</span></div>
+  return `<form class="controls bar" id="f" aria-label="Scenario">
+    <div class="fld f-site"><label for="site">Site</label><select id="site" name="site">${opts}</select></div>
+    <div class="fld f-t"><label for="t">Landing, UTC 24 h</label><input id="t" name="t" type="text" inputmode="numeric" autocomplete="off" value="${s.t.replace('T', ' ')}" pattern="\\d{4}-\\d\\d-\\d\\d[ T]\\d\\d:\\d\\d" title="Year-month-day and 24-hour time in UTC, for example 2024-01-19 23:24" placeholder="YYYY-MM-DD HH:MM" required></div>
+    <div class="fld f-n"><label for="stay">Stay, days</label><input id="stay" name="stay" type="number" min="1" max="60" step="1" value="${s.stay}" required></div>
+    <div class="fld f-slip"><label for="slip">Slip, days</label><span class="stepper"><button type="button" data-step="-1" aria-label="Slip one day earlier">−</button><input id="slip" name="slip" type="number" min="-90" max="90" step="1" value="${s.slip}" required><button type="button" data-step="1" aria-label="Slip one day later">+</button></span></div>
+    <div class="fld f-mode"><label for="mode">In view when</label><select id="mode" name="mode">
+      <option value="limb" ${s.mode === 'limb' ? 'selected' : ''}>any of the disc shows</option>
+      <option value="centre" ${s.mode === 'centre' ? 'selected' : ''}>half the disc shows</option></select></div>
+    <div class="tools"><button type="button" id="print">Print</button><button type="button" id="copy">Copy link</button><span id="copied" role="status" class="fine"></span></div>
+    <div class="chips" role="group" aria-label="Examples">${PRESETS.filter((p) => d.sites.some((x) => x.id === p.state.site)).map((p) => `<button type="button" class="chip" data-preset="${p.id}">${esc(p.label)}</button>`).join('')}</div>
   </form>`;
 }
 
-function optionRows(opts: SlipOptionEx[], d: Data): string {
-  const base = opts[0].metrics;
-  return opts.map((o) => {
-    const m = o.metrics, isBase = o.kind === 'baseline';
-    const hz = d.horizons.get(o.site_id)!;
-    const band = m.band && hasBand(hz)
-      ? `<br><small>terrain ±σ: ${(m.band.hi.both_visible_h ?? 0).toFixed(0)}–${(m.band.lo.both_visible_h ?? 0).toFixed(0)} h</small>` : '';
-    const dBoth = m.both_visible_h - base.both_visible_h;
-    const shown = o.causes.slice(0, 4), more = o.causes.slice(4);
-    const li = (c: SlipOptionEx['causes'][number]) => `<li class="${c.delta_h < 0 ? 'lost' : 'gained'}">${esc(c.text)}${c.kind === 'orbital' ? `<span class="tag">${o.kind === 'alternate' ? 'location' : 'orbit'}, not terrain</span>` : c.kind === 'dip' ? '<span class="tag">site height</span>' : '<span class="tag">terrain</span>'}</li>`;
-    const causes = isBase ? '' : `<tr class="causes"><td colspan="7">${o.note ? `<small>${esc(o.note)}</small>` : ''}
-      ${shown.length ? `<ul class="cause" aria-label="Causes for ${esc(o.label)}">${shown.map(li).join('')}</ul>` : '<small> No change of half an hour or more in Sun or Earth visibility.</small>'}
-      ${more.length ? `<details class="extra"><summary>${more.length} smaller cause${more.length > 1 ? 's' : ''}</summary><ul class="cause">${more.map(li).join('')}</ul></details>` : ''}</td></tr>`;
-    return `<tr class="${isBase ? 'base' : ''}"><td><strong>${esc(o.label)}</strong></td>
-      <td class="num">${when(o.start_utc)}</td>
-      <td class="num">${h1(m.sunlit_h)}</td><td class="num">${m.earth_visible_pct.toFixed(0)}%</td>
-      <td class="num"><strong>${h1(m.both_visible_h)}</strong>${band}</td>
-      <td class="num">${h1(m.longest_dark_gap_h)}</td>
-      <td class="num delta ${cls(dBoth)}">${isBase ? '—' : signed(dBoth, ' h')}</td></tr>${causes}`;
-  }).join('');
-}
+/** Width available to the charts, so SVG text stays readable on a phone instead of being scaled down. */
+const chartW = () => Math.max(300, Math.min(1240, document.documentElement.clientWidth - 40));
 
-function headline(opts: SlipOptionEx[], site: Site, s: State): string {
-  const base = opts[0], slip = opts.find((o) => o.kind === 'slip'), rec = opts.find((o) => o.kind === 'recover');
-  if (!slip) return `<p class="headline">At <strong>${esc(site.name)}</strong>, a ${s.stay}-day stay from ${when(base.start_utc)} has <strong>${h1(base.metrics.both_visible_h)} h</strong> with both the Sun and Earth in view. Enter a slip to see what changes.</p>`;
-  const d = slip.metrics.both_visible_h - base.metrics.both_visible_h;
-  const verb = Math.abs(d) < 0.05 ? 'does not change' : d < 0 ? 'cuts' : 'adds to';
-  let txt = `<p class="headline">A <strong>${Math.abs(s.slip)}-day ${s.slip < 0 ? 'advance' : 'slip'}</strong> at ${esc(site.name)} ${verb} the time with both Sun and Earth in view`
-    + (Math.abs(d) < 0.05 ? ` (${h1(base.metrics.both_visible_h)} h of a ${s.stay}-day stay).` : `: <strong>${h1(base.metrics.both_visible_h)} h → ${h1(slip.metrics.both_visible_h)} h</strong> (<strong class="${d < 0 ? 'loss' : 'gain'}">${signed(d, ' h')}</strong>) over a ${s.stay}-day stay.`) + '</p>';
-  // Per body: net change in visible hours and its largest same-sign cause; the cause's hours are quoted only if not larger than the change.
-  const why = bodyChanges(base, slip).map((x) => `${x.body === 'sun' ? 'Sun' : 'Earth'} in view ${h1(x.before_h)} h → ${h1(x.after_h)} h (${signed(x.delta_h, ' h')})`
-    + (!x.cause ? '' : x.causeFits ? `; main cause: ${esc(causeName(x.cause))} (${signed(x.cause.delta_h, ' h')})` : `; main cause: ${esc(causeName(x.cause))}, partly offset by other changes`));
-  if (why.length) txt += `<p><strong>Why:</strong> ${why.join('. ')}.</p>`;
-  if (rec) {
-    const days = Math.round((parseUtc(rec.start_utc) - parseUtc(base.start_utc)) / DAY);
-    txt += rec.label.startsWith('Next')
-      ? `<p><strong>Knock-on effect:</strong> the next landing date that is as good as the baseline is <strong>${when(rec.start_utc)}</strong>, ${days} days after the baseline. A ${Math.abs(s.slip)}-day slip becomes a ${days}-day wait.</p>`
-      : `<p><strong>Knock-on effect:</strong> no date in the 60 days after the slip matches the baseline; the best is ${when(rec.start_utc)} (${days} days after the baseline).</p>`;
-  }
-  return txt;
-}
+let lastW = 0, resizeBound = false;
+let rerender: (() => void) | null = null;
 
 function render(d: Data, s: State) {
   writeState(s);
@@ -198,7 +165,8 @@ function render(d: Data, s: State) {
   const site = d.sites.find((x) => x.id === s.site)!;
   const hz = d.horizons.get(site.id)!;
   const preset = PRESETS.find((p) => Object.entries(p.state).every(([k, v]) => (s as any)[k] === v));
-  let results = '';
+  let results = '', top = '';
+  const notes: string[] = [];
   try {
     const tStart = parseUtc(s.t + ':00Z');
     const opts = slipOptions({ ephem: d.ephem, site, horizons: d.horizons, sites: d.sites, features: d.features,
@@ -211,66 +179,106 @@ function render(d: Data, s: State) {
     const slip = opts.find((o) => o.kind === 'slip');
     const tracks = [{ label: 'Baseline', scan: opts[0].scan, dashed: false }];
     if (slip) tracks.push({ label: 'Slipped', scan: slip.scan, dashed: true });
-    const markers = (slip?.causes ?? []).filter((c) => c.kind === 'terrain' && c.az_deg != null && Math.abs(c.delta_h) >= 1).slice(0, 3)
-      .map((c) => ({ az: c.az_deg as number, label: `${c.body === 'sun' ? 'Sun' : 'Earth'} ${c.delta_h < 0 ? '−' : '+'}${Math.abs(c.delta_h).toFixed(0)} h` }));
     const sphere = hz.dem.product === 'sphere';
+    const W = chartW();
+    // Blocking terrain for the horizon plot: hours, then height of the skyline there, distance and bearing.
+    const markers = (slip?.causes ?? []).filter((c) => c.kind === 'terrain' && c.az_deg != null && Math.abs(c.delta_h) >= 1).slice(0, 3)
+      .map((c) => {
+        const az = c.az_deg as number;
+        return { az, label: `${c.body === 'sun' ? 'Sun' : 'Earth'} ${c.delta_h < 0 ? '−' : '+'}${Math.abs(c.delta_h).toFixed(1)} h`,
+          sub: `skyline ${hz.elev_deg[Math.round(az * 2) % 720].toFixed(1)}°${c.dist_km == null ? '' : ' · ' + fmtKm(c.dist_km * 1000, hz)} · ${compass(az)}` };
+      });
+    const altNote = s.slip !== 0 ? alternateSites({ site, sites: d.sites, horizons: d.horizons }).note : null;
+    notes.push(`Each stay is ${s.stay} days from landing, sampled every 10 minutes. Per body, the cause lines sum to the change in that body's visible hours, apart from pieces under half an hour, which are not listed.`,
+      'Sunlit hours include time when Earth covers part or all of the Sun.' + (opts.some((o) => o.metrics.eclipse_h > 0) ? ` Eclipse (Earth covers the Sun): ${opts.filter((o) => o.metrics.eclipse_h > 0).map((o) => `${esc(o.label)} ${h1(o.metrics.eclipse_h)} h`).join(', ')}.` : ''),
+      hasBand(hz) ? `Figures in brackets are the range when the terrain is lowered or raised by its published height error (σ = ${hz.dem.sigma_m} m).` : 'No terrain-error band is shown: the horizon file carries no terrain height error.',
+      'Timeline: a pink tick above the Sun row marks Earth covering part of the Sun. Horizon plot: the vertical scale is stretched, and paths above the top of the plot are cut off.');
+    if (altNote) notes.push(esc(altNote));
+    top = `${verdict({ opts, site, stay: s.stay, slip: s.slip, illustrative: !!preset && /illustrative/i.test(preset.note) })}
+      <details class="more"><summary>Context</summary>${verdictContext(opts)}${preset ? `<p>${esc(preset.note)}${site.story ? ' ' + esc(site.story) : ''}</p>` : ''}</details>`;
     results = `
-    <section aria-labelledby="h-sum"><h2 id="h-sum">What the slip does</h2>${headline(opts, site, s)}
-      ${preset ? `<p class="note">${esc(preset.note)}${site.story ? ' ' + esc(site.story) : ''}</p>` : ''}</section>
-    <section aria-labelledby="h-opt"><h2 id="h-opt">Options, ranked by time with both Sun and Earth in view</h2>
-      <div style="overflow-x:auto"><table><thead><tr><th scope="col">Option</th><th scope="col">Landing</th><th scope="col">Sunlit (h)</th><th scope="col">Earth in view</th><th scope="col">Sun + Earth (h)</th><th scope="col">Longest dark gap (h)</th><th scope="col">Change vs baseline</th></tr></thead>
-      <tbody>${optionRows(opts, d)}</tbody></table></div>
-      <p class="note">Each stay is ${s.stay} days from landing, sampled every 10 minutes. Per body, the cause lines sum to the change in that body's visible hours, apart from pieces under half an hour, which are not listed.
-      Sunlit hours include time when Earth covers part or all of the Sun.${opts.some((o) => o.metrics.eclipse_h > 0) ? ` Eclipse (Earth covers the Sun): ${opts.filter((o) => o.metrics.eclipse_h > 0).map((o) => `${esc(o.label)} ${h1(o.metrics.eclipse_h)} h`).join(', ')}.` : ''}
-      ${hasBand(hz) ? '' : 'No terrain-error band is shown yet: the horizon file carries no terrain sigma.'}</p></section>
-    <section aria-labelledby="h-tl"><h2 id="h-tl">Timeline at ${esc(site.name)}</h2>
-      ${timelineSvg(wide, wins, `Sun, Earth and both visible at ${site.name} from ${fmtUtc(t0).slice(0, 10)} to ${fmtUtc(t1).slice(0, 10)}, with the baseline and slipped stays marked`)}
-      <div class="legend"><span><span class="sw" style="background:#e69f00"></span>Sun above the local horizon</span><span><span class="sw" style="background:repeating-linear-gradient(45deg,#56b4e9 0 3px,#0b3d5c 3px 5px)"></span>Earth above the local horizon (hatched)</span><span><span class="sw" style="background:#009e73"></span>both (cross-hatched)</span><span><span class="sw" style="background:#cc79a7"></span>Earth covers part of the Sun</span><span><span class="sw" style="background:#f0e442"></span>slipped stay</span></div></section>
-    <section aria-labelledby="h-pan"><h2 id="h-pan">Local horizon, all the way round</h2>
-      ${panoramaSvg(hz, tracks, markers, `Terrain horizon at ${site.name} over 360 degrees of azimuth with the Sun and Earth paths for the baseline and slipped stays`)}
-      <div class="legend"><span><span class="sw" style="background:#6b7686"></span>${sphere ? 'smooth-sphere horizon (no terrain model for this site)' : 'terrain (LOLA)'}</span><span><span class="sw" style="background:#e69f00"></span>Sun path</span><span><span class="sw" style="background:#56b4e9"></span>Earth path</span><span>solid = baseline stay, dashed = slipped stay</span><span>yellow line = a terrain cause from the table</span></div>
-      <p class="note">Vertical scale is stretched; paths above the top of the plot are cut off.</p></section>`;
+    <section aria-labelledby="h-opt" class="s-opt"><h2 id="h-opt">Options ranked</h2>
+      ${optionBars(opts, d.horizons, s.stay)}
+      ${altNote ? `<p class="fine">${esc(altNote)}</p>` : ''}</section>
+    <section aria-labelledby="h-tl" class="s-tl"><h2 id="h-tl">Timeline</h2>
+      <div class="chart">${timelineSvg(wide, wins, `Sun, Earth and both visible at ${site.name} from ${fmtUtc(t0).slice(0, 10)} to ${fmtUtc(t1).slice(0, 10)}, with the baseline and slipped stays marked`, 'Three rows show when the Sun, Earth and both are above the local horizon. Brackets underneath mark each stay. The same intervals are listed in the table below the chart.', W)}</div>
+      <details class="more"><summary>As a table</summary><div class="scroll">${timelineTable(wide)}</div></details></section>
+    <section aria-labelledby="h-pan" class="s-pan"><h2 id="h-pan">Horizon${sphere ? ' <span class="tagx warn">smooth sphere, no terrain model</span>' : ''}</h2>
+      <div class="chart">${panoramaSvg(hz, tracks, markers, `Horizon at ${site.name} over 360 degrees of azimuth with the Sun and Earth paths for the baseline and slipped stays`, 'The grey shape is the horizon by compass direction. A body is in view where its path is above the grey shape. Yellow labels mark terrain that blocks the Sun or Earth.', hasBand(hz), W)}</div></section>`;
   } catch (e) {
-    results = `<div class="error" role="alert">${esc((e as Error).message)} Ephemeris covers ${when(fmtUtc(d.ephem.t0))} to ${when(fmtUtc(d.ephem.tLast))}.</div>`;
+    top = `<div class="error" role="alert">${esc((e as Error).message)} Ephemeris covers ${when(fmtUtc(d.ephem.t0))} to ${when(fmtUtc(d.ephem.tLast))}.</div>`;
   }
+  document.title = `${site.name}, ${slipWords(s.slip)} — Slip Impact Brief`;
   const res = residuals(d);
-  const bench = !d.mock && BENCH[site.id] ? { ...BENCH[site.id], ...longRunSunlit(d, site, s.mode) } : null;
   const altUsed = site.elev_m == null ? ' (catalogue elevation not published; 0 m used for the site vector)' : '';
+  const benchSite = d.sites.find((x) => BENCH[x.id]);
+  const bench = !d.mock && benchSite ? { ...longRunSunlit(d, benchSite, 'limb'), published: BENCH[benchSite.id].pct, name: benchSite.name.replace(/ \(.*$/, ''), cite: BENCH[benchSite.id].cite } : null;
   app.innerHTML = `
   <header class="top"><h1>Slip Impact Brief</h1>
-    <p>When a lunar landing slips, see which sunlight and direct-to-Earth windows a site gains or loses, and what causes each change: the terrain that blocks the view, its direction and its distance, or the Moon's own cycle.</p></header>
+    <p>When a lunar landing slips: what a site gains or loses in sunlight and Earth contact, and why.</p></header>
+  ${linkNotice ? `<div class="error" role="alert">${esc(linkNotice)}</div>` : ''}
   ${d.mock ? '<div class="banner" role="alert">MOCK DATA — synthetic values for development. Not results.</div>' : ''}
-  <div id="sim-slot"></div><h2 class="brief-h" id="h-brief">Mission brief</h2>
-  ${controls(d, s)}
-  <main id="main" tabindex="-1">
-  <p class="printonly"><strong>Scenario:</strong> ${esc(site.name)} · baseline landing ${when(s.t + ':00Z')} · ${s.stay}-day stay · slip ${s.slip} d · ${s.mode === 'limb' ? 'any part of the disc' : 'half the disc'} · ${esc(location.href)}</p>
+  <div id="sim-slot"></div>
+  <main id="main" class="brief" tabindex="-1">
+  <p class="brief-h" id="h-brief">Mission brief</p>
+  <p class="printonly"><strong>Scenario:</strong> ${esc(site.name)} · baseline landing ${when(s.t + ':00Z')} · ${s.stay}-day stay · ${slipWords(s.slip)} · ${s.mode === 'limb' ? 'any part of the disc' : 'half the disc'} · ${esc(location.href)}</p>
+  <section aria-labelledby="h-sum" class="s-verdict">
+    <h2 id="h-sum">Verdict</h2><div aria-live="polite">${top}</div>
+    <h2 id="h-in" class="h-in">Inputs</h2>
+    ${controls(d, s)}
+  </section>
   ${results}
-  <div class="grid2" style="margin-top:14px">
-    <section aria-labelledby="h-site"><h2 id="h-site">Site</h2><dl>
-      <dt>Name</dt><dd>${esc(site.name)} <span class="tag">${site.name_status === 'iau' ? 'IAU name' : 'informal name'}</span></dd>
-      <dt>Position</dt><dd class="mono">${Math.abs(site.lat).toFixed(4)}°${site.lat < 0 ? 'S' : 'N'}, ${site.lon_e.toFixed(4)}°E${site.elev_m != null ? `, ${site.elev_m} m` : ''}</dd>
-      <dt>Source</dt><dd><a href="${esc(site.source.url)}" rel="noopener">${esc(site.source.org)}</a>${altUsed}</dd>
-      <dt>Horizon</dt><dd>${esc(hz.dem.product)}${hz.dem.res_m ? `, ${hz.dem.res_m} m grid` : ''}${hz.dem.max_range_km ? `, out to ${hz.dem.max_range_km} km` : ''}; observer ${hz.mast_m} m above ground</dd>
-      ${site.landing_utc ? `<dt>Landed</dt><dd class="mono">${when(site.landing_utc)}</dd>` : ''}</dl></section>
-    <section aria-labelledby="h-val"><h2 id="h-val">How far to trust this</h2><dl>
-      <dt>Checked against</dt><dd>${res ? `NASA JPL Horizons, ${res.n} Sun and Earth positions at ${res.sites} landing sites, recomputed in your browser just now: largest gap <span class="mono">${res.az.toFixed(4)}°</span> in azimuth and <span class="mono">${res.el.toFixed(4)}°</span> in elevation.` : 'No Horizons fixtures loaded for this data set.'}</dd>
-      ${bench ? `<dt>Published benchmark</dt><dd>Sunlit <span class="mono">${bench.pct.toFixed(1)}%</span> of the time here over ${bench.years.toFixed(0)} years (2024–2030, ${s.mode === 'limb' ? 'any part of the disc' : 'half the disc'}), computed just now. Published: ${esc(BENCH[site.id].pct)} (${esc(bench.cite)}). A different time span and a newer terrain model, so a close match is the test, not an exact one.</dd>` : ''}
-      <dt>Ephemeris</dt><dd>${esc(d.header.spice_version)}, frame ${esc(d.header.frame)}, hourly, ${esc(d.header.kernels.join(', '))}</dd>
-      <dt>Earth</dt><dd>Seen from the site, not from the Moon's centre (the difference reaches about 0.28°, hours of Earthrise time near the poles).</dd>
-      <dt>Not modelled</dt><dd>Lander tilt and attitude, solar-panel pointing, thermal limits, radio link budget, relay satellites. "In view" means line of sight only.</dd></dl></section>
-  </div>
+  <section aria-labelledby="h-val" class="s-val"><h2 id="h-val">Validation</h2>
+    ${badges({ res, bench: bench ? { pct: bench.pct, published: bench.published, name: bench.name } : null, hz })}
+    <p class="siteline"><span class="k">Site</span> ${esc(site.name)} <span class="num">${Math.abs(site.lat).toFixed(4)}°${site.lat < 0 ? 'S' : 'N'} ${site.lon_e.toFixed(4)}°E</span> · <a href="${esc(site.source.url)}" rel="noopener">${esc(site.source.org)}</a> · ${site.name_status === 'iau' ? 'IAU name' : 'informal name'}</p>
+    <details class="more" id="method"><summary>Method and limits</summary>
+      <h3 id="h-site">Site</h3><dl>
+        <dt>Position</dt><dd class="mono">${Math.abs(site.lat).toFixed(4)}°${site.lat < 0 ? 'S' : 'N'}, ${site.lon_e.toFixed(4)}°E${site.elev_m != null ? `, ${site.elev_m} m` : ''}</dd>
+        <dt>Source</dt><dd><a href="${esc(site.source.url)}" rel="noopener">${esc(site.source.org)}</a>${altUsed}</dd>
+        <dt>Horizon</dt><dd>${esc(hz.dem.product)}${hz.dem.res_m ? `, ${hz.dem.res_m} m grid` : ''}${hz.dem.max_range_km ? `, out to ${hz.dem.max_range_km} km` : ''}; observer ${hz.mast_m} m above ground</dd>
+        ${site.landing_utc ? `<dt>Landed</dt><dd class="mono">${when(site.landing_utc)}</dd>` : ''}</dl>
+      <h3>Checks</h3><dl>
+        <dt>JPL Horizons</dt><dd>${res ? `${res.n} Sun and Earth positions at ${res.sites} landing sites, recomputed in your browser just now: largest gap <span class="mono">${res.az.toFixed(4)}°</span> in azimuth and <span class="mono">${res.el.toFixed(4)}°</span> in elevation.` : 'No Horizons fixtures loaded for this data set.'}</dd>
+        ${bench ? `<dt>Published benchmark</dt><dd>${esc(bench.name)}: sunlit <span class="mono">${bench.pct.toFixed(1)}%</span> of the time over ${bench.years.toFixed(0)} years (${fmtUtc(d.ephem.t0).slice(0, 4)}–${fmtUtc(d.ephem.tLast).slice(0, 4)}, any part of the disc), computed just now. Published: ${esc(bench.published)} (${esc(bench.cite)}). A different time span and a newer terrain model, so a close match is the test, not an exact one.</dd>` : ''}
+        <dt>Ephemeris</dt><dd>${esc(d.header.spice_version)}, frame ${esc(d.header.frame)}, hourly, ${esc(d.header.kernels.join(', '))}</dd>
+        <dt>Earth</dt><dd>Seen from the site, not from the Moon's centre (the difference reaches about 0.28°, hours of Earthrise time near the poles).</dd>
+        <dt>Not modelled</dt><dd>Lander tilt and attitude, solar-panel pointing, thermal limits, radio link budget, relay satellites. "In view" means line of sight only.</dd></dl>
+      <h3>Notes</h3><ul class="notes">${notes.map((n) => `<li>${n}</li>`).join('')}</ul>
+      <p>Data: NASA/NAIF SPICE kernels (DE440), NASA JPL Horizons, LRO LOLA topography (NASA GSFC PGDA), LROC landing-site coordinates, USGS/IAU Gazetteer of Planetary Nomenclature.</p>
+    </details></section>
   </main>
-  <footer><p>Built during NASA Space Apps Challenge 2026 by team Space City Ad Lunam. This project was built with AI assistance (Anthropic Claude) for research, code, tests and documentation, reviewed by the human team.
-    Data: NASA/NAIF SPICE kernels (DE440), NASA JPL Horizons, LRO LOLA topography (NASA GSFC PGDA), LROC landing-site coordinates, USGS/IAU Gazetteer of Planetary Nomenclature. NASA does not endorse this project.</p></footer>`;
+  <footer><p>Built for NASA Space Apps 2026 by team Space City Ad Lunam, with AI assistance (Anthropic Claude) for research, code, tests and documentation, reviewed by the team. NASA does not endorse this project.</p></footer>`;
 
   const f = document.getElementById('f') as HTMLFormElement;
   f.addEventListener('change', () => {
     if (!f.reportValidity()) return;
     const fd = new FormData(f);
-    render(d, { ...s, site: String(fd.get('site')), t: String(fd.get('t')).slice(0, 16), stay: Number(fd.get('stay')), slip: Math.round(Number(fd.get('slip'))), mode: fd.get('mode') === 'centre' ? 'centre' : 'limb' });
+    if (String(fd.get('site')) !== s.site) linkNotice = '';
+    render(d, { ...s, site: String(fd.get('site')), t: String(fd.get('t')).trim().slice(0, 16).replace(' ', 'T'), stay: Number(fd.get('stay')), slip: Math.round(Number(fd.get('slip'))), mode: fd.get('mode') === 'centre' ? 'centre' : 'limb' });
     document.getElementById(document.activeElement?.id || 'site')?.focus();
   });
   f.addEventListener('submit', (e) => e.preventDefault());
+  f.querySelectorAll<HTMLButtonElement>('button[data-step]').forEach((b) => b.addEventListener('click', () => {
+    const next = Math.max(-90, Math.min(90, s.slip + Number(b.dataset.step)));
+    render(d, { ...s, slip: next });
+    document.querySelector<HTMLButtonElement>(`button[data-step="${b.dataset.step}"]`)?.focus();
+  }));
+  app.querySelectorAll<HTMLButtonElement>('button[data-why]').forEach((b) => b.addEventListener('click', () => {
+    const box = document.getElementById(`ob-why-${b.dataset.why}`)!;
+    box.hidden = !box.hidden;
+    b.setAttribute('aria-expanded', String(!box.hidden));
+  }));
+  // Charts are drawn at the real pixel width; redraw when the width changes (rotation, window resize).
+  lastW = chartW();
+  if (!resizeBound) {
+    resizeBound = true;
+    let timer = 0;
+    window.addEventListener('resize', () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => { if (Math.abs(chartW() - lastW) > 24) rerender?.(); }, 200);
+    });
+  }
+  rerender = () => render(d, s);
   document.getElementById('print')!.addEventListener('click', () => window.print());
   document.getElementById('copy')!.addEventListener('click', async () => {
     const out = document.getElementById('copied')!;
@@ -295,7 +303,11 @@ function render(d: Data, s: State) {
   const s0 = readState(null);
   try {
     const d = await loadData(s0.data);
-    render(d, { ...readState(d.sites), data: s0.data });
+    const st = readState(d.sites);
+    if (s0.site !== st.site) {
+      linkNotice = `This link asks for the site "${s0.site}", which has no data in this build yet. Showing ${d.sites.find((x) => x.id === st.site)?.name ?? st.site} instead.`;
+    }
+    render(d, { ...st, data: s0.data });
   } catch (e) {
     app.innerHTML = `<div class="error" role="alert">${esc((e as Error).message)}. If the real data is not built yet, open <a href="?data=mock">the mock data</a>.</div>`;
   }

@@ -23,6 +23,8 @@ button:hover { background: #2d4055; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .headline { font-size: 1.12rem; }
+caption { text-align: left; padding: 4px 0; }
+.headline.why { font-size: 1.05rem; }
 .headline strong.loss { color: var(--loss); } .headline strong.gain { color: var(--gain); }
 table { width: 100%; border-collapse: collapse; font-size: .93rem; }
 th, td { text-align: right; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -49,14 +51,11 @@ dl { display: grid; grid-template-columns: max-content 1fr; gap: 3px 12px; margi
 dt { color: var(--muted); } dd { margin: 0; }
 footer { margin-top: 18px; color: var(--muted); font-size: .84rem; }
 .printonly { display: none; }
+/* Print rules for the brief live in ui/brief.css (round 3). */
 @media print {
-  :root { --bg: #fff; --panel: #fff; --line: #bbb; --text: #000; --muted: #333; --loss: #a02b00; --gain: #00624a; --earth: #0072b2; }
-  body { font-size: 10.5pt; } a { color: #000; }
-  #app { max-width: none; padding: 0; }
-  form.controls, .noprint, .skip { display: none !important; }
-  .printonly { display: block; }
-  section { border: 0; border-top: 1px solid #999; border-radius: 0; padding: 8px 0; margin-top: 8px; break-inside: avoid; }
-  tr.base td { background: #eee; } svg text { fill: #000; } svg .muted { fill: #333; }
-  .extra { display: none; }
-  @page { margin: 12mm; }
+  :root { --bg: #fff; --panel: #fff; --line: #bbb; --text: #000; --muted: #333; }
+  body { font-size: 9.5pt; line-height: 1.3; } #app { max-width: none; padding: 0 !important; }
+  .noprint, .skip, #sim-slot, header.top p { display: none !important; }
+  h1 { font-size: 15pt; }
 }
+.printonly { display: none; }

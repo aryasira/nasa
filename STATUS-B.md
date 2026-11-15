@@ -1,8 +1,116 @@
 # STATUS-B
 
-_Updated: Sat 14 Nov 2026, 17:10 CT_
+_Updated: Sun 15 Nov 2026, 13:40 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
+
+## Round 3: visual redesign below the simulator (Sun 12:30 to 13:40 CT)
+UI only. No engine maths, data or contract changes. Direction and references: `docs/design.md`.
+- **01 Verdict strip** replaces the "What the slip does" text: Sun + Earth in view (before → after), change,
+  main cause with an orbit/terrain icon, next equally good date. One sentence under it. The full "Why" and
+  "Terrain" sentences, glosses and the IM-1 note are in a "Context" disclosure. An "illustrative date" tag
+  stays visible.
+- **02 Inputs** is one control bar: site, date, stay, slip stepper (− / +), visibility rule, Print, Copy link,
+  three example chips.
+- **03 Landing dates** (C's logic, re-marked-up): rhythm bracket and season range drawn on the chart; short key;
+  the three paragraphs, the long legend and the click-mode control are in "Chart details".
+- **04 Options** are ranked horizontal bars with a baseline tick, big hours, change and cause icons. Full cause
+  sentences open with the row's "why" button (keyboard reachable) and are always in the DOM.
+- **05 Timeline:** direct row labels, stays as brackets with their dates, table alternative in a disclosure.
+- **06 Horizon:** blocking terrain labelled on the plot with leader lines (hours, skyline height, distance,
+  bearing), north arrow, tick marks, "elevation ×N stretched" tag, Sun/Earth labels on the paths.
+- **07 Compare** (C's logic): the 21-checkbox wall is inside "Choose sites (n of 4)". **Small multiples were not
+  built** (time); the table is unchanged.
+- **08 Validation:** badge row (Horizons checks, Connecting Ridge sunlit vs published, terrain model or
+  "no terrain model" in warning colour), a one-line site credit, and one "Method and limits" disclosure that
+  collects every footnote. All numbers are read from the data files or computed live.
+- Charts are now drawn at the real pixel width and redrawn on resize, so text stays readable at 390 px.
+
+Checks (all on the built app, headless Chrome):
+- `npm test` 42 passing, `npm run build` passes. JS bundle 201.5 kB gzip (limit 230); no new dependencies.
+- Words outside the simulator, IM-1 state at 1280 px: 1,377 → 608 by `innerText`; 451 actually visible.
+  **The 250 target is not met.**
+- No horizontal scroll at 390 px. Stepper, "why" toggles, example chips, Explain mode and URL parameters work.
+- Print: one page on Letter and A4 for IM-1, IM-2, Connecting Ridge, Apollo 11 and SLIM states.
+- axe-core (WCAG 2 A/AA + best practice), three states: nothing new from B. Still open, all in C's files:
+  `aria-pressed` on `div.sim-view` (critical), contrast of the sim's "Slipped · date" label, `.feat-explain`
+  outside a landmark, and the tour `h3` heading order.
+- Not checked: Lighthouse (not available), real phones, Safari/Firefox, contrast by hand beyond axe.
+
+Touched outside B's usual files, as the brief allows: `app/src/features/index.ts` (markup only, logic and tests
+unchanged), `docs/design.md`, `docs/design/*.jpg`. `app/src/sim/*` untouched.
+
+## Live-review fixes (Sun 12:00 to 12:25 CT)
+Merged `origin/c/work` at 081756a (the head of **open PR #6**) so the cause wording in `causes.ts` matches what
+will land on main; merge `main` again once PR #6 is merged. `main.ts` edits are in place; hooks untouched.
+- (1) A link to a site with no data (e.g. `site=shackleton_sr1`) now shows a message naming the site and the
+  one shown instead. It clears when the user picks a site.
+- (5) Alternate-site rows no longer repeat the baseline site's terrain line: for a different site, the
+  baseline's terrain is part of the "different location" line; only the alternate's own terrain is listed.
+- (6) `mode=center` (US spelling) is accepted and kept as centre.
+- (7) One rounding rule: hours are shown to one decimal everywhere (summary, cause lines, chart markers).
+- (8) One wording: "10-day slip" / "10-day advance" in the headline, the table and the page title.
+- Gloss lines for "libration" and "net of site height" appear under the summary when those words are used.
+- Alternate rows are shorter: "Alternate: <site>", "379 km away, same date.", two cause lines.
+- The date field is a text field in 24-hour UTC (`YYYY-MM-DD HH:MM`); links accept a space or `T`.
+- After PR #6 merged (12:06 CT), merged `origin/main` (d19e68e) as asked. C's new feature sections had pushed the
+  print brief to two pages; print now leaves out the landing-date explorer, site comparison and alternate rows
+  (with a line pointing to the on-screen version) and is back to one page on Letter and A4 for five scenarios.
+- Checks: `npm test` 42 passing, build passes, each item checked in headless Chrome; axe-core on the IM-2
+  state: no new violations in B's parts.
+
+## Round 2 (Sun 11:15 to 11:45 CT)
+Merged `origin/main` (d509614, includes the simulator) and `origin/c/work` (1eb4a2d, C's cause-line and slip
+fixes in B's files) into `b/app`. **`main.ts` was not restructured**: only small in-place edits; the SIM HOOK
+lines and `app/src/sim/**` are untouched.
+
+### REVIEW items 1 to 5 (cause-line correctness)
+Already fixed by C in `c/fix-causes`; B checked each on real data and kept C's code:
+1. One net non-terrain line per body. IM-2, 10-day stay, +7 d: "Earth in view 240.0 h → 157.7 h (−82.3 h);
+   main cause: Earth's libration, net of site height (−82.3 h)". No cancelling pair.
+2. Negative slip: no recovery option, no "0-day wait" (checked with −4 d).
+3. Alternate sites: the non-terrain line says "different location and date".
+4. Note now reads "Per body, the cause lines sum to the change in that body's visible hours, apart from
+   pieces under half an hour".
+5. Unnamed terrain is keyed by azimuth runs across both windows; distances under 3 grid cells print "< 0.5 km".
+
+### Round-2 tasks
+1. **Uncertainty bands: done, waiting for real sigma.** With `dem.sigma_m` set, the table shows
+   `82.0 (78–85)` for sunlit, Earth %, Sun + Earth and dark gap, the change shows `−73.3 h (−78 to −70)`, the
+   headline carries the same band, and the panorama draws the lowered/raised horizon as a light band.
+   Tested in Vitest on a synthetic ±0.1° horizon. No real horizon file has `sigma_m` yet, so nothing shows today.
+2. **Accessibility: axe-core 4 (WCAG 2 A/AA + best practice) run in headless Chrome on three states.**
+   Lighthouse was not available. B's parts: **0 violations**, 53 to 54 rules passing. Added: `aria-live` on the
+   summary, a page title per state, `<title>` + `<desc>` on both charts, a "Timeline as a table" alternative.
+   Remaining violations are in the simulator / hook (**C**):
+   - critical `aria-allowed-attr`: `<div class="sim-view" aria-pressed="true">` (needs `role="button"` or a `<button>`);
+   - serious `color-contrast`: the sim label `<span>Slipped · 03/13</span>` (seen on the IM-2 state);
+   - moderate `region`: `<h2 class="brief-h" id="h-brief">` sits outside any landmark (move it inside `<main>`).
+3. **Alternate sites: done.** Polar sites (|lat| ≥ 60°) only get terrain-modelled sites within 150 km; otherwise
+   the page says "No terrain-modelled site within 150 km, so no alternate site is offered." Non-polar sites keep
+   the nearest catalogue sites within 1000 km. Today no polar site has a terrain neighbour within 150 km
+   (IM-1 to IM-2 is 175 km), so polar scenarios show no alternates until `shackleton_sr1/sr2` horizons land.
+4. **Cause line as the hero: done.** Under the headline: "Why:" (one net sentence per body, C's) plus a new
+   "Terrain:" sentence with the two largest terrain lines, or "no terrain change of half an hour or more".
+5. **Print brief: done.** One page on Letter and A4 for IM-1, IM-2, Connecting Ridge, SLIM and Apollo 11
+   scenarios (checked by PDF page count). Includes the permalink as text, sources and the AI-use line. Print
+   hides the simulator, legends, notes and the cause rows of recovery/alternate options.
+6. COULD items: not started (need the human's OK after the 13:00 gate).
+
+Also: no hard-coded 2024 left in the trust panel (years come from the ephemeris header).
+Tests: `npm test` 29 passing; `npm run build` passes.
+
+### Blocked / needs other agent (round 2)
+- **A:** `sites.json` lists sites with no horizon file yet (`shackleton_sr1`, and others); the app hides any
+  site without a horizon. Ephemeris header still starts 2024-01-01. Bands need `dem.sigma_m`.
+- **C:** the three simulator accessibility items above. One of C's tests assumed far alternates; B passes
+  `alternateRangeKm: 1000` in that test so it still exercises alternates.
+- **Human:** IM-1 now shows no alternate site at all (nearest terrain site is 175 km away). If you would rather
+  keep IM-2 as an alternate for IM-1, say so and B will widen the range to 200 km.
+
+---
+## Round 1 notes (Sat) — kept for reference; several items below are now resolved
+
 
 ## Done
 - Merged `a/data` (7d4de7c, which already contains `c/work`) into `b/app` to build on the real data,
