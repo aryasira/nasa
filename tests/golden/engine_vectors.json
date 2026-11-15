@@ -20,21 +20,21 @@
    "site_id": "im1",
    "utc": "2024-01-01T00:00:00Z",
    "sun": {
-    "az": 178.538376,
-    "el": -9.866852,
+    "az": 49.254765,
+    "el": 5.672253,
     "radius": 0.2666,
-    "fraction": 0.0
+    "fraction": 1.0
    },
    "earth": {
-    "az": 358.538376,
-    "el": 9.596248,
-    "radius": 1.006875,
+    "az": 6.485765,
+    "el": 6.069699,
+    "radius": 0.952354,
     "fraction": 1.0,
-    "dist_km": 362963.887
+    "dist_km": 383740.716
    },
-   "earth_el_geocentric": 9.866852,
-   "earth_az_geocentric": 358.538376,
-   "sun_earth_sep": 179.729397,
+   "earth_el_geocentric": 6.32791,
+   "earth_az_geocentric": 6.485765,
+   "sun_earth_sep": 42.535497,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -42,21 +42,21 @@
    "site_id": "im1",
    "utc": "2024-01-19T15:20:00Z",
    "sun": {
-    "az": 310.72992,
-    "el": 7.902064,
+    "az": 181.745035,
+    "el": -10.755275,
     "radius": 0.2666,
-    "fraction": 1.0
+    "fraction": 0.0
    },
    "earth": {
-    "az": 351.198861,
-    "el": 15.662392,
-    "radius": 0.929076,
+    "az": 354.864258,
+    "el": 5.688465,
+    "radius": 0.999847,
     "fraction": 1.0,
-    "dist_km": 393354.5
+    "dist_km": 365514.947
    },
-   "earth_el_geocentric": 15.906133,
-   "earth_az_geocentric": 351.198861,
-   "sun_earth_sep": 40.299841,
+   "earth_el_geocentric": 5.95974,
+   "earth_az_geocentric": 354.864258,
+   "sun_earth_sep": 171.513768,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -64,21 +64,21 @@
    "site_id": "im1",
    "utc": "2024-02-22T23:24:00Z",
    "sun": {
-    "az": 252.912494,
-    "el": -2.413851,
+    "az": 122.569456,
+    "el": -6.551059,
     "radius": 0.2666,
     "fraction": 0.0
    },
    "earth": {
-    "az": 354.753849,
-    "el": 11.763502,
-    "radius": 1.000288,
+    "az": 5.454555,
+    "el": 4.392762,
+    "radius": 0.977261,
     "fraction": 1.0,
-    "dist_km": 365353.712
+    "dist_km": 373961.469
    },
-   "earth_el_geocentric": 12.030379,
-   "earth_az_geocentric": 354.753849,
-   "sun_earth_sep": 102.081394,
+   "earth_el_geocentric": 4.65847,
+   "earth_az_geocentric": 5.454555,
+   "sun_earth_sep": 117.400577,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -86,21 +86,21 @@
    "site_id": "im1",
    "utc": "2024-03-06T12:30:45Z",
    "sun": {
-    "az": 99.520633,
-    "el": -2.503861,
+    "az": 329.690641,
+    "el": 9.937341,
     "radius": 0.2666,
-    "fraction": 0.0
+    "fraction": 1.0
    },
    "earth": {
-    "az": 4.05947,
-    "el": 5.92917,
-    "radius": 0.914935,
+    "az": 352.760356,
+    "el": 15.600215,
+    "radius": 0.916065,
     "fraction": 1.0,
-    "dist_km": 399433.767
+    "dist_km": 398940.885
    },
-   "earth_el_geocentric": 6.177308,
-   "earth_az_geocentric": 4.05947,
-   "sun_earth_sep": 95.686443,
+   "earth_el_geocentric": 15.840621,
+   "earth_az_geocentric": 352.760356,
+   "sun_earth_sep": 23.183306,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -108,21 +108,21 @@
    "site_id": "im1",
    "utc": "2024-08-15T06:45:00Z",
    "sun": {
-    "az": 287.785394,
-    "el": 1.791972,
+    "az": 158.01149,
+    "el": -7.628607,
     "radius": 0.2666,
-    "fraction": 1.0
+    "fraction": 0.0
    },
    "earth": {
-    "az": 6.450567,
-    "el": 4.18291,
-    "radius": 0.951567,
+    "az": 358.772215,
+    "el": 16.301013,
+    "radius": 0.902272,
     "fraction": 1.0,
-    "dist_km": 384058.055
+    "dist_km": 405038.911
    },
-   "earth_el_geocentric": 4.44171,
-   "earth_az_geocentric": 6.450567,
-   "sun_earth_sep": 78.568065,
+   "earth_el_geocentric": 16.536966,
+   "earth_az_geocentric": 358.772215,
+   "sun_earth_sep": 157.94095,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -130,21 +130,21 @@
    "site_id": "im1",
    "utc": "2025-09-17T02:15:30Z",
    "sun": {
-    "az": 117.882739,
-    "el": -4.370249,
+    "az": 348.439941,
+    "el": 8.648582,
     "radius": 0.2666,
-    "fraction": 0.0
+    "fraction": 1.0
    },
    "earth": {
-    "az": 351.135017,
-    "el": 10.716138,
-    "radius": 0.931373,
+    "az": 355.286484,
+    "el": 5.108017,
+    "radius": 1.00128,
     "fraction": 1.0,
-    "dist_km": 392384.404
+    "dist_km": 364991.603
    },
-   "earth_el_geocentric": 10.96557,
-   "earth_az_geocentric": 351.135017,
-   "sun_earth_sep": 126.892726,
+   "earth_el_geocentric": 5.379954,
+   "earth_az_geocentric": 355.286484,
+   "sun_earth_sep": 7.663047,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -152,21 +152,21 @@
    "site_id": "im1",
    "utc": "2026-07-04T05:37:20Z",
    "sun": {
-    "az": 181.182266,
-    "el": -8.724311,
+    "az": 51.900851,
+    "el": 5.681758,
     "radius": 0.2666,
-    "fraction": 0.0
+    "fraction": 1.0
    },
    "earth": {
-    "az": 6.4647,
-    "el": 14.530781,
-    "radius": 0.963266,
+    "az": 0.441491,
+    "el": 7.704104,
+    "radius": 0.90303,
     "fraction": 1.0,
-    "dist_km": 379394.239
+    "dist_km": 404698.972
    },
-   "earth_el_geocentric": 14.784851,
-   "earth_az_geocentric": 6.4647,
-   "sun_earth_sep": 172.224456,
+   "earth_el_geocentric": 7.948078,
+   "earth_az_geocentric": 0.441491,
+   "sun_earth_sep": 51.120531,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -174,21 +174,21 @@
    "site_id": "im1",
    "utc": "2028-02-29T12:00:00Z",
    "sun": {
-    "az": 2.572429,
-    "el": 10.944905,
+    "az": 233.519996,
+    "el": -7.414921,
     "radius": 0.2666,
-    "fraction": 1.0
+    "fraction": 0.0
    },
    "earth": {
-    "az": 5.908784,
-    "el": 14.280895,
-    "radius": 0.974191,
+    "az": 2.008135,
+    "el": 3.114494,
+    "radius": 0.906138,
     "fraction": 1.0,
-    "dist_km": 375139.738
+    "dist_km": 403311.165
    },
-   "earth_el_geocentric": 14.538137,
-   "earth_az_geocentric": 5.908784,
-   "sun_earth_sep": 4.661089,
+   "earth_el_geocentric": 3.361257,
+   "earth_az_geocentric": 2.008135,
+   "sun_earth_sep": 128.553737,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -196,27 +196,27 @@
    "site_id": "im1",
    "utc": "2030-12-31T23:00:00Z",
    "sun": {
-    "az": 326.900117,
-    "el": 8.643328,
+    "az": 198.006025,
+    "el": -10.474248,
     "radius": 0.2666,
-    "fraction": 1.0
+    "fraction": 0.0
    },
    "earth": {
-    "az": 350.815676,
-    "el": 11.006717,
-    "radius": 0.966796,
+    "az": 0.653711,
+    "el": 4.909577,
+    "radius": 1.004393,
     "fraction": 1.0,
-    "dist_km": 378008.914
+    "dist_km": 363860.624
    },
-   "earth_el_geocentric": 11.26537,
-   "earth_az_geocentric": 350.815676,
-   "sun_earth_sep": 23.676161,
+   "earth_el_geocentric": 5.182446,
+   "earth_az_geocentric": 0.653711,
+   "sun_earth_sep": 161.933797,
    "eclipse_partial": false,
    "eclipse_total": false
   },
   {
    "site_id": "im1",
-   "utc": "2026-11-14T04:09:00Z",
+   "utc": "2025-11-14T04:09:00Z",
    "sun": {
     "az": 0.555523,
     "el": 10.047791,
@@ -238,7 +238,7 @@
   },
   {
    "site_id": "im1",
-   "utc": "2026-11-14T02:31:00Z",
+   "utc": "2025-11-14T02:31:00Z",
    "sun": {
     "az": 1.397981,
     "el": 10.021309,
@@ -260,7 +260,7 @@
   },
   {
    "site_id": "im1",
-   "utc": "2026-11-14T01:52:00Z",
+   "utc": "2025-11-14T01:52:00Z",
    "sun": {
     "az": 1.733206,
     "el": 10.010178,
@@ -284,21 +284,21 @@
    "site_id": "slim",
    "utc": "2024-01-01T00:00:00Z",
    "sun": {
-    "az": 116.027615,
-    "el": -61.658201,
+    "az": 62.385706,
+    "el": 61.370581,
     "radius": 0.2666,
-    "fraction": 0.0
+    "fraction": 1.0
    },
    "earth": {
-    "az": 296.027615,
-    "el": 61.527627,
-    "radius": 1.010308,
+    "az": 313.090065,
+    "el": 65.835886,
+    "radius": 0.955835,
     "fraction": 1.0,
-    "dist_km": 361730.602
+    "dist_km": 382343.607
    },
-   "earth_el_geocentric": 61.658201,
-   "earth_az_geocentric": 296.027615,
-   "sun_earth_sep": 179.869426,
+   "earth_el_geocentric": 65.941968,
+   "earth_az_geocentric": 313.090065,
+   "sun_earth_sep": 42.606986,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -306,21 +306,21 @@
    "site_id": "slim",
    "utc": "2024-01-19T15:20:00Z",
    "sun": {
-    "az": 272.723227,
-    "el": 17.376485,
+    "az": 117.795476,
+    "el": -64.837996,
     "radius": 0.2666,
-    "fraction": 1.0
+    "fraction": 0.0
    },
    "earth": {
-    "az": 279.53549,
-    "el": 57.244393,
-    "radius": 0.931416,
+    "az": 298.934396,
+    "el": 56.380324,
+    "radius": 1.003335,
     "fraction": 1.0,
-    "dist_km": 392366.32
+    "dist_km": 364244.22
    },
-   "earth_el_geocentric": 57.381081,
-   "earth_az_geocentric": 279.53549,
-   "sun_earth_sep": 40.192647,
+   "earth_el_geocentric": 56.530963,
+   "earth_az_geocentric": 298.934396,
+   "sun_earth_sep": 171.524229,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -328,21 +328,21 @@
    "site_id": "slim",
    "utc": "2024-02-22T23:24:00Z",
    "sun": {
-    "az": 258.030318,
-    "el": -39.574353,
+    "az": 90.994433,
+    "el": -9.343057,
     "radius": 0.2666,
     "fraction": 0.0
    },
    "earth": {
-    "az": 288.735984,
-    "el": 59.151306,
-    "radius": 1.0034,
+    "az": 314.238902,
+    "el": 63.926372,
+    "radius": 0.980995,
     "fraction": 1.0,
-    "dist_km": 364220.511
+    "dist_km": 372538.218
    },
-   "earth_el_geocentric": 59.290808,
-   "earth_az_geocentric": 288.735984,
-   "sun_earth_sep": 101.953399,
+   "earth_el_geocentric": 64.043266,
+   "earth_az_geocentric": 314.238902,
+   "sun_earth_sep": 117.49964,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -350,21 +350,21 @@
    "site_id": "slim",
    "utc": "2024-03-06T12:30:45Z",
    "sun": {
-    "az": 85.869941,
-    "el": 13.420258,
+    "az": 277.98695,
+    "el": 35.625677,
     "radius": 0.2666,
     "fraction": 1.0
    },
    "earth": {
-    "az": 309.535319,
-    "el": 63.939006,
-    "radius": 0.918101,
+    "az": 280.477893,
+    "el": 58.67005,
+    "radius": 0.918397,
     "fraction": 1.0,
-    "dist_km": 398056.59
+    "dist_km": 397928.016
    },
-   "earth_el_geocentric": 64.048386,
-   "earth_az_geocentric": 309.535319,
-   "sun_earth_sep": 95.775482,
+   "earth_el_geocentric": 58.799574,
+   "earth_az_geocentric": 280.477893,
+   "sun_earth_sep": 23.102757,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -372,21 +372,21 @@
    "site_id": "slim",
    "utc": "2024-08-15T06:45:00Z",
    "sun": {
-    "az": 269.824715,
-    "el": -6.102603,
+    "az": 104.67987,
+    "el": -42.408355,
     "radius": 0.2666,
     "fraction": 0.0
    },
    "earth": {
-    "az": 316.223075,
-    "el": 64.473229,
-    "radius": 0.955141,
+    "az": 282.666266,
+    "el": 64.416056,
+    "radius": 0.904674,
     "fraction": 1.0,
-    "dist_km": 382621.182
+    "dist_km": 403963.808
    },
-   "earth_el_geocentric": 64.584828,
-   "earth_az_geocentric": 316.223075,
-   "sun_earth_sep": 78.488028,
+   "earth_el_geocentric": 64.522003,
+   "earth_az_geocentric": 282.666266,
+   "sun_earth_sep": 157.962215,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -394,21 +394,21 @@
    "site_id": "slim",
    "utc": "2025-09-17T02:15:30Z",
    "sun": {
-    "az": 91.283039,
-    "el": -4.201322,
+    "az": 289.604844,
+    "el": 52.236199,
     "radius": 0.2666,
-    "fraction": 0.0
+    "fraction": 1.0
    },
    "earth": {
-    "az": 287.903744,
-    "el": 55.471755,
-    "radius": 0.934003,
+    "az": 300.231491,
+    "el": 56.419397,
+    "radius": 1.004829,
     "fraction": 1.0,
-    "dist_km": 391279.829
+    "dist_km": 363702.687
    },
-   "earth_el_geocentric": 55.615356,
-   "earth_az_geocentric": 287.903744,
-   "sun_earth_sep": 127.015217,
+   "earth_el_geocentric": 56.570104,
+   "earth_az_geocentric": 300.231491,
+   "sun_earth_sep": 7.464029,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -416,21 +416,21 @@
    "site_id": "slim",
    "utc": "2026-07-04T05:37:20Z",
    "sun": {
-    "az": 121.074256,
-    "el": -63.295738,
+    "az": 65.573475,
+    "el": 59.262339,
     "radius": 0.2666,
-    "fraction": 0.0
+    "fraction": 1.0
    },
    "earth": {
-    "az": 294.11718,
-    "el": 70.711237,
-    "radius": 0.96632,
+    "az": 301.600457,
+    "el": 62.14082,
+    "radius": 0.905939,
     "fraction": 1.0,
-    "dist_km": 378195.09
+    "dist_km": 403399.859
    },
-   "earth_el_geocentric": 70.797763,
-   "earth_az_geocentric": 294.11718,
-   "sun_earth_sep": 172.114122,
+   "earth_el_geocentric": 62.255636,
+   "earth_az_geocentric": 301.600457,
+   "sun_earth_sep": 51.212581,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -438,21 +438,21 @@
    "site_id": "slim",
    "utc": "2028-02-29T12:00:00Z",
    "sun": {
-    "az": 298.389031,
-    "el": 65.63454,
+    "az": 250.113645,
+    "el": -58.877893,
     "radius": 0.2666,
-    "fraction": 1.0
+    "fraction": 0.0
    },
    "earth": {
-    "az": 294.079019,
-    "el": 70.116097,
-    "radius": 0.977319,
+    "az": 311.179492,
+    "el": 60.531755,
+    "radius": 0.909327,
     "fraction": 1.0,
-    "dist_km": 373939.305
+    "dist_km": 401896.701
    },
-   "earth_el_geocentric": 70.206198,
-   "earth_az_geocentric": 294.079019,
-   "sun_earth_sep": 4.763666,
+   "earth_el_geocentric": 60.653084,
+   "earth_az_geocentric": 311.179492,
+   "sun_earth_sep": 128.484417,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -460,87 +460,87 @@
    "site_id": "slim",
    "utc": "2030-12-31T23:00:00Z",
    "sun": {
-    "az": 278.27294,
-    "el": 32.592178,
+    "az": 153.193553,
+    "el": -76.346919,
     "radius": 0.2666,
-    "fraction": 1.0
+    "fraction": 0.0
    },
    "earth": {
-    "az": 287.197683,
-    "el": 55.297153,
-    "radius": 0.9696,
+    "az": 306.55117,
+    "el": 60.662866,
+    "radius": 1.008166,
     "fraction": 1.0,
-    "dist_km": 376916.087
+    "dist_km": 362498.884
    },
-   "earth_el_geocentric": 55.446868,
-   "earth_az_geocentric": 287.197683,
-   "sun_earth_sep": 23.552083,
+   "earth_el_geocentric": 60.79678,
+   "earth_az_geocentric": 306.55117,
+   "sun_earth_sep": 161.894848,
    "eclipse_partial": false,
    "eclipse_total": false
   },
   {
    "site_id": "slim",
-   "utc": "2024-06-11T18:54:00Z",
+   "utc": "2024-06-01T10:20:00Z",
    "sun": {
-    "az": 291.654924,
-    "el": 57.728174,
+    "az": 289.670941,
+    "el": 54.534693,
     "radius": 0.2666,
     "fraction": 1.0
    },
    "earth": {
-    "az": 290.809103,
-    "el": 57.988817,
-    "radius": 1.000621,
+    "az": 290.480524,
+    "el": 54.27355,
+    "radius": 0.963669,
     "fraction": 1.0,
-    "dist_km": 365232.013
+    "dist_km": 379235.378
    },
-   "earth_el_geocentric": 58.132638,
-   "earth_az_geocentric": 290.809103,
-   "sun_earth_sep": 0.520017,
+   "earth_el_geocentric": 54.426175,
+   "earth_az_geocentric": 290.480524,
+   "sun_earth_sep": 0.538747,
    "eclipse_partial": true,
    "eclipse_total": true
   },
   {
    "site_id": "slim",
-   "utc": "2024-06-11T17:26:00Z",
+   "utc": "2024-06-01T08:50:00Z",
    "sun": {
-    "az": 292.224341,
-    "el": 58.409923,
+    "az": 290.170493,
+    "el": 55.240709,
     "radius": 0.2666,
     "fraction": 1.0
    },
    "earth": {
-    "az": 290.575557,
-    "el": 57.944067,
-    "radius": 1.000173,
+    "az": 290.31589,
+    "el": 54.295699,
+    "radius": 0.962917,
     "fraction": 1.0,
-    "dist_km": 365395.753
+    "dist_km": 379531.871
    },
-   "earth_el_geocentric": 58.088003,
-   "earth_az_geocentric": 290.575557,
-   "sun_earth_sep": 0.986308,
+   "earth_el_geocentric": 54.448123,
+   "earth_az_geocentric": 290.31589,
+   "sun_earth_sep": 0.948724,
    "eclipse_partial": true,
    "eclipse_total": false
   },
   {
    "site_id": "slim",
-   "utc": "2024-06-11T16:42:00Z",
+   "utc": "2024-06-01T08:02:00Z",
    "sun": {
-    "az": 292.517374,
-    "el": 58.749822,
+    "az": 290.444226,
+    "el": 55.616397,
     "radius": 0.2666,
     "fraction": 1.0
    },
    "earth": {
-    "az": 290.45934,
-    "el": 57.921783,
-    "radius": 0.999945,
+    "az": 290.228385,
+    "el": 54.308011,
+    "radius": 0.962515,
     "fraction": 1.0,
-    "dist_km": 365478.854
+    "dist_km": 379690.299
    },
-   "earth_el_geocentric": 58.065777,
-   "earth_az_geocentric": 290.45934,
-   "sun_earth_sep": 1.361073,
+   "earth_el_geocentric": 54.460325,
+   "earth_az_geocentric": 290.228385,
+   "sun_earth_sep": 1.314239,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -548,21 +548,21 @@
    "site_id": "apollo11",
    "utc": "2024-01-01T00:00:00Z",
    "sun": {
-    "az": 88.447964,
-    "el": -66.517728,
+    "az": 89.561147,
+    "el": 63.098527,
     "radius": 0.2666,
-    "fraction": 0.0
+    "fraction": 1.0
    },
    "earth": {
-    "az": 268.447964,
-    "el": 66.408176,
-    "radius": 1.010486,
+    "az": 280.438408,
+    "el": 74.11505,
+    "radius": 0.956046,
     "fraction": 1.0,
-    "dist_km": 361666.913
+    "dist_km": 382259.101
    },
-   "earth_el_geocentric": 66.517728,
-   "earth_az_geocentric": 268.447964,
-   "sun_earth_sep": 179.890447,
+   "earth_el_geocentric": 74.185938,
+   "earth_az_geocentric": 280.438408,
+   "sun_earth_sep": 42.598415,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -570,21 +570,21 @@
    "site_id": "apollo11",
    "utc": "2024-01-19T15:20:00Z",
    "sun": {
-    "az": 268.266863,
-    "el": 19.279736,
+    "az": 85.625502,
+    "el": -69.622007,
     "radius": 0.2666,
-    "fraction": 1.0
+    "fraction": 0.0
    },
    "earth": {
-    "az": 256.94493,
-    "el": 58.624486,
-    "radius": 0.931467,
+    "az": 277.142853,
+    "el": 62.559538,
+    "radius": 1.003594,
     "fraction": 1.0,
-    "dist_km": 392345.065
+    "dist_km": 364150.42
    },
-   "earth_el_geocentric": 58.755941,
-   "earth_az_geocentric": 256.94493,
-   "sun_earth_sep": 40.201286,
+   "earth_el_geocentric": 62.684841,
+   "earth_az_geocentric": 277.142853,
+   "sun_earth_sep": 171.564489,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -592,21 +592,21 @@
    "site_id": "apollo11",
    "utc": "2024-02-22T23:24:00Z",
    "sun": {
-    "az": 269.897929,
-    "el": -39.280691,
+    "az": 88.657621,
+    "el": -11.081092,
     "radius": 0.2666,
     "fraction": 0.0
    },
    "earth": {
-    "az": 263.887985,
-    "el": 62.560763,
-    "radius": 1.003536,
+    "az": 285.50629,
+    "el": 72.773778,
+    "radius": 0.981252,
     "fraction": 1.0,
-    "dist_km": 364171.305
+    "dist_km": 372440.783
    },
-   "earth_el_geocentric": 62.686055,
-   "earth_az_geocentric": 263.887985,
-   "sun_earth_sep": 101.956246,
+   "earth_el_geocentric": 72.852493,
+   "earth_az_geocentric": 285.50629,
+   "sun_earth_sep": 117.498486,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -614,21 +614,21 @@
    "site_id": "apollo11",
    "utc": "2024-03-06T12:30:45Z",
    "sun": {
-    "az": 89.283423,
-    "el": 12.235474,
+    "az": 267.704229,
+    "el": 38.111932,
     "radius": 0.2666,
     "fraction": 1.0
    },
    "earth": {
-    "az": 279.722263,
-    "el": 71.700316,
-    "radius": 0.918302,
+    "az": 256.535797,
+    "el": 60.120896,
+    "radius": 0.918447,
     "fraction": 1.0,
-    "dist_km": 397969.174
+    "dist_km": 397906.594
    },
-   "earth_el_geocentric": 71.778444,
-   "earth_az_geocentric": 279.722263,
-   "sun_earth_sep": 95.771657,
+   "earth_el_geocentric": 60.244918,
+   "earth_az_geocentric": 256.535797,
+   "sun_earth_sep": 23.117413,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -636,21 +636,21 @@
    "site_id": "apollo11",
    "utc": "2024-08-15T06:45:00Z",
    "sun": {
-    "az": 271.286136,
-    "el": -4.186009,
+    "az": 91.511378,
+    "el": -46.175319,
     "radius": 0.2666,
     "fraction": 0.0
    },
    "earth": {
-    "az": 287.099025,
-    "el": 73.68733,
-    "radius": 0.955386,
+    "az": 252.047605,
+    "el": 65.592964,
+    "radius": 0.904705,
     "fraction": 1.0,
-    "dist_km": 382522.971
+    "dist_km": 403949.719
    },
-   "earth_el_geocentric": 73.760026,
-   "earth_az_geocentric": 287.099025,
-   "sun_earth_sep": 78.493886,
+   "earth_el_geocentric": 65.694284,
+   "earth_az_geocentric": 252.047605,
+   "sun_earth_sep": 157.936556,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -658,21 +658,21 @@
    "site_id": "apollo11",
    "utc": "2025-09-17T02:15:30Z",
    "sun": {
-    "az": 90.207119,
-    "el": -6.164377,
+    "az": 270.837935,
+    "el": 56.540182,
     "radius": 0.2666,
-    "fraction": 0.0
+    "fraction": 1.0
    },
    "earth": {
-    "az": 266.501474,
-    "el": 59.076922,
-    "radius": 0.934141,
+    "az": 278.52325,
+    "el": 62.901494,
+    "radius": 1.0051,
     "fraction": 1.0,
-    "dist_km": 391221.86
+    "dist_km": 363604.815
    },
-   "earth_el_geocentric": 59.207039,
-   "earth_az_geocentric": 266.501474,
-   "sun_earth_sep": 127.010771,
+   "earth_el_geocentric": 63.025539,
+   "earth_az_geocentric": 278.52325,
+   "sun_earth_sep": 7.437355,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -680,21 +680,21 @@
    "site_id": "apollo11",
    "utc": "2026-07-04T05:37:20Z",
    "sun": {
-    "az": 91.442199,
-    "el": -69.133109,
+    "az": 90.294356,
+    "el": 60.488264,
     "radius": 0.2666,
-    "fraction": 0.0
+    "fraction": 1.0
    },
    "earth": {
-    "az": 250.089506,
-    "el": 73.199214,
-    "radius": 0.966377,
+    "az": 273.515172,
+    "el": 68.283521,
+    "radius": 0.906111,
     "fraction": 1.0,
-    "dist_km": 378172.807
+    "dist_km": 403323.089
    },
-   "earth_el_geocentric": 73.274882,
-   "earth_az_geocentric": 250.089506,
-   "sun_earth_sep": 172.060961,
+   "earth_el_geocentric": 68.374381,
+   "earth_az_geocentric": 273.515172,
+   "sun_earth_sep": 51.207054,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -702,21 +702,21 @@
    "site_id": "apollo11",
    "utc": "2028-02-29T12:00:00Z",
    "sun": {
-    "az": 264.862551,
-    "el": 70.414683,
+    "az": 274.034613,
+    "el": -59.05705,
     "radius": 0.2666,
-    "fraction": 1.0
+    "fraction": 0.0
    },
    "earth": {
-    "az": 251.508563,
-    "el": 72.773094,
-    "radius": 0.977383,
+    "az": 286.735727,
+    "el": 69.11172,
+    "radius": 0.909574,
     "fraction": 1.0,
-    "dist_km": 373914.763
+    "dist_km": 401787.553
    },
-   "earth_el_geocentric": 72.851503,
-   "earth_az_geocentric": 251.508563,
-   "sun_earth_sep": 4.816486,
+   "earth_el_geocentric": 69.199604,
+   "earth_az_geocentric": 286.735727,
+   "sun_earth_sep": 128.49644,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -724,27 +724,27 @@
    "site_id": "apollo11",
    "utc": "2030-12-31T23:00:00Z",
    "sun": {
-    "az": 269.095251,
-    "el": 35.280877,
+    "az": 67.997657,
+    "el": -85.325721,
     "radius": 0.2666,
-    "fraction": 1.0
+    "fraction": 0.0
    },
    "earth": {
-    "az": 265.940748,
-    "el": 58.746824,
-    "radius": 0.969743,
+    "az": 281.024474,
+    "el": 68.172795,
+    "radius": 1.008436,
     "fraction": 1.0,
-    "dist_km": 376860.274
+    "dist_km": 362402.037
    },
-   "earth_el_geocentric": 58.883179,
-   "earth_az_geocentric": 265.940748,
-   "sun_earth_sep": 23.558113,
+   "earth_el_geocentric": 68.274359,
+   "earth_az_geocentric": 281.024474,
+   "sun_earth_sep": 161.920186,
    "eclipse_partial": false,
    "eclipse_total": false
   },
   {
    "site_id": "apollo11",
-   "utc": "2025-06-01T10:20:00Z",
+   "utc": "2024-06-01T10:20:00Z",
    "sun": {
     "az": 269.164935,
     "el": 58.657204,
@@ -766,7 +766,7 @@
   },
   {
    "site_id": "apollo11",
-   "utc": "2025-06-01T08:45:00Z",
+   "utc": "2024-06-01T08:45:00Z",
    "sun": {
     "az": 269.089583,
     "el": 59.460858,
@@ -788,7 +788,7 @@
   },
   {
    "site_id": "apollo11",
-   "utc": "2025-06-01T07:59:00Z",
+   "utc": "2024-06-01T07:59:00Z",
    "sun": {
     "az": 269.051793,
     "el": 59.849981,
@@ -812,21 +812,21 @@
    "site_id": "chandrayaan3",
    "utc": "2024-01-01T00:00:00Z",
    "sun": {
-    "az": 145.941569,
-    "el": -17.318925,
+    "az": 19.107418,
+    "el": 18.773026,
     "radius": 0.2666,
-    "fraction": 0.0
+    "fraction": 1.0
    },
    "earth": {
-    "az": 325.941569,
-    "el": 17.056862,
-    "radius": 1.007484,
+    "az": 334.672441,
+    "el": 15.018643,
+    "radius": 0.953015,
     "fraction": 1.0,
-    "dist_km": 362744.429
+    "dist_km": 383474.571
    },
-   "earth_el_geocentric": 17.318925,
-   "earth_az_geocentric": 325.941569,
-   "sun_earth_sep": 179.737937,
+   "earth_el_geocentric": 15.269145,
+   "earth_az_geocentric": 334.672441,
+   "sun_earth_sep": 42.57774,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -834,21 +834,21 @@
    "site_id": "chandrayaan3",
    "utc": "2024-01-19T15:20:00Z",
    "sun": {
-    "az": 279.308708,
-    "el": 4.991168,
+    "az": 149.022279,
+    "el": -18.789931,
     "radius": 0.2666,
-    "fraction": 1.0
+    "fraction": 0.0
    },
    "earth": {
-    "az": 317.201504,
-    "el": 21.536447,
-    "radius": 0.929473,
+    "az": 323.034863,
+    "el": 12.511179,
+    "radius": 1.000405,
     "fraction": 1.0,
-    "dist_km": 393186.503
+    "dist_km": 365311.087
    },
-   "earth_el_geocentric": 21.771637,
-   "earth_az_geocentric": 317.201504,
-   "sun_earth_sep": 40.251121,
+   "earth_el_geocentric": 12.77701,
+   "earth_az_geocentric": 323.034863,
+   "sun_earth_sep": 171.478287,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -856,21 +856,21 @@
    "site_id": "chandrayaan3",
    "utc": "2024-02-22T23:24:00Z",
    "sun": {
-    "az": 223.639615,
-    "el": -14.715793,
+    "az": 91.689176,
+    "el": -1.904606,
     "radius": 0.2666,
     "fraction": 0.0
    },
    "earth": {
-    "az": 321.661089,
-    "el": 18.444768,
-    "radius": 1.000822,
+    "az": 333.922894,
+    "el": 13.189718,
+    "radius": 0.977949,
     "fraction": 1.0,
-    "dist_km": 365158.832
+    "dist_km": 373698.381
    },
-   "earth_el_geocentric": 18.703062,
-   "earth_az_geocentric": 321.661089,
-   "sun_earth_sep": 102.028864,
+   "earth_el_geocentric": 13.448873,
+   "earth_az_geocentric": 333.922894,
+   "sun_earth_sep": 117.445802,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -878,21 +878,21 @@
    "site_id": "chandrayaan3",
    "utc": "2024-03-06T12:30:45Z",
    "sun": {
-    "az": 69.886813,
-    "el": 6.481467,
+    "az": 297.268844,
+    "el": 11.247785,
     "radius": 0.2666,
     "fraction": 1.0
    },
    "earth": {
-    "az": 332.240428,
-    "el": 14.461599,
-    "radius": 0.915517,
+    "az": 318.797999,
+    "el": 21.79699,
+    "radius": 0.916472,
     "fraction": 1.0,
-    "dist_km": 399179.693
+    "dist_km": 398763.735
    },
-   "earth_el_geocentric": 14.702884,
-   "earth_az_geocentric": 332.240428,
-   "sun_earth_sep": 95.729338,
+   "earth_el_geocentric": 22.028473,
+   "earth_az_geocentric": 318.797999,
+   "sun_earth_sep": 23.13796,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -900,21 +900,21 @@
    "site_id": "chandrayaan3",
    "utc": "2024-08-15T06:45:00Z",
    "sun": {
-    "az": 258.188404,
-    "el": -5.719644,
+    "az": 125.962419,
+    "el": -10.864783,
     "radius": 0.2666,
     "fraction": 0.0
    },
    "earth": {
-    "az": 334.966703,
-    "el": 13.151896,
-    "radius": 0.952233,
+    "az": 324.777179,
+    "el": 23.678598,
+    "radius": 0.902739,
     "fraction": 1.0,
-    "dist_km": 383789.724
+    "dist_km": 404829.646
    },
-   "earth_el_geocentric": 13.404284,
-   "earth_az_geocentric": 334.966703,
-   "sun_earth_sep": 78.525293,
+   "earth_el_geocentric": 23.903472,
+   "earth_az_geocentric": 324.777179,
+   "sun_earth_sep": 157.977663,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -922,21 +922,21 @@
    "site_id": "chandrayaan3",
    "utc": "2025-09-17T02:15:30Z",
    "sun": {
-    "az": 87.584583,
-    "el": 1.206118,
+    "az": 316.056776,
+    "el": 14.107136,
     "radius": 0.2666,
     "fraction": 1.0
    },
    "earth": {
-    "az": 318.246717,
-    "el": 16.687135,
-    "radius": 0.93179,
+    "az": 323.573658,
+    "el": 12.024433,
+    "radius": 1.001849,
     "fraction": 1.0,
-    "dist_km": 392209.095
+    "dist_km": 364784.615
    },
-   "earth_el_geocentric": 16.930018,
-   "earth_az_geocentric": 318.246717,
-   "sun_earth_sep": 126.942867,
+   "earth_el_geocentric": 12.291149,
+   "earth_az_geocentric": 323.573658,
+   "sun_earth_sep": 7.612005,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -944,21 +944,21 @@
    "site_id": "chandrayaan3",
    "utc": "2026-07-04T05:37:20Z",
    "sun": {
-    "az": 148.846928,
-    "el": -16.691232,
+    "az": 21.888571,
+    "el": 18.806585,
     "radius": 0.2666,
-    "fraction": 0.0
+    "fraction": 1.0
    },
    "earth": {
-    "az": 333.086092,
-    "el": 23.352386,
-    "radius": 0.963906,
+    "az": 328.247467,
+    "el": 15.555162,
+    "radius": 0.90355,
     "fraction": 1.0,
-    "dist_km": 379142.293
+    "dist_km": 404466.384
    },
-   "earth_el_geocentric": 23.593069,
-   "earth_az_geocentric": 333.086092,
-   "sun_earth_sep": 172.240548,
+   "earth_el_geocentric": 15.792062,
+   "earth_az_geocentric": 328.247467,
+   "sun_earth_sep": 51.164556,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -966,21 +966,21 @@
    "site_id": "chandrayaan3",
    "utc": "2028-02-29T12:00:00Z",
    "sun": {
-    "az": 329.829365,
-    "el": 19.127051,
+    "az": 203.596523,
+    "el": -20.540077,
     "radius": 0.2666,
-    "fraction": 1.0
+    "fraction": 0.0
    },
    "earth": {
-    "az": 332.557851,
-    "el": 23.009665,
-    "radius": 0.974841,
+    "az": 330.689297,
+    "el": 11.326034,
+    "radius": 0.906693,
     "fraction": 1.0,
-    "dist_km": 374889.994
+    "dist_km": 403064.527
    },
-   "earth_el_geocentric": 23.253704,
-   "earth_az_geocentric": 332.557851,
-   "sun_earth_sep": 4.642579,
+   "earth_el_geocentric": 11.568065,
+   "earth_az_geocentric": 330.689297,
+   "sun_earth_sep": 128.511668,
    "eclipse_partial": false,
    "eclipse_total": false
   },
@@ -988,87 +988,87 @@
    "site_id": "chandrayaan3",
    "utc": "2030-12-31T23:00:00Z",
    "sun": {
-    "az": 294.846757,
-    "el": 9.355731,
+    "az": 165.85237,
+    "el": -21.132126,
     "radius": 0.2666,
-    "fraction": 1.0
+    "fraction": 0.0
    },
    "earth": {
-    "az": 317.860599,
-    "el": 16.905774,
-    "radius": 0.967239,
+    "az": 328.990866,
+    "el": 12.846728,
+    "radius": 1.005049,
     "fraction": 1.0,
-    "dist_km": 377835.93
+    "dist_km": 363623.303
    },
-   "earth_el_geocentric": 17.157589,
-   "earth_az_geocentric": 317.860599,
-   "sun_earth_sep": 23.624226,
+   "earth_el_geocentric": 13.113432,
+   "earth_az_geocentric": 328.990866,
+   "sun_earth_sep": 161.89085,
    "eclipse_partial": false,
    "eclipse_total": false
   },
   {
    "site_id": "chandrayaan3",
-   "utc": "2024-06-11T18:44:00Z",
+   "utc": "2025-11-14T04:14:00Z",
    "sun": {
-    "az": 321.387615,
-    "el": 16.56819,
+    "az": 327.907443,
+    "el": 17.868897,
     "radius": 0.2666,
     "fraction": 1.0
    },
    "earth": {
-    "az": 321.337312,
-    "el": 16.898065,
-    "radius": 0.997935,
+    "az": 327.811823,
+    "el": 18.203828,
+    "radius": 1.005729,
     "fraction": 1.0,
-    "dist_km": 366215.063
+    "dist_km": 363377.181
    },
-   "earth_el_geocentric": 17.157871,
-   "earth_az_geocentric": 321.337312,
-   "sun_earth_sep": 0.333375,
+   "earth_el_geocentric": 18.463753,
+   "earth_az_geocentric": 327.811823,
+   "sun_earth_sep": 0.347052,
    "eclipse_partial": true,
    "eclipse_total": true
   },
   {
    "site_id": "chandrayaan3",
-   "utc": "2024-06-11T17:06:00Z",
+   "utc": "2025-11-14T02:37:00Z",
    "sun": {
-    "az": 322.227406,
-    "el": 16.772336,
+    "az": 328.760296,
+    "el": 17.997356,
     "radius": 0.2666,
     "fraction": 1.0
    },
    "earth": {
-    "az": 321.209073,
-    "el": 16.977762,
-    "radius": 0.997445,
+    "az": 327.71046,
+    "el": 18.079717,
+    "radius": 1.005937,
     "fraction": 1.0,
-    "dist_km": 366394.856
+    "dist_km": 363302.349
    },
-   "earth_el_geocentric": 17.237329,
-   "earth_az_geocentric": 321.209073,
-   "sun_earth_sep": 0.995899,
+   "earth_el_geocentric": 18.339882,
+   "earth_az_geocentric": 327.71046,
+   "sun_earth_sep": 1.001625,
    "eclipse_partial": true,
    "eclipse_total": false
   },
   {
    "site_id": "chandrayaan3",
-   "utc": "2024-06-11T16:26:00Z",
+   "utc": "2025-11-14T01:57:00Z",
    "sun": {
-    "az": 322.570692,
-    "el": 16.854681,
+    "az": 329.112347,
+    "el": 18.049242,
     "radius": 0.2666,
     "fraction": 1.0
    },
    "earth": {
-    "az": 321.157064,
-    "el": 17.010283,
-    "radius": 0.997242,
+    "az": 327.668593,
+    "el": 18.028458,
+    "radius": 1.006018,
     "fraction": 1.0,
-    "dist_km": 366469.508
+    "dist_km": 363272.816
    },
-   "earth_el_geocentric": 17.269752,
-   "earth_az_geocentric": 321.157064,
-   "sun_earth_sep": 1.361264,
+   "earth_el_geocentric": 18.288721,
+   "earth_az_geocentric": 327.668593,
+   "sun_earth_sep": 1.372942,
    "eclipse_partial": false,
    "eclipse_total": false
   }
@@ -1081,92 +1081,34 @@
     "site_id": "im1",
     "start_utc": "2024-01-19T00:00:00Z",
     "end_utc": "2024-02-02T00:00:00Z",
-    "sunlit_h": 105.333333,
+    "sunlit_h": 130.5,
     "earth_visible_pct": 100.0,
-    "both_visible_h": 105.333333,
-    "longest_dark_gap_h": 230.666667,
-    "next_sunset_utc": "2024-01-23T09:13:15Z",
-    "next_earthset_utc": null,
-    "eclipse_h": 0.0,
-    "band": {
-     "lo": {
-      "site_id": "im1",
-      "start_utc": "2024-01-19T00:00:00Z",
-      "end_utc": "2024-02-02T00:00:00Z",
-      "sunlit_h": 105.833333,
-      "earth_visible_pct": 100.0,
-      "both_visible_h": 105.833333,
-      "longest_dark_gap_h": 230.166667,
-      "next_sunset_utc": "2024-01-23T09:46:20Z",
-      "next_earthset_utc": null,
-      "eclipse_h": 0.0
-     },
-     "hi": {
-      "site_id": "im1",
-      "start_utc": "2024-01-19T00:00:00Z",
-      "end_utc": "2024-02-02T00:00:00Z",
-      "sunlit_h": 104.833333,
-      "earth_visible_pct": 100.0,
-      "both_visible_h": 104.833333,
-      "longest_dark_gap_h": 231.166667,
-      "next_sunset_utc": "2024-01-23T08:40:15Z",
-      "next_earthset_utc": null,
-      "eclipse_h": 0.0
-     }
-    }
-   }
-  },
-  {
-   "mode": "centre",
-   "days": 14,
-   "metrics": {
-    "site_id": "im1",
-    "start_utc": "2024-01-19T00:00:00Z",
-    "end_utc": "2024-02-02T00:00:00Z",
-    "sunlit_h": 102.333333,
-    "earth_visible_pct": 100.0,
-    "both_visible_h": 102.333333,
-    "longest_dark_gap_h": 233.666667,
-    "next_sunset_utc": "2024-01-23T06:17:38Z",
-    "next_earthset_utc": null,
-    "eclipse_h": 0.0
-   }
-  },
-  {
-   "mode": "limb",
-   "days": 14,
-   "metrics": {
-    "site_id": "im1",
-    "start_utc": "2024-02-22T00:00:00Z",
-    "end_utc": "2024-03-07T00:00:00Z",
-    "sunlit_h": 0.0,
-    "earth_visible_pct": 100.0,
-    "both_visible_h": 0.0,
-    "longest_dark_gap_h": 336.0,
+    "both_visible_h": 130.5,
+    "longest_dark_gap_h": 205.5,
     "next_sunset_utc": null,
     "next_earthset_utc": null,
     "eclipse_h": 0.0,
     "band": {
      "lo": {
       "site_id": "im1",
-      "start_utc": "2024-02-22T00:00:00Z",
-      "end_utc": "2024-03-07T00:00:00Z",
-      "sunlit_h": 0.0,
+      "start_utc": "2024-01-19T00:00:00Z",
+      "end_utc": "2024-02-02T00:00:00Z",
+      "sunlit_h": 131.166667,
       "earth_visible_pct": 100.0,
-      "both_visible_h": 0.0,
-      "longest_dark_gap_h": 336.0,
+      "both_visible_h": 131.166667,
+      "longest_dark_gap_h": 204.833333,
       "next_sunset_utc": null,
       "next_earthset_utc": null,
       "eclipse_h": 0.0
      },
      "hi": {
       "site_id": "im1",
-      "start_utc": "2024-02-22T00:00:00Z",
-      "end_utc": "2024-03-07T00:00:00Z",
-      "sunlit_h": 0.0,
+      "start_utc": "2024-01-19T00:00:00Z",
+      "end_utc": "2024-02-02T00:00:00Z",
+      "sunlit_h": 130.0,
       "earth_visible_pct": 100.0,
-      "both_visible_h": 0.0,
-      "longest_dark_gap_h": 336.0,
+      "both_visible_h": 130.0,
+      "longest_dark_gap_h": 206.0,
       "next_sunset_utc": null,
       "next_earthset_utc": null,
       "eclipse_h": 0.0
@@ -1179,12 +1121,70 @@
    "days": 14,
    "metrics": {
     "site_id": "im1",
+    "start_utc": "2024-01-19T00:00:00Z",
+    "end_utc": "2024-02-02T00:00:00Z",
+    "sunlit_h": 127.833333,
+    "earth_visible_pct": 100.0,
+    "both_visible_h": 127.833333,
+    "longest_dark_gap_h": 208.166667,
+    "next_sunset_utc": null,
+    "next_earthset_utc": null,
+    "eclipse_h": 0.0
+   }
+  },
+  {
+   "mode": "limb",
+   "days": 14,
+   "metrics": {
+    "site_id": "im1",
     "start_utc": "2024-02-22T00:00:00Z",
     "end_utc": "2024-03-07T00:00:00Z",
-    "sunlit_h": 0.0,
+    "sunlit_h": 245.166667,
     "earth_visible_pct": 100.0,
-    "both_visible_h": 0.0,
-    "longest_dark_gap_h": 336.0,
+    "both_visible_h": 245.166667,
+    "longest_dark_gap_h": 90.833333,
+    "next_sunset_utc": null,
+    "next_earthset_utc": null,
+    "eclipse_h": 0.0,
+    "band": {
+     "lo": {
+      "site_id": "im1",
+      "start_utc": "2024-02-22T00:00:00Z",
+      "end_utc": "2024-03-07T00:00:00Z",
+      "sunlit_h": 245.666667,
+      "earth_visible_pct": 100.0,
+      "both_visible_h": 245.666667,
+      "longest_dark_gap_h": 90.333333,
+      "next_sunset_utc": null,
+      "next_earthset_utc": null,
+      "eclipse_h": 0.0
+     },
+     "hi": {
+      "site_id": "im1",
+      "start_utc": "2024-02-22T00:00:00Z",
+      "end_utc": "2024-03-07T00:00:00Z",
+      "sunlit_h": 244.666667,
+      "earth_visible_pct": 100.0,
+      "both_visible_h": 244.666667,
+      "longest_dark_gap_h": 91.333333,
+      "next_sunset_utc": null,
+      "next_earthset_utc": null,
+      "eclipse_h": 0.0
+     }
+    }
+   }
+  },
+  {
+   "mode": "centre",
+   "days": 14,
+   "metrics": {
+    "site_id": "im1",
+    "start_utc": "2024-02-22T00:00:00Z",
+    "end_utc": "2024-03-07T00:00:00Z",
+    "sunlit_h": 242.5,
+    "earth_visible_pct": 100.0,
+    "both_visible_h": 242.5,
+    "longest_dark_gap_h": 93.5,
     "next_sunset_utc": null,
     "next_earthset_utc": null,
     "eclipse_h": 0.0
@@ -1197,11 +1197,11 @@
     "site_id": "slim",
     "start_utc": "2024-01-19T00:00:00Z",
     "end_utc": "2024-02-02T00:00:00Z",
-    "sunlit_h": 51.0,
+    "sunlit_h": 186.666667,
     "earth_visible_pct": 100.0,
-    "both_visible_h": 51.0,
-    "longest_dark_gap_h": 285.0,
-    "next_sunset_utc": "2024-01-21T02:57:37Z",
+    "both_visible_h": 186.666667,
+    "longest_dark_gap_h": 149.333333,
+    "next_sunset_utc": null,
     "next_earthset_utc": null,
     "eclipse_h": 0.0,
     "band": {
@@ -1209,11 +1209,11 @@
       "site_id": "slim",
       "start_utc": "2024-01-19T00:00:00Z",
       "end_utc": "2024-02-02T00:00:00Z",
-      "sunlit_h": 51.166667,
+      "sunlit_h": 186.666667,
       "earth_visible_pct": 100.0,
-      "both_visible_h": 51.166667,
-      "longest_dark_gap_h": 284.833333,
-      "next_sunset_utc": "2024-01-21T03:03:41Z",
+      "both_visible_h": 186.666667,
+      "longest_dark_gap_h": 149.333333,
+      "next_sunset_utc": null,
       "next_earthset_utc": null,
       "eclipse_h": 0.0
      },
@@ -1221,11 +1221,11 @@
       "site_id": "slim",
       "start_utc": "2024-01-19T00:00:00Z",
       "end_utc": "2024-02-02T00:00:00Z",
-      "sunlit_h": 51.0,
+      "sunlit_h": 186.5,
       "earth_visible_pct": 100.0,
-      "both_visible_h": 51.0,
-      "longest_dark_gap_h": 285.0,
-      "next_sunset_utc": "2024-01-21T02:51:33Z",
+      "both_visible_h": 186.5,
+      "longest_dark_gap_h": 149.5,
+      "next_sunset_utc": null,
       "next_earthset_utc": null,
       "eclipse_h": 0.0
      }
@@ -1239,11 +1239,11 @@
     "site_id": "slim",
     "start_utc": "2024-01-19T00:00:00Z",
     "end_utc": "2024-02-02T00:00:00Z",
-    "sunlit_h": 50.5,
+    "sunlit_h": 186.166667,
     "earth_visible_pct": 100.0,
-    "both_visible_h": 50.5,
-    "longest_dark_gap_h": 285.5,
-    "next_sunset_utc": "2024-01-21T02:25:15Z",
+    "both_visible_h": 186.166667,
+    "longest_dark_gap_h": 149.833333,
+    "next_sunset_utc": null,
     "next_earthset_utc": null,
     "eclipse_h": 0.0
    }
@@ -1255,36 +1255,36 @@
     "site_id": "im2",
     "start_utc": "2024-01-01T00:00:00Z",
     "end_utc": "2024-01-29T00:00:00Z",
-    "sunlit_h": 344.333333,
-    "earth_visible_pct": 78.74504,
-    "both_visible_h": 258.5,
-    "longest_dark_gap_h": 178.166667,
-    "next_sunset_utc": "2024-01-21T13:47:45Z",
-    "next_earthset_utc": "2024-01-04T20:27:57Z",
+    "sunlit_h": 311.166667,
+    "earth_visible_pct": 78.249008,
+    "both_visible_h": 292.833333,
+    "longest_dark_gap_h": 360.833333,
+    "next_sunset_utc": "2024-01-10T22:08:17Z",
+    "next_earthset_utc": "2024-01-20T15:06:38Z",
     "eclipse_h": 0.0,
     "band": {
      "lo": {
       "site_id": "im2",
       "start_utc": "2024-01-01T00:00:00Z",
       "end_utc": "2024-01-29T00:00:00Z",
-      "sunlit_h": 346.666667,
-      "earth_visible_pct": 79.141865,
-      "both_visible_h": 261.0,
-      "longest_dark_gap_h": 177.0,
-      "next_sunset_utc": "2024-01-21T14:50:43Z",
-      "next_earthset_utc": "2024-01-04T21:43:22Z",
+      "sunlit_h": 313.0,
+      "earth_visible_pct": 78.645833,
+      "both_visible_h": 295.166667,
+      "longest_dark_gap_h": 359.0,
+      "next_sunset_utc": "2024-01-10T23:08:32Z",
+      "next_earthset_utc": "2024-01-20T16:21:57Z",
       "eclipse_h": 0.0
      },
      "hi": {
       "site_id": "im2",
       "start_utc": "2024-01-01T00:00:00Z",
       "end_utc": "2024-01-29T00:00:00Z",
-      "sunlit_h": 342.166667,
-      "earth_visible_pct": 78.397817,
-      "both_visible_h": 256.333333,
-      "longest_dark_gap_h": 179.166667,
-      "next_sunset_utc": "2024-01-21T12:44:59Z",
-      "next_earthset_utc": "2024-01-04T19:13:34Z",
+      "sunlit_h": 309.166667,
+      "earth_visible_pct": 77.901786,
+      "both_visible_h": 290.666667,
+      "longest_dark_gap_h": 362.833333,
+      "next_sunset_utc": "2024-01-10T21:08:13Z",
+      "next_earthset_utc": "2024-01-20T13:52:27Z",
       "eclipse_h": 0.0
      }
     }
@@ -1297,12 +1297,12 @@
     "site_id": "im2",
     "start_utc": "2024-01-01T00:00:00Z",
     "end_utc": "2024-01-29T00:00:00Z",
-    "sunlit_h": 332.333333,
-    "earth_visible_pct": 72.395833,
-    "both_visible_h": 232.5,
-    "longest_dark_gap_h": 183.666667,
-    "next_sunset_utc": "2024-01-21T08:16:27Z",
-    "next_earthset_utc": "2024-01-03T22:19:38Z",
+    "sunlit_h": 300.833333,
+    "earth_visible_pct": 71.800595,
+    "both_visible_h": 266.5,
+    "longest_dark_gap_h": 371.166667,
+    "next_sunset_utc": "2024-01-10T16:51:00Z",
+    "next_earthset_utc": "2024-01-19T16:50:55Z",
     "eclipse_h": 0.0
    }
   },
@@ -1313,37 +1313,37 @@
     "site_id": "im1",
     "start_utc": "2026-11-01T00:00:00Z",
     "end_utc": "2026-11-29T00:00:00Z",
-    "sunlit_h": 347.833333,
+    "sunlit_h": 315.166667,
     "earth_visible_pct": 100.0,
-    "both_visible_h": 347.833333,
-    "longest_dark_gap_h": 168.166667,
-    "next_sunset_utc": "2026-11-21T23:40:12Z",
+    "both_visible_h": 315.166667,
+    "longest_dark_gap_h": 356.833333,
+    "next_sunset_utc": "2026-11-11T07:31:35Z",
     "next_earthset_utc": null,
-    "eclipse_h": 4.166667,
+    "eclipse_h": 0.0,
     "band": {
      "lo": {
       "site_id": "im1",
       "start_utc": "2026-11-01T00:00:00Z",
       "end_utc": "2026-11-29T00:00:00Z",
-      "sunlit_h": 349.0,
+      "sunlit_h": 316.166667,
       "earth_visible_pct": 100.0,
-      "both_visible_h": 349.0,
-      "longest_dark_gap_h": 167.666667,
-      "next_sunset_utc": "2026-11-22T00:13:54Z",
+      "both_visible_h": 316.166667,
+      "longest_dark_gap_h": 355.833333,
+      "next_sunset_utc": "2026-11-11T08:04:31Z",
       "next_earthset_utc": null,
-      "eclipse_h": 4.166667
+      "eclipse_h": 0.0
      },
      "hi": {
       "site_id": "im1",
       "start_utc": "2026-11-01T00:00:00Z",
       "end_utc": "2026-11-29T00:00:00Z",
-      "sunlit_h": 346.666667,
+      "sunlit_h": 314.0,
       "earth_visible_pct": 100.0,
-      "both_visible_h": 346.666667,
-      "longest_dark_gap_h": 168.833333,
-      "next_sunset_utc": "2026-11-21T23:06:32Z",
+      "both_visible_h": 314.0,
+      "longest_dark_gap_h": 358.0,
+      "next_sunset_utc": "2026-11-11T06:58:43Z",
       "next_earthset_utc": null,
-      "eclipse_h": 4.166667
+      "eclipse_h": 0.0
      }
     }
    }
@@ -1355,13 +1355,13 @@
     "site_id": "im1",
     "start_utc": "2026-11-01T00:00:00Z",
     "end_utc": "2026-11-29T00:00:00Z",
-    "sunlit_h": 341.666667,
+    "sunlit_h": 309.333333,
     "earth_visible_pct": 100.0,
-    "both_visible_h": 341.666667,
-    "longest_dark_gap_h": 171.166667,
-    "next_sunset_utc": "2026-11-21T20:41:16Z",
+    "both_visible_h": 309.333333,
+    "longest_dark_gap_h": 362.666667,
+    "next_sunset_utc": "2026-11-11T04:36:42Z",
     "next_earthset_utc": null,
-    "eclipse_h": 4.166667
+    "eclipse_h": 0.0
    }
   }
  ]

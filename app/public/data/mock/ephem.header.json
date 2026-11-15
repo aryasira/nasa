@@ -1,9 +1,9 @@
 {
   "$comment": "AI-ASSISTED. Contract for app/public/data/ephem.bin. schema_version 1. Frozen Sat 17:00 CT.",
   "schema_version": 1,
-  "t0_utc": "2024-01-01T00:00:00Z",
+  "t0_utc": "2023-01-01T00:00:00Z",
   "step_s": 3600,
-  "n": 61368,
+  "n": 70128,
   "layout": [
     "sun_ux",
     "sun_uy",
@@ -19,7 +19,7 @@
   "frame": "MOON_ME",
   "observer": "MOON (center)",
   "abcorr": "LT+S",
-  "notes": "Row i is time t0 + i*step_s. Sun is a unit vector from Moon centre plus distance in AU. Earth is a position vector in km from Moon centre; the app MUST subtract the site vector (topocentric). n covers 2024-01-01T00Z through 2030-12-31T23Z inclusive.",
+  "notes": "Row i is time t0 + i*step_s. Sun is a unit vector from Moon centre plus distance in AU. Earth is a position vector in km from Moon centre; the app MUST subtract the site vector (topocentric). n covers 2023-01-01T00Z through 2030-12-31T23Z inclusive (start moved from 2024 to 2023 on Sat 14 Nov, approved by C and the human; layout unchanged, schema_version stays 1).",
   "kernels": [
     "naif0012.tls",
     "pck00011.tpc",

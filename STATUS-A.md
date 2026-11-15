@@ -1,6 +1,6 @@
 # STATUS-A
 
-_Updated: Sat 14 Nov 2026, 19:55 CT_
+_Updated: Sun 15 Nov 2026, 12:25 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
 
@@ -56,13 +56,95 @@ _Updated: Sat 14 Nov 2026, 19:55 CT_
   - New optional near-field layer for im1 and im2: `--fine 40` or `--fine 20`.
   - `run_all.py --horizons-only` redoes horizons, doc and tests without touching ephem or fixtures.
 
+- **Round 2 code (23:55), all in one Mac run: `python3 pipeline/run_all.py --fine 40`.**
+  - Merged `main` (6fda338). Re-read CONTEXT.md and PLAN.md.
+  - Task 1: `contracts/ephem.header.json` now `t0_utc 2023-01-01T00:00:00Z`, `n 70128`, notes updated.
+    Only those three fields changed. Mocks and golden vectors regenerated with C's tools.
+    Fixtures: the 140 round-1 epochs do not move. `chandrayaan3` gains 10 epochs, 27 h apart,
+    from 2023-08-23T12:30Z to 2023-09-02T15:30Z. Expected total: 160 fixtures.
+  - Task 2: bands are on by default for every terrain site. A full band wider than 0.5 deg at the
+    highest horizon point prints `WIDE BAND` and sets `band_flag` in `pipeline/reports/horizons.json`.
+  - Task 3: `shackleton_sr1` and `shackleton_sr2` horizons use PGDA 78 Site04 5 m, then the 40 m
+    grid to 100 km (with `--fine 40`), then 80 m to 220 km. Until C adds them to `sites.json` the
+    brief's coordinates are used and the file says so in `site_used.point_from`.
+    **`de_gerlache_rim` is skipped.** No published high-illumination point with coordinates was found.
+  - Task 5: `docs/science.md` opens with a validation report (Horizons, Connecting Ridge against
+    Glaeser 2014, band widths, data products with citations and kernel sizes). It fills from the run.
+  - Tests: 32 total. 31 pass. **1 fails until the Mac run:** `tests/contracts::test_ephem[data]`,
+    because the committed real `ephem.bin` still starts in 2024.
+
+- 00:05: occluder naming no longer uses a feature that contains the site. Committed files are
+  relabelled (`make_horizons.py --rematch`, no DEM needed) and the Mac run uses the same rule.
+  im2: named directions 720 to 49 (Malapert, Nobile). connecting_ridge: 591 to 138
+  (de Gerlache, Mons Malapert, Mons Mouton). The skipped ids are in `site_used.stands_on`.
+
+- 10:05: merged `main` (abc7ad7). REVIEW.md items for A: item 1 done Sat 23:41 (df8581e);
+  item 2 done now (`check_vs_horizons.py` accepts the last ephemeris row).
+- **10:05: the Mac run has not been pushed yet.** `a/data` on GitHub has no commit after Sat 23:41.
+
+- 11:50: looked at the live site in a browser. It makes 12 failed requests (404), one per
+  site in `sites.json` without a horizon file. Ten are the new flat-horizon sites C added
+  (apollo14 to 17, surveyor7, luna17, luna24, change3, change4, change5). Their horizon files are
+  now generated and committed. The other two are `shackleton_sr1` and `shackleton_sr2`, which
+  need the Mac run.
+
+- 12:05: two additions for the Mac run, both tested on synthetic terrain.
+  - Grid confidence: `occluder.res_m` and `occluder.cells` per azimuth in every terrain horizon.
+    `cells` = occluder distance / grid size of the layer it was found in. Under 3 is low confidence.
+  - Optional observer heights: `--masts 5,10` writes `horizon/<id>.mast5.json` and
+    `horizon/<id>.mast10.json` next to the standard 2 m file. Same schema, `mast_m` set.
+  - Recommended run is now `python3 pipeline/run_all.py --fine 40 --masts 5,10`.
+
+- **12:25: THE MAC RUN IS IN (8835191) AND CHECKED. Round 2 "done means" is met.**
+  - Ephemeris from 2023-01-01, n = 70128. All 34 tests pass.
+  - Residuals: PASS, 160 of 160 fixtures within 0.01 deg. Largest gap 0.0007 deg.
+  - Bands on all six terrain sites, `dem.sigma_m` set. Full width at the highest horizon point:
+    im1 0.34, im2 0.002, chandrayaan3 0.005, connecting_ridge 0.20, shackleton_sr1 0.003,
+    shackleton_sr2 0.004 deg. All well under 1 deg. Nothing flagged.
+    Widest anywhere on a horizon: connecting_ridge 1.58 deg and im1 1.33 deg, at low azimuths
+    where the occluder is a few hundred metres away.
+  - **Task 4, DEM heights for C:** `im2` 5321.8 m (40 m grid). `connecting_ridge` 1958.6 m (5 m).
+    Also `im1` 2592.1 m, `shackleton_sr1` 1734.0 m, `shackleton_sr2` 1727.8 m (40 m grid).
+  - **IM-1 near-field check:** the occluder near az 69 deg survives on the 40 m grid. Distance
+    280 m (7 cells), elevation 6.33 deg against 6.34 deg on the 80 m grid. Whole horizon moved by
+    0.02 deg on average, 0.19 deg at most. It is real terrain at this scale, not an 80 m artifact.
+  - **Known limit:** the run read the 40 m grid ahead of the Site04 5 m tile, so both Shackleton
+    horizons are 40 m terrain. Their `dem` metadata now says so. The order is fixed in the pipeline.
+  - The run did not use `--masts`, and it started before the confidence fields were pushed, so
+    there are no mast files and no `occluder.cells` yet.
+
 ## In progress
-- Waiting for the human to run `python pipeline/run_all.py --horizons-only --fine 40`.
+- Nothing blocking.
 
 ## Next
-- Commit the banded horizons. Check band widths are sane. Sun 13:00: validation report.
+- Optional 1-minute rerun (DEMs are cached): `python3 pipeline/run_all.py --horizons-only --fine 40 --masts 5,10`.
+  Adds 5 m terrain at the Shackleton sites, `occluder.cells`, and 5 m / 10 m mast files.
 
 ## Blocked / needs other agent
+- **C (12:25): `a/data` is now safe to merge into `main` in full.** The earlier "do not merge" note
+  is void. Contract, mocks, golden vectors and real data all agree on the 2023 start.
+- **B (12:05):** after the Mac run, use `occluder.cells[az]` for a confidence tag on terrain
+  causes: under 3 cells say "nearby terrain, low confidence" and do not headline it. If the
+  mast files exist, a 2 / 5 / 10 m selector can load `horizon/<id>.mast<h>.json`.
+- **C (11:50): the horizon folder on `a/data` is safe to take now, without the contract change:**
+  `git checkout origin/a/data -- app/public/data/horizon/` then commit. That removes ten 404s on
+  the live site and ships the occluder naming fix (im2 no longer reads Mons Mouton everywhere).
+  Do not take `contracts/`, `app/public/data/mock/` or `tests/golden/` until the Mac run is in.
+- **B (seen live, IM-1, 19 Jan 2024, +60 d):** the three alternate-site rows show the IM-1 cause
+  line ("... at IM-1 Odysseus"). The headline cause is terrain "< 0.5 km" away at az 69 deg. That
+  occluder sits within a few cells of the 80 m grid, so treat it as soft until the 40 m run.
+- **B:** `site_used.stands_on` lists the features the site stands on (im2: `mons_mouton`). Use it
+  for a "site is on Mons Mouton" label if wanted. Occluders on that ground are now null, so they
+  read as unnamed local terrain.
+- **Human / C: do not merge `a/data` into `main` before the Mac run.** The contract says 2023 but the
+  real `ephem.bin` is still 2024 until then. One contract test is red in between.
+- **B:** after the Mac run the fixture count is 160, not 140, and the ephemeris has 70128 rows.
+  Recompute the Connecting Ridge 91.2 percent figure on the new span. `connecting_ridge` terrain
+  layers are unchanged on purpose so that figure moves only because of the span.
+- **C:** lead sentence 3 says 140 points at seven sites. After the run it is 160 points, same seven sites.
+- **C:** add `shackleton_sr1` and `shackleton_sr2` to `data-src/sites.yaml` with `terrain: lola`.
+  The DEM file for both is `Site04_final_adj_5mpp_surf.tif` (PGDA 78). Its name follows the Site01
+  pattern; the Mac run confirms it downloads.
 - **Human:** `main` is still the scaffold commit 84dcbb4 at 19:25 CT. The 17:00 merge did not
   happen. `a/data` (and `b/app`, `c/work`) are waiting to be merged.
 - **Human:** this cloud workspace gets HTTP 403 from naif.jpl.nasa.gov, ssd.jpl.nasa.gov,
