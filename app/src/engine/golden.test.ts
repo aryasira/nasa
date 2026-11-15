@@ -110,7 +110,7 @@ describe.skipIf(!existsSync(root + REAL + '/ephem.bin'))('real data', () => {
     expect(worst).toBeLessThan(0.3);
   });
 
-  it('cause lines add up exactly to the change in visible hours', () => {
+  it('cause lines (all pieces, threshold off) sum to the change in visible hours per body', () => {
     const features = json<FeaturesFile>(REAL + '/features.json');
     for (const id of ['im1', 'im2', 'connecting_ridge']) {
       const f = siteFrame(r.site(id)), hz = r.hz(id);
