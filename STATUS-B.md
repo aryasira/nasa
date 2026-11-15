@@ -122,3 +122,17 @@ The split is exact. Pieces under 0.5 h are not listed.
   memory). A reload offline needs a service worker in `app/public/`, which is outside B's paths.
 - **Human:** GitHub Pages will not deploy while the repo is private on a free plan, and the deploy step has
   `continue-on-error: true`, so CI stays green either way. No LICENSE file yet.
+
+## Fixes made from the Agent A session at the human's request (Sun 15 Nov, 12:45 CT, branch `b/a-fixes`)
+Branch = `b/app` (ab910bd) + `main` (e1c712e) + `a/data` (8670e9d, the checked Mac run) + the fixes below.
+Vitest 43 passed, Python 34 passed, `npm run build` ok. Not looked at in a browser.
+- Works with the new data: `site_used.stands_on` is a list now; `siteIsOn` accepts list or string.
+- Regression numbers moved by one 10-minute sample on the 40 m terrain: IM-1 baseline 155.3 -> 155.5 h
+  (slipped stays 82.0 h); IM-2 Earth -82.3 -> -82.5 h, Sun -90.3 -> -90.5 h. Tests updated.
+  **C: lead sentences and page copy that quote 155.3 h need 155.5 h.**
+- A link to an unknown or not-yet-built site now shows a notice instead of silently loading IM-1.
+- `mode=center` is accepted as `centre`; an unknown mode shows a notice.
+- Cause lines use one decimal ("lost 18.5 h"), matching the "-18.5 h" beside them.
+- An earlier landing is labelled "10 d earlier", not "-10 d slip".
+Not done: confidence tag (needs `occluder.cells`, not in the data yet), Earth elevation mask,
+Sun fraction, heat map, exports, mast selector, Web Worker.

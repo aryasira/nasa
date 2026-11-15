@@ -138,13 +138,15 @@ function gcKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
 
 /** True when the named feature is the ground the site stands on (the site is inside its radius). */
 export function siteIsOn(hz: HorizonFile, f: Feature): boolean {
-  const su = (hz as HorizonFile & { site_used?: { lat: number; lon_e: number; stands_on?: string | null } }).site_used;
+  const su = (hz as HorizonFile & { site_used?: { lat: number; lon_e: number; stands_on?: string | string[] | null } }).site_used;
   if (!su) return false;
-  if (su.stands_on != null) return su.stands_on === f.id;
+  // The pipeline writes a list of feature ids; older files had one id or nothing.
+  if (su.stands_on != null) return Array.isArray(su.stands_on) ? su.stands_on.includes(f.id) : su.stands_on === f.id;
   return f.radius_km != null && gcKm(su.lat, su.lon_e, f.lat, f.lon_e) <= f.radius_km;
 }
 
-const fmtH = (h: number) => (Math.abs(h) >= 10 ? Math.abs(h).toFixed(0) : Math.abs(h).toFixed(1));
+// One decimal, like every other hour figure in the brief, so "lost 18.5 h" matches the "−18.5 h" beside it.
+const fmtH = (h: number) => Math.abs(h).toFixed(1);
 const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
 export const compass = (az: number) => COMPASS[Math.round(az / 22.5) % 16];
 

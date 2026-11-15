@@ -38,6 +38,8 @@ const PRESETS: { id: string; label: string; state: Partial<State>; note: string 
     note: 'Illustration: Earth sets at Mons Mouton for part of each month.' },
 ];
 
+/** Set when the link asked for something that could not be honoured; shown once above the brief. */
+let linkNote = '';
 function readState(sites: Site[] | null): State {
   const q = new URLSearchParams(location.search);
   const num = (k: string, d: number, lo: number, hi: number) => {
@@ -45,12 +47,20 @@ function readState(sites: Site[] | null): State {
     return q.has(k) && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d;
   };
   const site = q.get('site') ?? 'im1';
+  const known = !sites || sites.some((s) => s.id === site);
+  const mode = q.get('mode');
+  if (sites) {
+    linkNote = !known
+      ? `The link asked for site "${site}", which has no data here yet. Showing ${sites[0].name} instead.`
+      : mode !== null && !['limb', 'centre', 'center'].includes(mode)
+        ? `The link asked for visibility rule "${mode}", which is not known. Using "any part of the disc shows".` : '';
+  }
   return {
-    site: !sites || sites.some((s) => s.id === site) ? site : sites[0].id,
+    site: known ? site : sites![0].id,
     t: /^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(q.get('t') ?? '') ? q.get('t')! : '2024-01-19T23:24',
     stay: num('stay', 7, 1, 60),
     slip: Math.round(num('slip', 10, -90, 90)),
-    mode: q.get('mode') === 'centre' ? 'centre' : 'limb',
+    mode: mode === 'centre' || mode === 'center' ? 'centre' : 'limb',
     data: q.get('data') === 'mock' ? 'mock' : 'real',
   };
 }
@@ -245,6 +255,7 @@ function render(d: Data, s: State) {
   <header class="top"><h1>Slip Impact Brief</h1>
     <p>When a lunar landing slips, see which sunlight and direct-to-Earth windows a site gains or loses, and what causes each change: the terrain that blocks the view, its direction and its distance, or the Moon's own cycle.</p></header>
   ${d.mock ? '<div class="banner" role="alert">MOCK DATA — synthetic values for development. Not results.</div>' : ''}
+  ${linkNote ? `<div class="error" role="alert">${esc(linkNote)}</div>` : ''}
   <div id="sim-slot"></div><h2 class="brief-h" id="h-brief">Mission brief</h2>
   ${controls(d, s)}
   <main id="main" tabindex="-1">
@@ -272,6 +283,7 @@ function render(d: Data, s: State) {
   f.addEventListener('change', () => {
     if (!f.reportValidity()) return;
     const fd = new FormData(f);
+    linkNote = '';
     render(d, { ...s, site: String(fd.get('site')), t: String(fd.get('t')).slice(0, 16), stay: Number(fd.get('stay')), slip: Math.round(Number(fd.get('slip'))), mode: fd.get('mode') === 'centre' ? 'centre' : 'limb' });
     document.getElementById(document.activeElement?.id || 'site')?.focus();
   });

@@ -64,7 +64,7 @@ export function slipOptions(inp: SlipInput): SlipOptionEx[] {
     throw new RangeError(`The ${inp.slipDays > 0 ? '+' : ''}${inp.slipDays} d slipped ${inp.stayDays}-day window is outside the ephemeris coverage.`);
   }
   if (inp.slipDays !== 0) {
-    rest.push(mk('slip', `${inp.slipDays > 0 ? '+' : ''}${inp.slipDays} d slip`, site, hz, tSlip));
+    rest.push(mk('slip', inp.slipDays > 0 ? `+${inp.slipDays} d slip` : `${-inp.slipDays} d earlier`, site, hz, tSlip));
 
     // Next date after the slip whose both-visible hours recover the baseline (1-day steps).
     // Only for a real slip (later date): after an advance the baseline itself is still available.
