@@ -209,3 +209,17 @@ header.top .wm-sub { font: 600 11px/1 var(--mono); letter-spacing: 0.16em; text-
 @media print { .bar details.adv, .feat-toast { display: none !important; } }
 
 @media screen and (min-width: 761px) { .ob { grid-template-columns: 200px minmax(100px, 1fr) 84px 150px 200px 44px; } .ob-d { text-align: left; } }
+
+/* Round 5 (C): hero verdict line above the simulator, provenance lines, NASA rationale */
+.hero-v { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin: 14px 0 12px; padding: 12px 0; border-top: 1px solid rgba(255, 255, 255, 0.12); border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+.hero-v .hv-t { font: 500 clamp(1rem, 1.7vw, 1.3rem)/1.35 var(--sans); letter-spacing: -0.01em; color: #cfd6df; }
+.hero-v .hv-t b { color: #fff; font-weight: 600; } .hero-v .hv-t b.num { font-family: var(--mono); font-weight: 500; } .hero-v .hv-t b.neg { color: #ff8a66; }
+.hero-v .hv-chip { margin-left: auto; padding: 5px 10px; border: 1px solid rgba(95, 211, 172, 0.5); color: #5fd3ac; font-size: 12px; text-decoration: none; white-space: nowrap; }
+.hero-v .hv-chip:hover { border-color: #5fd3ac; background: rgba(95, 211, 172, 0.08); }
+.brief .prov { margin: 8px 0 0; font: 400 11px/1.4 var(--mono); color: #7d8794; max-width: none; }
+.brief .why { margin: 10px 0 0; font-size: 0.86rem; color: var(--dim); max-width: 86ch; }
+body { font-family: "Public Sans Variable", var(--sans); }
+h1, h2, h3, button, .vd-word, header.top .wm { font-family: var(--sans); }
+header.top .wm { font-family: "Inter Variable", var(--sans); }
+@media (max-width: 760px) { .hero-v .hv-chip { margin-left: 0; white-space: normal; } }
+@media print { .hero-v, .brief .why { display: none; } }

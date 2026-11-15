@@ -2,10 +2,10 @@
 :root {
   --bg: #10141a; --panel: #19202a; --line: #2e3947; --text: #e8edf3; --muted: #a9b4c2;
   --sun: #e69f00; --earth: #56b4e9; --both: #009e73; --loss: #ff9d7a; --gain: #7fe0b8; --accent: #f0e442;
-  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 "Public Sans Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 a { color: #8fd0ff; }
 .skip { position: absolute; left: -999px; } .skip:focus { left: 8px; top: 8px; background: #fff; color: #000; padding: 6px 10px; z-index: 9; }
 #app { max-width: 1120px; margin: 0 auto; padding: 16px 20px 48px; }
@@ -41,7 +41,7 @@ ul.cause li.lost::before { content: "−"; color: var(--loss); } ul.cause li.gai
 .tag { display: inline-block; font-size: .72rem; border: 1px solid #5b6b80; border-radius: 4px; padding: 0 5px; margin-left: 6px; color: var(--muted); white-space: nowrap; }
 .note, small { color: var(--muted); font-size: .84rem; }
 svg { display: block; width: 100%; height: auto; }
-svg text { fill: var(--text); font: 11px system-ui, sans-serif; }
+svg text { fill: var(--text); font: 11px "DM Mono", ui-monospace, monospace; }
 svg .muted { fill: var(--muted); }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .84rem; color: var(--muted); margin-top: 6px; }
 .sw { display: inline-block; width: 22px; height: 10px; vertical-align: middle; margin-right: 5px; border: 1px solid #0006; }
