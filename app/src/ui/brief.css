@@ -152,7 +152,7 @@ footer p { font-size: 0.8rem; color: #a3aebb; max-width: 90ch; }
   .vd-n, .ob-h strong, .bdg-v { color: #000 !important; } .vd.neg .vd-n { color: var(--loss) !important; } .vd.pos .vd-n { color: var(--gain) !important; }
   .vd-n { font-size: 24pt; } .vd.cause .vd-n { font-size: 13pt; min-height: 0; } .vd.cause .ic { color: #000; }
   .vd-line, .brief a, .brief svg text { color: #000; fill: #000; }
-  .brief details.more, .h-in, form.controls, .ob-x, .ob-axis, #feat-dates, #feat-cmp, #custom-site, .tour, .feat-explain, .s-tl details, .brief .sphere-note + .sphere-note { display: none !important; }
+  .brief details.more, .h-in, #h-in, form.controls, .ob-x, .ob-axis, #feat-dates, #feat-cmp, #custom-site, .tour, .feat-explain, .s-tl details, .brief .sphere-note + .sphere-note { display: none !important; }
   .ob { grid-template-columns: 52mm minmax(20mm, 1fr) 18mm 28mm; padding: 4px 0; } .ob-ic { display: none; }
   .ob-bar { background: #e6e6e6; print-color-adjust: exact; -webkit-print-color-adjust: exact; } .ob-bar b { background: #000; }
   .ob-bar i, .r-slip .ob-bar i { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
@@ -181,3 +181,31 @@ footer p { font-size: 0.8rem; color: #a3aebb; max-width: 90ch; }
 .st-key { grid-column: 1 / -1; margin: 8px 0 0 !important; font: 500 11px/1 var(--mono); }
 .st-key .k { display: inline-block; width: 16px; height: 4px; margin: 0 5px 2px 12px; vertical-align: middle; } .st-key .k:first-child { margin-left: 0; }
 .st-key .k-sun { background: var(--sun); } .st-key .k-earth { background: repeating-linear-gradient(90deg, var(--earth) 0 3px, transparent 3px 4px); } .st-key .k-both { background: var(--both); }
+
+/* Round 4 (C): brand header, plan-then-result order, lead sentences, simpler inputs */
+header.top { display: flex; align-items: center; gap: 14px; }
+header.top .logo { flex: none; width: 44px; height: 44px; }
+header.top h1 { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+header.top .wm { font: 700 1.7rem/1 system-ui, sans-serif; letter-spacing: -0.02em; }
+header.top .wm-sub { font: 600 11px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+.brief > section > h2.h-res { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--rule); }
+.brief > section > .res { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--rule); }
+.brief .vd-lead { font-size: 1rem; color: var(--dim); margin: 0 0 16px; max-width: 80ch; }
+.brief .vd-lead b { color: #fff; font-weight: 600; }
+.brief .lead { font-size: 0.92rem; color: var(--dim); margin: 0 0 12px; max-width: 80ch; }
+.brief .lead .c-sun { color: var(--sun); } .brief .lead .c-earth { color: var(--earth); }
+.bar label { font: 600 12px/1.2 var(--sans); letter-spacing: 0; text-transform: none; }
+.bar .f-slip .stepper { border: 1px solid var(--dim); border-radius: 8px; overflow: hidden; }
+.bar .f-slip .stepper button { background: rgba(255, 255, 255, 0.07); }
+.bar .chips { align-items: center; }
+.bar .chips-k { font: 600 12px/1 var(--sans); color: var(--dim); margin-right: 4px; }
+.bar details.adv { flex-basis: 100%; }
+.bar details.adv > summary { cursor: pointer; font: 500 12.5px/1 var(--sans); color: var(--dim); padding: 6px 0; width: fit-content; }
+.bar details.adv > summary:hover { color: #fff; }
+.bar details.adv .adv-in { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px 22px; padding: 10px 0 2px; }
+.bar details.adv .tools { margin-left: auto; }
+.feat-toast { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); z-index: 50; padding: 10px 16px; border-radius: 10px; background: #0f5c45; border: 1px solid #5fd3ac; color: #fff; font: 600 14px/1.3 system-ui, sans-serif; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5); }
+@media (max-width: 760px) { .brief > section > h2.h-res, .brief > section > .res { margin-top: 14px; padding-top: 14px; } .brief > section > .res { border-top: 0; margin-top: 0; padding-top: 0; } header.top .logo { width: 36px; height: 36px; } }
+@media print { .bar details.adv, .feat-toast { display: none !important; } }
+
+@media screen and (min-width: 761px) { .ob { grid-template-columns: 200px minmax(100px, 1fr) 84px 150px 200px 44px; } .ob-d { text-align: left; } }

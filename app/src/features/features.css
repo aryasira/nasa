@@ -109,3 +109,8 @@ table.cmp td.hz { font-size: .88rem; color: var(--ink-2); }
 table.cmp th[scope="row"] { min-width: 150px; white-space: normal; }
 /* long product / kernel names in the brief's definition lists must not widen the page on phones */
 dl dd { min-width: 0; overflow-wrap: anywhere; }
+
+/* Round 4 (C): landing-date chart reads as "green area = good hours" */
+#dates-chart .ar-both { fill: rgba(0, 158, 115, 0.28); stroke: none; }
+#dates-chart .plant { fill: #fff; font: 600 11px var(--mono); paint-order: stroke; stroke: #0b0e12; stroke-width: 4px; }
+#dates-chart .nightt { fill: #cfd6df; font: 500 10.5px var(--mono); paint-order: stroke; stroke: #0b0e12; stroke-width: 4px; }

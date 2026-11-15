@@ -153,6 +153,11 @@ class Simulator {
     this.fallback.hidden = true;
     this.view.append(this.canvas, this.compassC, this.labels, this.pinsEl, this.fallback);
     this.view.insertAdjacentHTML('beforeend', OVERLAY_HTML);
+    this.view.insertAdjacentHTML('beforeend', `<div class="sim-zoom" role="group" aria-label="Zoom">
+      <button type="button" data-a="zin" aria-label="Zoom in" title="Zoom in">+</button>
+      <button type="button" data-a="zout" aria-label="Zoom out" title="Zoom out">−</button>
+      <button type="button" data-a="home" aria-label="Reset view" title="Reset view"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h4v-5h4v5h4v-9"/></svg></button>
+    </div>`);
     this.stage.append(this.view, this.status, this.cause);
     const con = el('div', 'sim-console', CONSOLE_HTML);
     this.root.append(this.stage, con, this.live);
@@ -175,6 +180,9 @@ class Simulator {
       else if (a === 'back') this.step(-HOUR);
       else if (a === 'fwd') this.step(HOUR);
       else if (a === 'fs') this.toggleFullscreen();
+      else if (a === 'zin') this.zoomBy(1.25);
+      else if (a === 'zout') this.zoomBy(1 / 1.25);
+      else if (a === 'home') this.homeView();
       else if (a === 'compass') { this.showCompass = !this.showCompass; this.syncButtons(); this.writeUrl(true); this.dirty = true; }
       else if (b.dataset.speed) { this.speed = Number(b.dataset.speed); this.syncButtons(); }
       else if (b.dataset.ab) this.setAB(b.dataset.ab as AB);
@@ -318,7 +326,7 @@ class Simulator {
     this.view.addEventListener('wheel', (e) => {
       if (e.ctrlKey || e.metaKey) return;
       e.stopPropagation();
-      if (this.cam !== 'lander') this.flashZoomHint();
+      this.flashZoomHint();
     }, { capture: true });
     this.resizeObs = new ResizeObserver(() => this.resize());
     this.resizeObs.observe(this.view);
@@ -437,12 +445,39 @@ class Simulator {
     this.terrain.setResolution(this.view.clientWidth, this.view.clientHeight);
   }
 
+  // On-screen zoom (+ / −) and home (reset view) buttons, for every camera.
+  private landerZoom = 1;
+  private landerBaseFov = 66;
+  private zoomBy(k: number) {
+    if (!this.renderer) return;
+    if (this.cam === 'lander') {
+      this.landerZoom = clamp(this.landerZoom * k, 0.7, 5);
+      this.camLander.fov = this.landerBaseFov / this.landerZoom; this.camLander.updateProjectionMatrix();
+    } else {
+      const ctl = this.cam === 'orbit' ? this.orbit : this.globeCtl;
+      if (!ctl) return;
+      const cam = ctl.object, off = cam.position.clone().sub(ctl.target);
+      off.setLength(clamp(off.length() / k, ctl.minDistance, ctl.maxDistance));
+      cam.position.copy(ctl.target).add(off);
+      ctl.update();
+    }
+    this.camTween = null;
+    this.dirty = true;
+  }
+  private homeView() {
+    if (!this.renderer) return;
+    this.landerZoom = 1;
+    this.camLander.fov = this.landerBaseFov; this.camLander.updateProjectionMatrix();
+    this.lookTween = null;
+    this.frameCameras();
+    this.dirty = true;
+  }
   private zoomHint: HTMLElement | null = null;
   private zoomHintTimer = 0;
   private flashZoomHint() {
     if (!this.zoomHint) {
       this.zoomHint = el('div', 'sim-zoomhint');
-      this.zoomHint.textContent = `Hold ${/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl'} and scroll to zoom`;
+      this.zoomHint.textContent = `Use the + and − buttons, or hold ${/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl'} and scroll, to zoom`;
       this.zoomHint.setAttribute('aria-hidden', 'true');
       this.view.append(this.zoomHint);
     }
@@ -525,7 +560,7 @@ class Simulator {
     const range = (x: { t0: number; t1: number }, cls: string, label: string) =>
       `<div class="rng ${cls}" style="left:${pct(x.t0).toFixed(3)}%;width:${(pct(x.t1) - pct(x.t0)).toFixed(3)}%"><span>${label}</span></div>`;
     const day = (x: { t0: number }) => fmtUtc(x.t0).slice(5, 10).replace('-', '/');
-    this.q<HTMLElement>('.tl-ranges').innerHTML = range(a, 'rng-a' + (this.ab === 'a' ? ' on' : ''), `Baseline · ${day(a)}`)
+    this.q<HTMLElement>('.tl-ranges').innerHTML = range(a, 'rng-a' + (this.ab === 'a' ? ' on' : ''), `Planned · ${day(a)}`)
       + (b ? range(b, 'rng-b' + (this.ab === 'b' ? ' on' : ''), `Slipped · ${day(b)}`) : '');
     const cv = this.q<HTMLCanvasElement>('.tl-strip');
     const dpr = Math.min(2, devicePixelRatio || 1);
@@ -693,7 +728,8 @@ class Simulator {
     this.post.setSize(w, h);
     for (const c of [this.camLander, this.camOrbit, this.camView]) { c.aspect = w / h; c.updateProjectionMatrix(); }
     // Keep the lander view's horizontal field reasonable on tall (mobile) screens.
-    this.camLander.fov = w / h < 1 ? 82 : 66; this.camLander.updateProjectionMatrix();
+    this.landerBaseFov = w / h < 1 ? 82 : 66;
+    this.camLander.fov = this.landerBaseFov / this.landerZoom; this.camLander.updateProjectionMatrix();
     this.camOrbit.fov = w / h < 1 ? 64 : 48; this.camOrbit.updateProjectionMatrix();
     if (this.globe) { this.globe.camera.aspect = w / h; this.globe.camera.updateProjectionMatrix(); this.globe.setPixelRatio(this.renderer.getPixelRatio()); }
     this.terrain?.setResolution(w, h);
@@ -850,7 +886,7 @@ class Simulator {
     const dayN = (this.t - start) / DAY;
     this.set('utc', fmtUtc(this.t).slice(0, 16).replace('T', ' '));
     this.set('met', fmtMet(this.t - start));
-    this.set('stay', `${this.ab === 'b' ? 'Slipped' : 'Baseline'} stay · ${dayN < 0 ? 'before landing' : dayN > stayDays ? 'after the stay' : `day ${Math.min(stayDays, Math.floor(dayN) + 1)} of ${stayDays}`}`);
+    this.set('stay', `${this.ab === 'b' ? 'Slipped' : 'Planned'} stay · ${dayN < 0 ? 'before landing' : dayN > stayDays ? 'after the stay' : `day ${Math.min(stayDays, Math.floor(dayN) + 1)} of ${stayDays}`}`);
     const pw = powerWord(r), cw = commWord(r);
     const card = (k: 'power' | 'comm', word: { word: string; tone: string }, body: BodyReadout, frac: number, more: [string, string][]) => {
       const c = this.q<HTMLElement>(`.card-${k}`);
