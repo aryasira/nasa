@@ -188,9 +188,14 @@ export function causeLines(a: CauseInput, b: CauseInput, features: FeaturesFile 
       const w = lost ? b : a;
       const { az, distM } = blockPosition(w.scan, w.hz, body, src.ks);
       const feat = src.feature ? names.get(src.feature) : undefined;
-      const local = !feat || siteIsOn(w.hz, feat) || (distM != null && distM < nearLimitM(w.hz));
-      const name = feat && !local ? feat.name + (feat.name_status === 'informal' ? ' (informal name)' : '')
-        : feat ? 'local terrain' : 'unnamed terrain';
+      const on = !!feat && siteIsOn(w.hz, feat);
+      const near = distM != null && distM < nearLimitM(w.hz);
+      const fname = feat ? feat.name + (feat.name_status === 'informal' ? ' (informal name)' : '') : '';
+      // A named feature the site stands on keeps its name ("local" would mislead at 20 km); close unnamed
+      // or sub-cell blockers are "nearby terrain"; everything else unnamed stays "unnamed terrain".
+      const name = on ? `${fname} (the feature the site stands on)`
+        : feat && !near ? fname
+        : near ? 'nearby terrain' : 'unnamed terrain';
       const at = sameSite ? '' : `, at ${siteNames?.get(w.hz.site_id) ?? w.hz.site_id}`;
       const where = `az ${az.toFixed(0)}° (${compass(az)})` + (distM == null ? '' : `, ${fmtKm(distM, w.hz)}`) + at;
       lines.push({
