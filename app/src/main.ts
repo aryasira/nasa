@@ -5,10 +5,14 @@ import type { EphemHeader, FeaturesFile, FixturesFile, HorizonFile, Site, SitesF
 import { Ephem, fmtUtc, parseUtc } from './engine/ephem';
 import { observe, siteFrame } from './engine/geometry';
 import { scanWindow, hasBand } from './engine/metrics';
-import { slipOptions, type SlipOptionEx } from './engine/slip';
+import { bodyChanges, slipOptions, type SlipOptionEx } from './engine/slip';
+import { causeName } from './engine/causes';
 import type { Mode } from './engine/visibility';
 import { panoramaSvg, timelineSvg, type TimelineWindow } from './ui/charts';
 import { mountSim } from './sim'; // SIM HOOK (Agent C): 3D mission simulator, see src/sim/
+// --- FEATURE HOOK (C): imports for the challenge-coverage panels, see src/features/
+import { addSphereAndCustomSites, mountFeatures, writeFeatureParams } from './features';
+// --- END
 
 interface State { site: string; t: string; stay: number; slip: number; mode: Mode; data: 'real' | 'mock' }
 interface Data {
@@ -26,9 +30,9 @@ const cls = (v: number, goodIsUp = true) => (Math.abs(v) < 0.05 ? '' : (v > 0) =
 
 const PRESETS: { id: string; label: string; state: Partial<State>; note: string }[] = [
   { id: 'im1-slip', label: 'IM-1: a 10-day slip', state: { site: 'im1', t: '2024-01-19T23:24', stay: 7, slip: 10, mode: 'limb' },
-    note: 'Illustration with a 7-day surface stay. January landing date as reported for the original window; the real mission landed 22 Feb 2024.' },
+    note: 'Illustration with a 7-day surface stay. The January landing is an illustrative baseline date (original launch window 12–16 Jan 2024); the real mission landed 22 Feb 2024.' },
   { id: 'im1-actual', label: 'IM-1: January plan vs actual landing', state: { site: 'im1', t: '2024-01-19T23:24', stay: 7, slip: 34, mode: 'limb' },
-    note: 'Compares the planned January date with the actual landing, 22 Feb 2024 23:24 UTC.' },
+    note: 'Compares an illustrative January baseline date (original launch window 12–16 Jan 2024) with the actual landing, 22 Feb 2024 23:24 UTC.' },
   { id: 'im2-slip', label: 'IM-2: a 7-day slip', state: { site: 'im2', t: '2025-03-06T17:29', stay: 10, slip: 7, mode: 'limb' },
     note: 'Illustration: Earth sets at Mons Mouton for part of each month.' },
 ];
@@ -80,6 +84,9 @@ async function loadData(kind: State['data']): Promise<Data> {
     const hz = await getJson<HorizonFile>(`${base}horizon/${s.id}.json`, true);
     if (hz) horizons.set(s.id, hz);
   }));
+  // --- FEATURE HOOK (C): sphere horizon for terrain:"sphere" sites without a file; custom site from the URL
+  addSphereAndCustomSites(sitesFile!.sites, horizons);
+  // --- END
   const sites = sitesFile!.sites.filter((s) => horizons.has(s.id));
   const mock = [header!.meta, sitesFile!.meta, ...[...horizons.values()].map((x) => x.meta)].some((m) => m?.mock === true);
   return { ephem: new Ephem(header!, bin), header: header!, sites, horizons, features, fixtures, mock };
@@ -105,7 +112,7 @@ function residuals(d: Data) {
 
 /** Long-run sunlit share on the loaded terrain, to compare with a published figure. Hourly samples over the whole ephemeris. */
 const BENCH: Record<string, { pct: string; cite: string }> = {
-  connecting_ridge: { pct: '92.27%', cite: 'Gläser et al. 2014, Icarus 243, 2 m above ground, 19-year run' },
+  connecting_ridge: { pct: '92.27%', cite: 'Gläser et al. 2014, Icarus 243, 2 m above ground' },
 };
 const benchCache = new Map<string, { pct: number; years: number }>();
 function longRunSunlit(d: Data, site: Site, mode: Mode): { pct: number; years: number } {
@@ -125,8 +132,8 @@ function controls(d: Data, s: State): string {
   const groups: Record<string, Site[]> = {};
   for (const x of d.sites) (groups[x.kind] ??= []).push(x);
   const names: Record<string, string> = { landed: 'Landed missions', planned: 'Planned', candidate: 'Candidate sites' };
-  const opts = Object.entries(groups).map(([k, v]) => `<optgroup label="${names[k] ?? k}">${v.map((x) =>
-    `<option value="${x.id}" ${x.id === s.site ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</optgroup>`).join('');
+  const opts = Object.entries(groups).map(([k, v]) => `<optgroup label="${esc(names[k] ?? k)}">${v.map((x) =>
+    `<option value="${esc(x.id)}" ${x.id === s.site ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</optgroup>`).join('');
   return `<form class="controls" id="f" aria-label="Scenario">
     <div class="wide"><label for="site">Landing site</label><select id="site" name="site">${opts}</select></div>
     <div class="wide"><label for="t">Baseline landing (UTC)</label><input id="t" name="t" type="datetime-local" value="${s.t}" min="${fmtUtc(d.ephem.t0).slice(0, 16)}" max="${fmtUtc(d.ephem.tLast).slice(0, 16)}" required></div>
@@ -147,10 +154,10 @@ function optionRows(opts: SlipOptionEx[], d: Data): string {
     const m = o.metrics, isBase = o.kind === 'baseline';
     const hz = d.horizons.get(o.site_id)!;
     const band = m.band && hasBand(hz)
-      ? `<br><small>terrain ±σ: ${h1(m.band.hi.both_visible_h ?? 0)}–${h1(m.band.lo.both_visible_h ?? 0)} h</small>` : '';
+      ? `<br><small>terrain ±σ: ${(m.band.hi.both_visible_h ?? 0).toFixed(0)}–${(m.band.lo.both_visible_h ?? 0).toFixed(0)} h</small>` : '';
     const dBoth = m.both_visible_h - base.both_visible_h;
     const shown = o.causes.slice(0, 4), more = o.causes.slice(4);
-    const li = (c: SlipOptionEx['causes'][number]) => `<li class="${c.delta_h < 0 ? 'lost' : 'gained'}">${esc(c.text)}${c.kind === 'orbital' ? '<span class="tag">orbit, not terrain</span>' : c.kind === 'dip' ? '<span class="tag">site height</span>' : '<span class="tag">terrain</span>'}</li>`;
+    const li = (c: SlipOptionEx['causes'][number]) => `<li class="${c.delta_h < 0 ? 'lost' : 'gained'}">${esc(c.text)}${c.kind === 'orbital' ? `<span class="tag">${o.kind === 'alternate' ? 'location' : 'orbit'}, not terrain</span>` : c.kind === 'dip' ? '<span class="tag">site height</span>' : '<span class="tag">terrain</span>'}</li>`;
     const causes = isBase ? '' : `<tr class="causes"><td colspan="7">${o.note ? `<small>${esc(o.note)}</small>` : ''}
       ${shown.length ? `<ul class="cause" aria-label="Causes for ${esc(o.label)}">${shown.map(li).join('')}</ul>` : '<small> No change of half an hour or more in Sun or Earth visibility.</small>'}
       ${more.length ? `<details class="extra"><summary>${more.length} smaller cause${more.length > 1 ? 's' : ''}</summary><ul class="cause">${more.map(li).join('')}</ul></details>` : ''}</td></tr>`;
@@ -167,11 +174,13 @@ function headline(opts: SlipOptionEx[], site: Site, s: State): string {
   const base = opts[0], slip = opts.find((o) => o.kind === 'slip'), rec = opts.find((o) => o.kind === 'recover');
   if (!slip) return `<p class="headline">At <strong>${esc(site.name)}</strong>, a ${s.stay}-day stay from ${when(base.start_utc)} has <strong>${h1(base.metrics.both_visible_h)} h</strong> with both the Sun and Earth in view. Enter a slip to see what changes.</p>`;
   const d = slip.metrics.both_visible_h - base.metrics.both_visible_h;
-  const top = slip.causes[0];
   const verb = Math.abs(d) < 0.05 ? 'does not change' : d < 0 ? 'cuts' : 'adds to';
   let txt = `<p class="headline">A <strong>${Math.abs(s.slip)}-day ${s.slip < 0 ? 'advance' : 'slip'}</strong> at ${esc(site.name)} ${verb} the time with both Sun and Earth in view`
     + (Math.abs(d) < 0.05 ? ` (${h1(base.metrics.both_visible_h)} h of a ${s.stay}-day stay).` : `: <strong>${h1(base.metrics.both_visible_h)} h → ${h1(slip.metrics.both_visible_h)} h</strong> (<strong class="${d < 0 ? 'loss' : 'gain'}">${signed(d, ' h')}</strong>) over a ${s.stay}-day stay.`) + '</p>';
-  if (top) txt += `<p><strong>Main cause:</strong> ${esc(top.text)}.</p>`;
+  // Per body: net change in visible hours and its largest same-sign cause; the cause's hours are quoted only if not larger than the change.
+  const why = bodyChanges(base, slip).map((x) => `${x.body === 'sun' ? 'Sun' : 'Earth'} in view ${h1(x.before_h)} h → ${h1(x.after_h)} h (${signed(x.delta_h, ' h')})`
+    + (!x.cause ? '' : x.causeFits ? `; main cause: ${esc(causeName(x.cause))} (${signed(x.cause.delta_h, ' h')})` : `; main cause: ${esc(causeName(x.cause))}, partly offset by other changes`));
+  if (why.length) txt += `<p><strong>Why:</strong> ${why.join('. ')}.</p>`;
   if (rec) {
     const days = Math.round((parseUtc(rec.start_utc) - parseUtc(base.start_utc)) / DAY);
     txt += rec.label.startsWith('Next')
@@ -183,6 +192,9 @@ function headline(opts: SlipOptionEx[], site: Site, s: State): string {
 
 function render(d: Data, s: State) {
   writeState(s);
+  // --- FEATURE HOOK (C): keep lat, lon, elev, name, cmp, explain in the permalink
+  writeFeatureParams();
+  // --- END
   const site = d.sites.find((x) => x.id === s.site)!;
   const hz = d.horizons.get(site.id)!;
   const preset = PRESETS.find((p) => Object.entries(p.state).every(([k, v]) => (s as any)[k] === v));
@@ -208,7 +220,8 @@ function render(d: Data, s: State) {
     <section aria-labelledby="h-opt"><h2 id="h-opt">Options, ranked by time with both Sun and Earth in view</h2>
       <div style="overflow-x:auto"><table><thead><tr><th scope="col">Option</th><th scope="col">Landing</th><th scope="col">Sunlit (h)</th><th scope="col">Earth in view</th><th scope="col">Sun + Earth (h)</th><th scope="col">Longest dark gap (h)</th><th scope="col">Change vs baseline</th></tr></thead>
       <tbody>${optionRows(opts, d)}</tbody></table></div>
-      <p class="note">Each stay is ${s.stay} days from landing, sampled every 10 minutes. Cause lines add up exactly to the change in visible hours; pieces under half an hour are not listed.
+      <p class="note">Each stay is ${s.stay} days from landing, sampled every 10 minutes. Per body, the cause lines sum to the change in that body's visible hours, apart from pieces under half an hour, which are not listed.
+      Sunlit hours include time when Earth covers part or all of the Sun.${opts.some((o) => o.metrics.eclipse_h > 0) ? ` Eclipse (Earth covers the Sun): ${opts.filter((o) => o.metrics.eclipse_h > 0).map((o) => `${esc(o.label)} ${h1(o.metrics.eclipse_h)} h`).join(', ')}.` : ''}
       ${hasBand(hz) ? '' : 'No terrain-error band is shown yet: the horizon file carries no terrain sigma.'}</p></section>
     <section aria-labelledby="h-tl"><h2 id="h-tl">Timeline at ${esc(site.name)}</h2>
       ${timelineSvg(wide, wins, `Sun, Earth and both visible at ${site.name} from ${fmtUtc(t0).slice(0, 10)} to ${fmtUtc(t1).slice(0, 10)}, with the baseline and slipped stays marked`)}
@@ -273,6 +286,9 @@ function render(d: Data, s: State) {
   mountSim(document.getElementById('sim-slot'), { ephem: d.ephem, sites: d.sites, horizons: d.horizons, features: d.features,
     mock: d.mock, state: s, setState: (p) => render(d, { ...s, ...p }) });
   // --- END SIM HOOK ---
+  // --- FEATURE HOOK (C): custom site, landing-date explorer, site comparison, plain-language mode
+  mountFeatures({ data: d, state: s, setState: (p) => render(d, { ...s, ...p }) });
+  // --- END
 }
 
 (async () => {
