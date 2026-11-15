@@ -1,201 +1,207 @@
 // AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
 // 3D terrain around the lander, built from the site's 720-sample horizon profile.
-// Each azimuth column runs from the lander out to a skyline vertex at (smoothed, clamped) occluder distance D
-// and height mast + tan(elev_deg)·D, so the silhouette seen from the mast matches elev_deg at every azimuth.
-// The profile between the lander and the skyline is monotone in elevation angle (it never pokes above the
-// skyline from the mast); craters and bumps near the lander are illustrative, not LOLA data.
+// Polar mesh: one column per horizon azimuth sample, geometric ring spacing (dense at the lander, sparse at the
+// ridge). The crest vertex of each column sits at (smoothed, clamped) occluder distance D and height
+// mast + tan(elev_deg)·D, so the silhouette seen from the mast equals elev_deg. All relief in front of the crest
+// (craters, undulation, ridged mountains, rocks) is illustrative and stays below the mast's line of sight.
 import * as THREE from 'three';
+import { Line2 } from 'three/examples/jsm/lines/Line2.js';
+import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { HorizonFile } from '@contracts/types';
-import { dirFromAzEl, ridgeDistances, ridgeHeight } from './astro';
+import { dirFromAzEl } from './astro';
+import { GroundModel, noise3, rng } from './ground';
+import { regolithMaterial, type SunUniforms } from './regolith';
 
-const NEAR_RINGS = 60; // 2 m spacing out to 120 m
-const NEAR_STEP = 2;
-const FAR_RINGS = 34;
-const SKIRT = [[1.12, 0.06], [1.6, 0.3]] as const; // behind the skyline: (r/D, drop/D)
-
-/** Small deterministic PRNG so the illustrative ground is the same on every visit. */
-export function rng(seedStr: string) {
-  let s = 2166136261;
-  for (let i = 0; i < seedStr.length; i++) s = Math.imul(s ^ seedStr.charCodeAt(i), 16777619);
-  return () => {
-    s += 0x6d2b79f5;
-    let t = s;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-interface Crater { x: number; z: number; r: number }
+const RINGS = 168; // rings from the lander (r = 0) to the crest (s = 1)
+const K = 7.2; // geometric spacing: r_j = D (e^{K j/RINGS} − 1)/(e^K − 1)
+const SKIRT = [1.12, 1.6, 2.4];
+const HF_W = 720, HF_H = 224, HF_R0 = 4, HF_RMAX = 50_000;
+const HL_N = 41; // highlight outline: ±10° of azimuth
 
 export class Terrain {
   readonly group = new THREE.Group();
+  readonly model: GroundModel;
   readonly n: number;
-  readonly dist: Float64Array;
-  readonly ridgeY: Float64Array;
-  private readonly mesh: THREE.Mesh;
-  private readonly crest: THREE.Line;
-  private readonly hl: { mesh: THREE.Mesh; line: THREE.Line; geo: THREE.BufferGeometry; lineGeo: THREE.BufferGeometry }[] = [];
+  private readonly hfTex: THREE.DataTexture;
+  private readonly hl: { line: Line2; glow: Line2; geo: LineGeometry; geoGlow: LineGeometry }[] = [];
+  private readonly lineMats: LineMaterial[] = [];
   private readonly disposables: { dispose(): void }[] = [];
 
-  constructor(readonly hz: HorizonFile) {
-    const n = (this.n = hz.elev_deg.length);
-    const mast = hz.mast_m;
-    this.dist = ridgeDistances(hz);
-    this.ridgeY = new Float64Array(n);
-    for (let i = 0; i < n; i++) this.ridgeY[i] = ridgeHeight(hz.elev_deg[i], this.dist[i], mast);
-
-    const rand = rng(hz.site_id);
-    const craters: Crater[] = [];
-    for (let k = 0; k < 70; k++) {
-      const r = 1.5 + Math.pow(rand(), 2.2) * 9;
-      const rho = 8 + r + rand() * (110 - r), th = rand() * Math.PI * 2;
-      craters.push({ x: rho * Math.sin(th), z: -rho * Math.cos(th), r });
-    }
-    // Ground relief near the lander: never more than +0.3 m, far below the 2 m mast, so the skyline stays exact.
-    const relief = (x: number, z: number, r: number) => {
-      if (r > 118) return 0;
-      let y = 0.12 * Math.sin(x * 0.11 + 1.3) * Math.cos(z * 0.09 - 0.4) + 0.06 * Math.sin(x * 0.37 - z * 0.29);
-      for (const c of craters) {
-        const d = Math.hypot(x - c.x, z - c.z) / c.r;
-        if (d < 1) y -= 0.09 * c.r * (1 - d * d);
-        else if (d < 1.5) y += Math.min(0.15, 0.03 * c.r) * (1 - (d - 1) / 0.5);
-      }
-      const fade = r < 112 ? 1 : (118 - r) / 6;
-      return Math.min(0.3, y) * fade * Math.min(1, r / 6);
-    };
-
-    const rings = NEAR_RINGS + FAR_RINGS + SKIRT.length + 1;
+  constructor(readonly hz: HorizonFile, u: SunUniforms) {
+    const m = (this.model = new GroundModel(hz));
+    const n = (this.n = m.n);
+    const rings = RINGS + 1 + SKIRT.length;
     const pos = new Float32Array(n * rings * 3);
-    const basePos = new Float32Array(n * rings * 3); // same mesh without the illustrative relief
-    const col = new Float32Array(n * rings * 3);
-    const base = new THREE.Color(0x8a8a86);
+    const g = (j: number) => (Math.exp((K * j) / RINGS) - 1) / (Math.exp(K) - 1);
     for (let i = 0; i < n; i++) {
-      const az = (i * 360) / n;
+      const az = i * m.step;
       const [sx, , sz] = dirFromAzEl(az, 0);
-      const D = this.dist[i], Y = this.ridgeY[i];
-      const profile = (r: number) => { const s = r / D; return Y > 0 ? Y * s * s : Y * s; };
+      const D = m.dist[i];
       for (let j = 0; j < rings; j++) {
-        let r: number, y: number;
-        if (j <= NEAR_RINGS) { r = j * NEAR_STEP; y = profile(r); }
-        else if (j <= NEAR_RINGS + FAR_RINGS) {
-          const q = (j - NEAR_RINGS) / FAR_RINGS;
-          r = NEAR_RINGS * NEAR_STEP * Math.pow(D / (NEAR_RINGS * NEAR_STEP), q);
-          y = profile(r);
-        } else {
-          const [k, drop] = SKIRT[j - NEAR_RINGS - FAR_RINGS - 1];
-          r = D * k; y = Y - D * drop;
-        }
-        const x = sx * r, z = sz * r;
+        const r = j <= RINGS ? D * g(j) : D * SKIRT[j - RINGS - 1];
+        const y = j === RINGS ? m.ridgeY[i] : m.heightAt(az, r);
         const o = (i * rings + j) * 3;
-        basePos[o] = x; basePos[o + 1] = y; basePos[o + 2] = z;
-        y += relief(x, z, r);
-        pos[o] = x; pos[o + 1] = y; pos[o + 2] = z;
-        const v = 0.86 + 0.14 * Math.sin(x * 0.05 + z * 0.031) * Math.cos(z * 0.043) + (rand() - 0.5) * 0.06;
-        col[o] = base.r * v; col[o + 1] = base.g * v; col[o + 2] = base.b * v;
+        pos[o] = sx * r; pos[o + 1] = y; pos[o + 2] = sz * r;
       }
     }
-    const idx: number[] = [];
+    const idx = new Uint32Array(n * (rings - 1) * 6);
+    let q = 0;
     for (let i = 0; i < n; i++) {
       const a = i * rings, b = ((i + 1) % n) * rings;
       for (let j = 0; j < rings - 1; j++) {
-        // Winding so faces point up (toward +y) when seen from above.
-        idx.push(a + j, b + j, a + j + 1, b + j, b + j + 1, a + j + 1);
+        idx[q++] = a + j; idx[q++] = b + j; idx[q++] = a + j + 1;
+        idx[q++] = b + j; idx[q++] = b + j + 1; idx[q++] = a + j + 1;
       }
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    geo.setIndex(idx);
-    // Shading normals = (base-profile normal, smoothed over ±K azimuth columns) + (relief detail).
-    // Per-sample noise in elev_deg and in occluder distance otherwise corrugates the slopes into vertical
-    // stripes under a grazing Sun. Only normals are smoothed; vertex positions (and the skyline) are exact.
-    geo.setAttribute('position', new THREE.BufferAttribute(basePos, 3));
+    geo.setIndex(new THREE.BufferAttribute(idx, 1));
     geo.computeVertexNormals();
-    const nb = Float32Array.from(geo.getAttribute('normal').array as Float32Array);
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.computeVertexNormals();
-    const dst = geo.getAttribute('normal').array as Float32Array, K = 10;
+    // Smooth normals across neighbouring columns, more toward the ridge: per-sample noise in elev_deg and in
+    // occluder distance otherwise reads as vertical stripes under a grazing Sun. Positions stay exact.
+    const nrm = geo.getAttribute('normal').array as Float32Array;
+    const src = Float32Array.from(nrm);
     for (let j = 1; j < rings; j++) {
+      const s = j <= RINGS ? g(j) : 1;
+      const k = Math.round(1 + 22 * s * s);
       for (let i = 0; i < n; i++) {
-        let x = 0, y = 0, z = 0;
-        for (let k = -K; k <= K; k++) {
-          const o = ((((i + k) % n) + n) % n * rings + j) * 3;
-          x += nb[o]; y += nb[o + 1]; z += nb[o + 2];
+        let x = 0, y = 0, z = 0, w = 0;
+        for (let d = -k; d <= k; d++) {
+          const o = ((((i + d) % n) + n) % n * rings + j) * 3, wt = 1 - Math.abs(d) / (k + 1);
+          x += src[o] * wt; y += src[o + 1] * wt; z += src[o + 2] * wt; w += wt;
         }
         const l = Math.hypot(x, y, z) || 1, o = (i * rings + j) * 3;
-        const fx = x / l + dst[o] - nb[o], fy = y / l + dst[o + 1] - nb[o + 1], fz = z / l + dst[o + 2] - nb[o + 2];
-        const m = Math.hypot(fx, fy, fz) || 1;
-        dst[o] = fx / m; dst[o + 1] = fy / m; dst[o + 2] = fz / m;
+        nrm[o] = x / l; nrm[o + 1] = y / l; nrm[o + 2] = z / l;
       }
     }
-    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.97, metalness: 0, side: THREE.DoubleSide });
-    this.mesh = new THREE.Mesh(geo, mat);
-    this.mesh.receiveShadow = true;
-    this.mesh.name = 'terrain';
-    this.group.add(this.mesh);
+    geo.computeBoundingSphere();
+    const mat = regolithMaterial(u, { detail: true });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.receiveShadow = true; mesh.castShadow = true;
+    mesh.name = 'terrain';
+    this.group.add(mesh);
     this.disposables.push(geo, mat);
 
-    // Faint crest line: the LOLA skyline itself.
-    const cp = new Float32Array((n + 1) * 3);
-    for (let i = 0; i <= n; i++) this.crestPoint(i % n, cp, i * 3, 0.999);
-    const cgeo = new THREE.BufferGeometry();
-    cgeo.setAttribute('position', new THREE.BufferAttribute(cp, 3));
-    const cmat = new THREE.LineBasicMaterial({ color: 0x9fb4c8, transparent: true, opacity: 0.35 });
-    this.crest = new THREE.Line(cgeo, cmat);
-    this.group.add(this.crest);
-    this.disposables.push(cgeo, cmat);
+    // Polar heightfield of the same ground, for the soft Sun march in the shader.
+    const hf = new Uint16Array(HF_W * HF_H);
+    const logK = Math.log(1 + HF_RMAX / HF_R0);
+    for (let j = 0; j < HF_H; j++) {
+      const r = HF_R0 * (Math.exp(((j + 0.5) / HF_H) * logK) - 1);
+      for (let i = 0; i < HF_W; i++) hf[j * HF_W + i] = THREE.DataUtils.toHalfFloat(m.heightAt((i * 360) / HF_W, r));
+    }
+    this.hfTex = new THREE.DataTexture(hf, HF_W, HF_H, THREE.RedFormat, THREE.HalfFloatType);
+    this.hfTex.wrapS = THREE.RepeatWrapping; this.hfTex.wrapT = THREE.ClampToEdgeWrapping;
+    this.hfTex.magFilter = this.hfTex.minFilter = THREE.LinearFilter;
+    this.hfTex.needsUpdate = true;
+    this.disposables.push(this.hfTex);
+    u.uHF.value = this.hfTex; u.uHFR0.value = HF_R0; u.uHFLogK.value = logK; u.uHFu0.value = 0.5 / HF_W;
 
-    // Highlight ribbons for the sector that blocks the Sun (0) or Earth (1).
-    for (const color of [0xe69f00, 0x56b4e9]) {
-      const g = new THREE.BufferGeometry();
-      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(HL_N * 2 * 3), 3));
-      const ii: number[] = [];
-      for (let k = 0; k < HL_N - 1; k++) ii.push(2 * k, 2 * k + 1, 2 * k + 2, 2 * k + 2, 2 * k + 1, 2 * k + 3);
-      g.setIndex(ii);
-      const m = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-        depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
-      const mesh = new THREE.Mesh(g, m);
-      mesh.visible = false; mesh.renderOrder = 2; mesh.frustumCulled = false;
-      const lg = new THREE.BufferGeometry();
-      lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(HL_N * 3), 3));
-      const lm = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 1, depthTest: false });
-      const line = new THREE.Line(lg, lm);
-      line.visible = false; line.renderOrder = 3; line.frustumCulled = false;
-      this.group.add(mesh, line);
-      this.hl.push({ mesh, line, geo: g, lineGeo: lg });
-      this.disposables.push(g, m, lg, lm);
+    this.addRocks(u);
+
+    // Blocking-terrain outline (Sun = 0, Earth = 1): thin luminous line along the crest + soft glow.
+    for (const color of [0xff6b5e, 0xff6b5e]) {
+      const mk = (w: number, op: number) => {
+        const lm = new LineMaterial({ color, linewidth: w, transparent: true, opacity: op, depthWrite: false, worldUnits: false });
+        lm.toneMapped = false;
+        this.lineMats.push(lm); this.disposables.push(lm);
+        return lm;
+      };
+      const lg = new LineGeometry(), gg = new LineGeometry();
+      const zero = new Array(HL_N * 3).fill(0);
+      lg.setPositions(zero); gg.setPositions(zero);
+      const line = new Line2(lg, mk(2, 1)), glow = new Line2(gg, mk(7, 0.22));
+      for (const l of [line, glow]) { l.visible = false; l.frustumCulled = false; l.renderOrder = 5; }
+      this.group.add(glow, line);
+      this.hl.push({ line, glow, geo: lg, geoGlow: gg });
+      this.disposables.push(lg, gg);
     }
   }
 
-  private crestPoint(i: number, out: Float32Array, o: number, scale = 1) {
-    const [sx, , sz] = dirFromAzEl((i * 360) / this.n, 0);
-    out[o] = sx * this.dist[i] * scale; out[o + 1] = this.ridgeY[i] * scale + (1 - scale) * this.hz.mast_m; out[o + 2] = sz * this.dist[i] * scale;
+  private addRocks(u: SunUniforms) {
+    const m = this.model;
+    const rand = rng(this.hz.site_id + ':rocks');
+    const variants: THREE.BufferGeometry[] = [];
+    for (let v = 0; v < 4; v++) {
+      // Smooth, irregular boulder: an icosphere displaced by 3D value noise, with a few flattened faces.
+      const base = mergeVertices(new THREE.IcosahedronGeometry(1, 4));
+      const p = base.getAttribute('position') as THREE.BufferAttribute;
+      const r2 = rng('rock' + v);
+      const cuts = Array.from({ length: 5 }, () => ({ n: new THREE.Vector3(r2() - 0.5, r2() - 0.3, r2() - 0.5).normalize(), d: 0.62 + 0.25 * r2() }));
+      const vv = new THREE.Vector3();
+      for (let i = 0; i < p.count; i++) {
+        vv.fromBufferAttribute(p, i);
+        let d = 1 + 0.22 * noise3(vv.x * 1.6 + v * 7, vv.y * 1.6, vv.z * 1.6) + 0.08 * noise3(vv.x * 5 + v, vv.y * 5, vv.z * 5) + 0.025 * noise3(vv.x * 13, vv.y * 13 + v, vv.z * 13);
+        for (const c of cuts) { const h = vv.dot(c.n) * d; if (h > c.d) d *= c.d / h + (h - c.d) * 0.15; }
+        vv.multiplyScalar(d);
+        vv.y *= 0.62;
+        p.setXYZ(i, vv.x, vv.y, vv.z);
+      }
+      base.computeVertexNormals();
+      variants.push(base);
+    }
+    const mat = regolithMaterial(u, { rock: true });
+    mat.flatShading = false;
+    this.disposables.push(mat, ...variants);
+    const per: THREE.Matrix4[][] = variants.map(() => []);
+    const place = (count: number, sMin: number, sMax: number, rMin: number, rMax: number, alpha: number) => {
+      for (let k = 0; k < count; k++) {
+        const size = sMin * Math.pow(1 - rand() * (1 - Math.pow(sMin / sMax, alpha)), -1 / alpha);
+        const r = rMin + Math.pow(rand(), 0.8) * (rMax - rMin);
+        const az = rand() * 360;
+        const ground = m.heightAt(az, r);
+        // Keep every rock below the mast's line of sight so the LOLA silhouette stays exact.
+        const room = m.sight(az, r) - 0.02 - 0.0015 * r - ground;
+        const h = size * 1.05; // generous bound on the top of a tilted, squashed rock above the ground
+        const sc = h > room ? size * Math.max(0, room / h) : size;
+        if (sc < 0.04) continue;
+        const [x, , z] = dirFromAzEl(az, 0);
+        const mt = new THREE.Matrix4().compose(
+          new THREE.Vector3(x * r, ground - sc * 0.62 * 0.3, z * r),
+          new THREE.Quaternion().setFromEuler(new THREE.Euler((rand() - 0.5) * 0.4, rand() * Math.PI * 2, (rand() - 0.5) * 0.4)),
+          new THREE.Vector3(sc * (0.8 + 0.5 * rand()), sc, sc * (0.8 + 0.5 * rand())));
+        per[Math.floor(rand() * variants.length)].push(mt);
+      }
+    };
+    place(340, 0.05, 0.7, 3.2, 70, 1.6);
+    place(60, 0.3, 1.6, 20, 160, 1.8);
+    place(14, 1.2, 3.2, 60, 380, 2);
+    variants.forEach((g, v) => {
+      const im = new THREE.InstancedMesh(g, mat, Math.max(1, per[v].length));
+      im.count = per[v].length;
+      per[v].forEach((mt, i) => im.setMatrixAt(i, mt));
+      im.instanceMatrix.needsUpdate = true;
+      im.castShadow = true; im.receiveShadow = true;
+      im.computeBoundingSphere();
+      this.group.add(im);
+    });
   }
 
-  /** Tint the skyline sector around `az` (or hide it with null). which: 0 = Sun, 1 = Earth. */
+  /** Crest point (scene coords) at an azimuth, pulled slightly toward the mast so it draws in front of the ridge. */
+  crest(az: number, pull = 0.996): THREE.Vector3 {
+    const m = this.model;
+    const c = m.column(az);
+    const [sx, , sz] = dirFromAzEl(az, 0);
+    const y = m.mast + (c.Y - m.mast) * pull;
+    return new THREE.Vector3(sx * c.D * pull, y, sz * c.D * pull);
+  }
+
+  setResolution(w: number, h: number) { for (const m of this.lineMats) m.resolution.set(w, h); }
+
+  /** Outline the crest around `az` (the stretch of ridge that blocks the body), or hide it. which: 0 = Sun, 1 = Earth. */
   setHighlight(which: 0 | 1, az: number | null) {
     const h = this.hl[which];
-    if (az == null) { h.mesh.visible = h.line.visible = false; return; }
-    const p = h.geo.getAttribute('position') as THREE.BufferAttribute;
-    const l = h.lineGeo.getAttribute('position') as THREE.BufferAttribute;
-    const step = 360 / this.n;
-    const c = Math.round(az / step);
+    if (az == null) { h.line.visible = h.glow.visible = false; return; }
+    const pts: number[] = [];
     for (let k = 0; k < HL_N; k++) {
-      const i = (((c + k - (HL_N - 1) / 2) % this.n) + this.n) % this.n;
-      const arr = p.array as Float32Array;
-      // Pull the ribbon a little toward the mast so it sits in front of the terrain face.
-      this.crestPoint(i, arr, 6 * k, 0.985);
-      const [sx, , sz] = dirFromAzEl(i * step, 0);
-      // Lower edge on the terrain profile at 0.45·D; the chord to the crest lies on or above the (convex) profile.
-      const D = this.dist[i], Y = this.ridgeY[i], s = 0.45;
-      const y = Y > 0 ? Y * s * s : Y * s;
-      arr[6 * k + 3] = sx * D * s * 0.985; arr[6 * k + 4] = y + 0.01 * D * (1 - s); arr[6 * k + 5] = sz * D * s * 0.985;
-      this.crestPoint(i, l.array as Float32Array, 3 * k, 0.995);
+      const a = az + (k - (HL_N - 1) / 2) * 0.5;
+      const p = this.crest(a);
+      pts.push(p.x, p.y, p.z);
     }
-    p.needsUpdate = true; l.needsUpdate = true;
-    h.geo.computeBoundingSphere(); h.lineGeo.computeBoundingSphere();
-    h.mesh.visible = h.line.visible = true;
+    h.geo.setPositions(pts); h.geoGlow.setPositions(pts);
+    h.line.computeLineDistances(); h.glow.computeLineDistances();
+    h.line.visible = h.glow.visible = true;
   }
 
   dispose() {
@@ -203,4 +209,3 @@ export class Terrain {
     this.group.removeFromParent();
   }
 }
-const HL_N = 33; // 16 samples either side = ±8° of azimuth
