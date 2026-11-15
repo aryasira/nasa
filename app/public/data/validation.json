@@ -22,18 +22,18 @@
   "passed": true,
   "n_failures": 0,
   "max_az_gap_deg": 0.0001,
-  "max_el_gap_deg": 0.00069,
+  "max_el_gap_deg": 0.00093,
   "max_earth_parallax_deg": 0.2767,
   "sun_diameter_deg": [
    0.5231,
    0.5437
   ],
   "max_gap_as_fraction_of_sun_diameter": {
-   "one_over": 750,
-   "exact_ratio": 758.1,
-   "text": "about 1/750 of the Sun's width"
+   "one_over": 550,
+   "exact_ratio": 562.5,
+   "text": "about 1/550 of the Sun's width"
   },
-  "run_git_sha": "883519165917d8cd22bef4827266bfeef98bf362",
+  "run_git_sha": "989f03726faa8689ba41155a93e09309e7d612c2",
   "fixtures_git_sha": "00efaf4d31268b5bb586f7bde0bc2377bbe39264"
  },
  "benchmark": {
@@ -284,7 +284,7 @@
  "meta": {
   "ai_generated": true,
   "generated_by": "pipeline/make_validation.py",
-  "git_sha": "4677a0925cbfce9c5ac9e86100abbe7991a0df96",
+  "git_sha": "f3a8157dff74ce0416c1f9159fa741c1cb871507",
   "mock": false
  }
 }

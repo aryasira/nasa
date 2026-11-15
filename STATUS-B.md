@@ -246,3 +246,11 @@ CSV/JSON export, site-by-date map, Earth clearance plot, longest-night line, con
 Vitest 47 passed, Python 34 passed, build ok, headless Chrome check ok.
 One thing seen: in headless Chrome the plain wheel over the 3D view did not scroll the page with
 C's fix. It may behave differently in a real browser. Check it on the live site.
+
+### `b/a-fixes` after B's round 3 redesign (Sun 15 Nov, 13:35 CT, real clock)
+Merged `main` 1d6a154 (B's redesign, PR #7) and `a/data` 29a3382 (A's round 3). `main.ts` is B's
+redesigned version. Re-attached to it, in B's layout: Earth link margin field, CSV and JSON buttons,
+section "All terrain sites by landing date", section "Earth above the skyline, 30 days".
+Dropped because the redesign replaced that part: the longest-night sentence and the 24-hour label.
+Vitest 47 passed, Python 38 passed, build ok, headless Chrome ok, no console errors.
+Seen at 1280 px in "Options ranked": the band text "(+7 to +8)" overlaps the cause chips. B's layout.
