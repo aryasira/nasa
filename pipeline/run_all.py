@@ -23,7 +23,7 @@ import zipfile
 
 import common as C
 
-PACK = ["app/public/data/ephem.bin", "app/public/data/ephem.header.json",
+PACK = ["app/public/data/validation.json", "app/public/data/ephem.bin", "app/public/data/ephem.header.json",
         "app/public/data/fixtures.json", "app/public/data/features.json",
         "docs/science.md", "docs/horizons-flags.md"]
 
@@ -79,6 +79,13 @@ def main():
             results["5 horizons"] = None
         else:
             results["5 horizons"] = step(log, "5. terrain horizons", ["pipeline/make_horizons.py"] + dem_args)
+        if args.skip_horizons:
+            results["5b IM-1 near field"] = None
+        else:
+            results["5b IM-1 near field"] = step(log, "5b. IM-1 near-field study", ["pipeline/im1_near_field.py"]
+                                                 + [x for d in args.dem_dir for x in ("--dem-dir", d)]
+                                                 + (["--fine", args.fine] if args.fine else []))
+        results["5c validation.json"] = step(log, "5c. validation scorecard", ["pipeline/make_validation.py"])
         results["6 science doc"] = step(log, "6. docs/science.md", ["pipeline/make_science_doc.py"])
         results["7 contract tests"] = step(log, "7. contract tests", ["-m", "pytest", "-q", "tests"])
 

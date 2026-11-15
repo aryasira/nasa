@@ -281,6 +281,70 @@ def test_fine_layer_goes_after_a_finer_site_tile(tmp_path, monkeypatch):
     assert seen["order"] == ["Site04_final_adj_5mpp_surf.tif", "LDEM_80S_40MPP_ADJ.TIF", "LDEM_80S_80MPP_ADJ.TIF"]
 
 
+def check(doc, name):
+    import jsonschema
+    from referencing import Registry, Resource
+    load = lambda n: json.loads((ROOT / "contracts" / n).read_text())      # noqa: E731
+    reg = Registry().with_resources([(n, Resource.from_contents(load(n))) for n in
+                                     ["sites.schema.json", "horizon.schema.json"]])
+    jsonschema.Draft202012Validator(load(name), registry=reg).validate(doc)
+
+
+def test_sphere_sites_use_the_mast_dip():
+    assert abs(mh.sphere_dip_deg({"elev_m": 0}) - (-0.0869)) < 5e-5
+    assert abs(mh.sphere_dip_deg({"elev_m": None}, mast_m=2.0) - (-0.0869)) < 5e-5
+    assert mh.sphere_dip_deg({"elev_m": 0}, mast_m=10.0) < mh.sphere_dip_deg({"elev_m": 0}, mast_m=2.0) < 0
+    doc = mh.sphere_doc({"id": "x", "lat": 0.0, "lon_e": 0.0, "elev_m": 0, "terrain": "sphere"})
+    assert set(doc["elev_deg"]) == {-0.0869} and doc["elev_lo_deg"] == doc["elev_hi_deg"] == doc["elev_deg"]
+    check(doc, "horizon.schema.json")
+
+
+def test_round3_validation_helpers():
+    import make_validation as mv
+    for ratio, want in [(772.5, 750), (1040.0, 1000), (99.9, 95), (49.0, 49), (7.9, 7), (310.0, 310)]:
+        got = mv.honest_one_over(ratio)
+        assert got == want and got <= ratio
+    real = ROOT / "app/public/data/validation.json"
+    if real.exists():
+        v = json.loads(real.read_text())
+        check(v, "validation.schema.json")
+        assert v["meta"]["mock"] is False
+        assert v["benchmark"]["ours_limb_band_pct"][0] <= v["benchmark"]["ours_limb_pct"] <= v["benchmark"]["ours_limb_band_pct"][1]
+
+
+def test_im1_near_field_study_logic(monkeypatch):
+    import im1_near_field as nf
+    calls = []
+
+    def fake(lat, lon, paths, mast_m=2.0, **kw):
+        calls.append((round(lat, 6), round(lon, 6), mast_m, len(paths)))
+        elev = np.full(720, 1.0)
+        elev[120:161] = 6.0 - 0.2 * (mast_m - 2.0)          # the blocker, az 60 to 80
+        if len(paths) == 2:                                  # 80 m grid only: blocker gone
+            elev[120:161] = 2.0
+        dist = np.full(720, 5000.0)
+        dist[120:161] = 300.0
+        return {"elev_deg": elev, "occ_dist_m": dist, "site_height_m": 2590.0}
+
+    monkeypatch.setattr(nf.MH, "find_dem", lambda n, dirs: pathlib.Path(n))
+    monkeypatch.setattr(nf, "lead_hours", lambda e: {"baseline_sunlit_h": 155.0 + float(e[130]) / 10, "slipped_sunlit_h": 82.0})
+    site = {"id": "im1", "lat": -80.13, "lon_e": 1.44, "elev_m": 2579}
+    rep = nf.run(site, [], "40", horizon_fn=fake)
+    keys = [r["variant"] for r in rep["variants"]]
+    assert keys[0] == "base" and "grid_80m" in keys and "mast_1m" in keys and "mast_3m" in keys
+    assert sum(k.startswith("moved_40m") for k in keys) == 4 and sum(k.startswith("moved_80m") for k in keys) == 4
+    by = {r["variant"]: r for r in rep["variants"]}
+    assert by["base"]["blocker_stays"] and by["mast_3m"]["blocker_stays"]
+    assert not by["grid_80m"]["blocker_stays"] and rep["blocker_survives_all"] is False
+    assert "low confidence" in rep["verdict"]
+    assert by["moved_40m_north"]["lat"] > site["lat"] and by["moved_40m_east"]["lon_e"] > site["lon_e"]
+    assert abs((by["moved_80m_north"]["lat"] - site["lat"]) * 3.141592653589793 / 180 * 1737400 - 80) < 1.0
+    assert rep["lead_story"]["largest_loss_h"] >= rep["lead_story"]["smallest_loss_h"] > 70
+    # without the coarse-only variant everything agrees and the blocker survives
+    rep2 = nf.run(site, [], None, horizon_fn=lambda *a, **k: fake(a[0], a[1], [1, 2, 3], k.get("mast_m", 2.0)))
+    assert rep2["blocker_survives_all"] is True and "stays" in rep2["verdict"]
+
+
 def test_round2_sites_have_a_dem_plan():
     ids = {x["id"] for x in mh.ROUND2_SITES}
     assert ids == {"shackleton_sr1", "shackleton_sr2"} and ids <= set(mh.PLAN) and ids <= mh.FINE_SITES

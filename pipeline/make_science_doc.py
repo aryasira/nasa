@@ -7,6 +7,7 @@ Sections with no report yet say so instead of showing a value.
 
 Usage:  python pipeline/make_science_doc.py
 """
+import json
 import common as C
 
 PENDING = "_Not produced yet: run the pipeline step named above._"
@@ -74,6 +75,85 @@ def validation_report():
         used = sorted({d["file"] for _, v in rows for d in v.get("dems", [])} |
                       {e["file"] for _, v in rows for e in v.get("err_maps", [])})
         out += ["- Terrain files read in the last run: " + ", ".join(f"`{u}`" for u in used) + "."]
+    return out + [""]
+
+
+def claims_section():
+    """Round 3: lead lines, the IM-1 near-field study and one-line claims, all read from files."""
+    p = C.DATA / "validation.json"
+    if not p.exists():
+        return ["## One-line claims", "", PENDING, ""]
+    v = json.loads(p.read_text(encoding="utf-8"))
+    h, b, n = v["horizons_check"], v["benchmark"], v["im1_near_field"]
+    worst = max(h["max_az_gap_deg"], h["max_el_gap_deg"])
+    out = ["## Lead-site lines with the terrain band", "",
+           "Reference engine (`tests/reference/engine_ref.py`) on the real data, 10-minute samples. "
+           "The range is the same stay computed on the lowered and the raised horizon.", ""]
+    out += [f"- {x['text']}." for x in v["lead_lines"]]
+    tiny = [x for x in v["lead_lines"] if x["sunlit_h_range"][1] - x["sunlit_h_range"][0] < 1.0]
+    out += ["", f"{len(tiny)} of {len(v['lead_lines'])} of these ranges are under one hour wide. The terrain "
+            "height error matters for the IM-1 baseline stay and hardly at all for the others.", ""]
+
+    out += ["## IM-1 near-field study (`pipeline/im1_near_field.py`)", ""]
+    near = C.read_report("im1_near_field.json")
+    if not near:
+        out += ["Status: **not run yet**. What is known so far from the two full runs: on the 40 m grid the "
+                "occluder near azimuth 69 deg is 280 m away at 6.33 deg, against 320 m and 6.34 deg on the "
+                "80 m grid, and the whole IM-1 horizon moved by 0.02 deg on average (0.19 deg at most). The "
+                "moved-site and mast-height variants need the DEMs and run in the next pipeline pass.", ""]
+    else:
+        out += [near["rule"], "",
+                "| Variant | Mean horizon, az 60 to 80 (deg) | Occluder distance, median (m) | "
+                "Baseline stay sunlit (h) | Slipped stay sunlit (h) | Blocker stays |",
+                "|---|---:|---:|---:|---:|---|"]
+        out += [f"| {r['what']} | {r['sector_mean_deg']} | {r['occluder_dist_m_median']} | "
+                f"{r['baseline_sunlit_h']} | {r['slipped_sunlit_h']} | {'yes' if r['blocker_stays'] else 'no'} |"
+                for r in near["variants"]]
+        out += ["", f"**Verdict: {near['verdict']}.** {near['position_uncertainty_note']}"]
+        if near["lead_story"]:
+            ls = near["lead_story"]
+            out += ["", f"The IM-1 story does not rest on this blocker: across every variant the baseline stay has "
+                    f"{ls['baseline_sunlit_h_range'][0]} to {ls['baseline_sunlit_h_range'][1]} h of sunlight and the "
+                    f"slipped stay {ls['slipped_sunlit_h_range'][0]} to {ls['slipped_sunlit_h_range'][1]} h, a loss of "
+                    f"{ls['smallest_loss_h']} to {ls['largest_loss_h']} h."]
+        out.append("")
+
+    im1 = {x["which"]: x for x in v["lead_lines"] if x["site_id"] == "im1"}
+    out += ["## One-line claims", "",
+            "Plain-English sentences for the page. Each uses only numbers the pipeline produced.", ""]
+    claims = [
+        (f"Sun and Earth positions match NASA JPL Horizons to within {worst:.4f}° at {h['n_sites']} landing sites "
+         f"({h['n_fixtures']} checks, all inside the {h['tol_deg']}° tolerance): "
+         f"{h['max_gap_as_fraction_of_sun_diameter']['text']}.", "validation.json, horizons_check"),
+        (f"Earth is placed as seen from the landing site, not from the Moon's centre; the difference reaches "
+         f"{h['max_earth_parallax_deg']:.2f}° in our checks, and the check fails without it.", "validation.json, horizons_check"),
+        (f"At Connecting Ridge our model has the Sun in view {b['ours_limb_pct']}% of the time over "
+         f"{b['span_utc'][0][:4]} to {b['span_utc'][1][:4]} ({b['ours_limb_band_pct'][0]}% to {b['ours_limb_band_pct'][1]}% across the "
+         f"terrain error band); a published study found {b['published']['pct']}% over 19 years (Gläser et al. 2014), "
+         + ("which lies inside our band." if b["published_inside_our_band"] else "which lies outside our band."),
+         "validation.json, benchmark"),
+        (f"Counting the Sun only when at least half its disc shows, the Connecting Ridge figure is {b['ours_centre_pct']}%.",
+         "validation.json, benchmark"),
+    ]
+    if "baseline" in im1 and len(im1) == 2:
+        s0, s1 = im1["baseline"], [x for k, x in im1.items() if k != "baseline"][0]
+        claims.append((f"At the IM-1 site a {s1['which'].strip('+ d')}-day slip cuts a {s0['stay_days']}-day stay from "
+                       f"{s0['sunlit_h']} to {s1['sunlit_h']} hours of sunlight; with the terrain height error the baseline is "
+                       f"{s0['sunlit_h_range'][0]} to {s0['sunlit_h_range'][1]} h and the slipped stay "
+                       f"{s1['sunlit_h_range'][0]} to {s1['sunlit_h_range'][1]} h.", "validation.json, lead_lines"))
+    bs = v["bands"]["sites"]
+    if bs:
+        w = max(x["full_width_at_peak_deg"] for x in bs.values())
+        claims.append((f"Every terrain horizon carries an uncertainty band built from NASA's published height-error maps; "
+                       f"at the highest point of each skyline the band is at most {w:.2f}° wide across {len(bs)} sites.",
+                       "validation.json, bands"))
+    if n["status"] == "run":
+        claims.append((f"The terrain that blocks the Sun near IM-1 was rebuilt {n['n_variants']} ways (finer grid, moved site, "
+                       f"1 m and 3 m masts): " + ("it stays in every one." if n["blocker_survives_all"] else "it does not stay in every one."),
+                       "pipeline/reports/im1_near_field.json"))
+    claims.append((f"The ephemeris comes from NASA NAIF SPICE kernels ({(v['products'].get('spice') or 'CSPICE')}, DE440) and the terrain from "
+                   f"NASA GSFC LOLA elevation models ({len(v['products']['terrain_files'])} files read).", "validation.json, products"))
+    out += [f"{i}. {text} *Source: {src}.*" for i, (text, src) in enumerate(claims, 1)]
     return out + [""]
 
 
@@ -275,7 +355,7 @@ def main():
              "Conventions: body-fixed frame MOON_ME, east longitude 0 to 360, azimuth clockwise "
              "from north, elevation above the plane normal to the 1737.4 km reference sphere "
              "at the site, UTC.", ""]
-    for section in (validation_report, kernels_section, ephem_section, residual_section, horizon_section, band_section):
+    for section in (validation_report, claims_section, kernels_section, ephem_section, residual_section, horizon_section, band_section):
         lines += section()
     C.DOCS.mkdir(exist_ok=True)
     (C.DOCS / "science.md").write_text("\n".join(lines) + "\n" + STATIC_TAIL, encoding="utf-8")

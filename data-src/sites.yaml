@@ -22,7 +22,7 @@ sites:
     kind: landed
     lat: -84.7906
     lon_e: 29.1957
-    elev_m: null
+    elev_m: 5321.8   # DEM height at the site, NASA GSFC PGDA LOLA (Agent A pipeline run 15 Nov, STATUS-A.md)
     frame: MOON_ME
     landing_utc: "2025-03-06T17:28:50Z"   # 12:28:50 p.m. EST per Spaceflight Now (secondary): https://spaceflightnow.com/2025/03/07/intuitive-machines-im-2-mission-ends-with-lander-on-its-side-on-the-moon/
     source: { org: "LROC", url: "https://lroc.im-ldi.com/images/1408" }
@@ -111,7 +111,7 @@ sites:
     kind: candidate
     lat: -89.4399     # Gläser 2014 "spot 2" (best 2 m site); longitude read as east-positive 0-360 (paper does not state the convention)
     lon_e: 222.8524
-    elev_m: null
+    elev_m: 1958.6   # DEM height at the site, NASA GSFC PGDA LOLA (Agent A pipeline run 15 Nov, STATUS-A.md)
     frame: MOON_ME
     source: { org: "Gläser et al. 2014, Icarus 243:78-90", url: "https://elib.dlr.de/94240", quote: "smallest accumulated percentage in darkness is 7.73% and occurs at 89.4399°S, 222.8524°E" }
     name_status: informal
@@ -123,7 +123,7 @@ sites:
     kind: candidate
     lat: -89.7742     # Gläser 2014, 2 m above ground; longitude read as east-positive 0-360
     lon_e: 203.4952
-    elev_m: null
+    elev_m: 1734.0   # DEM height at the site, NASA GSFC PGDA LOLA (Agent A pipeline run 15 Nov, STATUS-A.md)
     frame: MOON_ME
     source: { org: "Gläser et al. 2014, Icarus 243:78-90", url: "https://elib.dlr.de/94240", quote: "SR1 at 89.7742°S, 203.4952°E; SR2 at 89.6871°S, 197.0983°E" }
     name_status: informal
@@ -134,7 +134,7 @@ sites:
     kind: candidate
     lat: -89.6871
     lon_e: 197.0983
-    elev_m: null
+    elev_m: 1727.8   # DEM height at the site, NASA GSFC PGDA LOLA (Agent A pipeline run 15 Nov, STATUS-A.md)
     frame: MOON_ME
     source: { org: "Gläser et al. 2014, Icarus 243:78-90", url: "https://elib.dlr.de/94240" }
     name_status: informal

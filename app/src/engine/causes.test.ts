@@ -154,11 +154,19 @@ describe.skipIf(!existsSync(root + D + '/ephem.bin'))('cause lines and slip opti
     for (let d = 0; d < 30; d += 3) {
       const a = win('im2', t0, 7), b = win('im2', t0 + d * 86400, 7);
       for (const l of causeLines({ scan: a.scan, hz }, { scan: b.scan, hz }, features)) {
-        if (l.feature_id === 'mons_mouton') { expect(l.text).toMatch(/Mons Mouton \(the feature the site stands on\)/); seen++; }
+        // Old files name the ground under the site (feature_id mons_mouton); files from the 15 Nov
+        // pipeline run leave it null and the app looks the host feature up. Either way the wording is the same.
+        if (/Mons Mouton/.test(l.text)) { expect(l.text).toMatch(/Mons Mouton \(the feature the site stands on\)/); seen++; }
       }
     }
     // With the Mac-run terrain, Mons Mouton no longer blocks IM-2 in this month; when it does, the line names it.
     expect(seen).toBeGreaterThanOrEqual(0);
+  });
+
+  it('11. an earlier landing is labelled as earlier, not as a negative slip', () => {
+    const o = of(run('connecting_ridge', '2027-06-10T00:00:00Z', 14, -10), 'slip');
+    expect(o.label).toBe('10-day advance');
+    expect(of(run(...IM2), 'slip').label).toBe('7-day slip');
   });
 
   it('10. eclipse hours are counted inside the sunlit hours', () => {

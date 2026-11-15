@@ -3,7 +3,7 @@
 import type { HorizonFile, WindowMetrics } from '@contracts/types';
 import { Ephem, fmtUtc } from './ephem';
 import { observe, type SiteFrame } from './geometry';
-import { discFraction, horizonAt, isVisible, type Mode } from './visibility';
+import { discFraction, horizonAt, isVisible, linkMargin, type Mode } from './visibility';
 
 export const STEP_S = 600;
 const BISECT_TOL_S = 1;
@@ -32,7 +32,7 @@ function bodyVisible(ephem: Ephem, f: SiteFrame, h: ArrayLike<number>, t: number
   const o = observe(ephem, f, t);
   return body === 'sun'
     ? isVisible(discFraction(o.sunEl, o.sunR, horizonAt(h, o.sunAz)), mode)
-    : isVisible(discFraction(o.earthEl, o.earthR, horizonAt(h, o.earthAz)), mode);
+    : isVisible(discFraction(o.earthEl, o.earthR, horizonAt(h, o.earthAz) + linkMargin()), mode);
 }
 
 export function scanWindow(ephem: Ephem, f: SiteFrame, h: ArrayLike<number>, tStart: number, tEnd: number, mode: Mode, stepS = STEP_S): Scan {
@@ -48,9 +48,9 @@ export function scanWindow(ephem: Ephem, f: SiteFrame, h: ArrayLike<number>, tSt
   for (let k = 0; k < m; k++) {
     const o = observe(ephem, f, Math.min(tStart + stepS * k, tEnd));
     s.sunVis[k] = +isVisible(discFraction(o.sunEl, o.sunR, horizonAt(h, o.sunAz)), mode);
-    s.earthVis[k] = +isVisible(discFraction(o.earthEl, o.earthR, horizonAt(h, o.earthAz)), mode);
+    s.earthVis[k] = +isVisible(discFraction(o.earthEl, o.earthR, horizonAt(h, o.earthAz) + linkMargin()), mode);
     s.sunVisSphere[k] = +isVisible(discFraction(o.sunEl, o.sunR, SPHERE_HORIZON_DEG), mode);
-    s.earthVisSphere[k] = +isVisible(discFraction(o.earthEl, o.earthR, SPHERE_HORIZON_DEG), mode);
+    s.earthVisSphere[k] = +isVisible(discFraction(o.earthEl, o.earthR, SPHERE_HORIZON_DEG + linkMargin()), mode);
     s.eclipse[k] = +o.eclipsePartial;
     s.sunAz[k] = o.sunAz; s.sunEl[k] = o.sunEl; s.earthAz[k] = o.earthAz; s.earthEl[k] = o.earthEl;
   }
