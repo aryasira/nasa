@@ -77,7 +77,7 @@ class Simulator {
   private speed = 21600;
   private slipPreview: number | null = null;
   private keepMet: number | null = null; // mission-elapsed time to restore after a commit re-renders the page
-  private cam: Cam = (['lander', 'orbit', 'globe'] as const).find((c) => c === INITIAL.get('cam')) ?? 'orbit';
+  private cam: Cam = (['lander', 'orbit', 'globe'] as const).find((c) => c === INITIAL.get('cam')) ?? 'lander';
   private size = INITIAL.has('size') && Number(INITIAL.get('size')) > 1 ? 6 : 1;
   private showCompass = INITIAL.get('compass') !== '0';
   private pendingSimT: number | null = INITIAL.has('simt') ? (() => { try { return parseUtc(INITIAL.get('simt')!); } catch { return null; } })() : null;
@@ -307,11 +307,19 @@ class Simulator {
     this.orbit.maxPolarAngle = Math.PI * 0.49;
     this.orbit.target.set(0, 1.1, 0);
     this.orbit.addEventListener('change', () => { this.dirty = true; });
+    this.orbit.enabled = this.cam === 'orbit';
 
     this.canvas.addEventListener('pointerdown', this.onDown);
     this.canvas.addEventListener('pointermove', this.onMove);
     this.canvas.addEventListener('pointerup', this.onUp);
     this.canvas.addEventListener('pointercancel', () => { this.drag = null; });
+    // Page scroll wins over the 3D view: a plain wheel scrolls the page; Ctrl/Cmd + wheel (a trackpad pinch
+    // arrives as Ctrl + wheel) zooms. Capture phase on the wrapper, so the camera controls never see plain wheels.
+    this.view.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey) return;
+      e.stopPropagation();
+      if (this.cam !== 'lander') this.flashZoomHint();
+    }, { capture: true });
     this.resizeObs = new ResizeObserver(() => this.resize());
     this.resizeObs.observe(this.view);
     this.interObs = new IntersectionObserver((es) => { this.onScreen = es.some((x) => x.isIntersecting); if (this.onScreen) this.dirty = true; }, { threshold: 0.02 });
@@ -379,7 +387,19 @@ class Simulator {
       this.t = this.pendingSimT; this.pendingSimT = null;
       const [, b] = this.stays();
       if (this.ab === 'b' && b && (this.t < b.t0 || this.t > b.t1)) this.ab = 'a';
-    } else this.t = (prev ? met : 0) + this.activeStart();
+    } else if (prev) this.t = met + this.activeStart();
+    else {
+      // First open with no ?simt=: start at the first hour of the stay with the Sun in view (if any), so the
+      // lander view does not open on a black sky. The transport bar still covers the whole stay.
+      this.t = a.t0;
+      let firstLit: number | null = null;
+      for (let t = a.t0; t <= a.t1; t += 3600) {
+        const sun = readout(ctx.ephem, this.frameF, hz, this.feats, t, ctx.state.mode).sun;
+        if (sun.visible && firstLit == null) firstLit = t;
+        if (sun.visible && sun.frac >= 1) { this.t = t; firstLit = null; break; } // whole disc clear of the skyline
+      }
+      if (firstLit != null) this.t = firstLit;
+    }
     if (!Number.isFinite(this.t)) this.t = a.t0;
     this.q<HTMLElement>('.sim-mock').hidden = !ctx.mock;
     const sel = this.view.querySelector<HTMLSelectElement>('.site-select')!;
@@ -417,6 +437,19 @@ class Simulator {
     this.terrain.setResolution(this.view.clientWidth, this.view.clientHeight);
   }
 
+  private zoomHint: HTMLElement | null = null;
+  private zoomHintTimer = 0;
+  private flashZoomHint() {
+    if (!this.zoomHint) {
+      this.zoomHint = el('div', 'sim-zoomhint');
+      this.zoomHint.textContent = `Hold ${/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl'} and scroll to zoom`;
+      this.zoomHint.setAttribute('aria-hidden', 'true');
+      this.view.append(this.zoomHint);
+    }
+    this.zoomHint.classList.add('on');
+    clearTimeout(this.zoomHintTimer);
+    this.zoomHintTimer = window.setTimeout(() => this.zoomHint?.classList.remove('on'), 1400);
+  }
   private buildPins() {
     this.pinsEl.innerHTML = this.ctx.sites.map((s) =>
       `<button type="button" class="pin" data-site="${esc(s.id)}" aria-pressed="${s.id === this.site.id}" aria-label="Select site ${esc(s.name)}"><i></i><span>${esc(s.name)}</span></button>`).join('');
