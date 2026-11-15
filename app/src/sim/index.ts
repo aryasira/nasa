@@ -827,7 +827,7 @@ class Simulator {
       this.set(`${k}-az`, `${body.az.toFixed(1)}°`);
       this.set(`${k}-el`, deg2(body.el));
       this.set(`${k}-clr`, deg2(body.el - body.horizonEl));
-      this.set(`${k}-more`, more.map(([dt, dd]) => `<dt>${dt}</dt><dd class="num">${esc(dd)}</dd>`).join(''), true);
+      this.set(`${k}-more`, more.map(([dt, dd]) => (dt === '*' ? `<dt class="fn">* ${esc(dd)}</dt>` : `<dt>${dt}</dt><dd class="num">${esc(dd)}</dd>`)).join(''), true);
     };
     // --- FEATURE (C): countdown to the next sunset/sunrise and Earthset/Earthrise (engine visibility, cached)
     const stayEnd = start + stayDays * DAY;
@@ -841,16 +841,16 @@ class Simulator {
     const pg = powerGeometry(r.sun.el, r.sun.horizonEl, r.sun.frac);
     const pct = (x: number) => `${(x * 100).toFixed(0)}%`;
     card('power', pw, r.sun, r.power.pct / 100, [
-      ['Sun elevation (above local horizontal)', deg2(pg.sunEl)],
+      ['Elevation above horizontal', deg2(pg.sunEl)],
       ['Clearance above terrain', deg2(pg.clearance)],
       ['Sun disc visible', pct(pg.discFrac)],
-      ['Relative output, Sun-tracking panel*', pct(pg.tracking)],
-      ['Relative output, fixed horizontal panel*', pct(pg.horizontal)],
+      ['Sun-tracking panel*', pct(pg.tracking)],
+      ['Fixed flat panel*', pct(pg.horizontal)],
       ['Power (disc in view)', `${r.power.pct.toFixed(0)}%`],
       [`Skyline at ${r.sun.az.toFixed(1)}°`, deg2(r.sun.horizonEl)],
       ['Sun radius', `${r.sun.r.toFixed(3)}°`],
       ...(r.power.note ? [['Note', r.power.note] as [string, string]] : []),
-      ['* Geometric factor', 'not a power model'],
+      ['*', 'Relative panel output: geometric factor, not a power model (flat panel = disc × sin elevation).'],
     ]);
     card('comm', cw, r.earth, r.earth.frac, [
       ['Disc above skyline', `${(r.earth.frac * 100).toFixed(0)}%`],

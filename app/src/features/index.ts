@@ -35,7 +35,16 @@ const day = (t: number) => fmtUtc(t).slice(0, 10);
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const monYr = (t: number) => { const d = new Date(t * 1000); return `${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
 const idle = (fn: (deadline: { timeRemaining(): number }) => void) =>
-  ('requestIdleCallback' in window ? (window as any).requestIdleCallback(fn, { timeout: 200 }) : setTimeout(() => fn({ timeRemaining: () => 8 }), 16));
+  ('requestIdleCallback' in window ? (window as any).requestIdleCallback(fn, { timeout: 60 }) : setTimeout(() => fn({ timeRemaining: () => 8 }), 16));
+
+/** Next macrotask (between frames even when the 3D view keeps the main thread busy), as a 0-budget idle deadline. */
+const chan = typeof MessageChannel !== 'undefined' ? new MessageChannel() : null;
+const soonQ: (() => void)[] = [];
+if (chan) chan.port1.onmessage = () => soonQ.shift()?.();
+const soon = (fn: (deadline: { timeRemaining(): number }) => void) => {
+  const run = () => fn({ timeRemaining: () => 0 });
+  if (chan) { soonQ.push(run); chan.port2.postMessage(0); } else setTimeout(run, 0);
+};
 
 /** loadData hook: sphere horizons for sphere sites without a file, plus the custom site from the URL. */
 export function addSphereAndCustomSites(sites: Site[], horizons: Map<string, HorizonFile>): void {
@@ -238,7 +247,7 @@ function mountDates() {
     </div>
     <div class="dates-chart" id="dates-chart"></div>
     <p class="dates-read num" id="dates-read" aria-hidden="true"></p>
-    <div class="legend"><span><span class="sw" style="background:#e69f00"></span>sunlit</span><span><span class="sw" style="background:repeating-linear-gradient(90deg,#56b4e9 0 5px,transparent 5px 8px)"></span>Earth in view</span><span><span class="sw" style="background:#009e73"></span>Sun + Earth</span><span><span class="sw" style="background:#f0e442"></span>slipped date</span><span>1 2 3 = best dates</span></div>
+    <div class="legend"><span><span class="sw" style="background:#e69f00"></span>sunlit</span><span><span class="sw" style="background:repeating-linear-gradient(90deg,#56b4e9 0 5px,transparent 5px 8px)"></span>Earth in view</span><span><span class="sw" style="background:#009e73"></span>Sun + Earth</span><span><span class="sw" style="background:#fff"></span>baseline (left edge)</span><span><span class="sw" style="background:#f0e442"></span>slipped date</span><span>1 2 3 = best dates</span><span><span class="sw" style="background:rgba(255,255,255,.12)"></span>beyond the 90-day slip range</span></div>
     <div id="dates-sum"></div>
     <p id="dates-status" role="status" class="note"></p>`;
   insertAfter(after, sec);
@@ -267,10 +276,11 @@ function startDates() {
     if (activeJob !== key) return; // a newer scenario took over; this job stays cached half-done
     let done = false;
     const t0 = performance.now();
-    do { done = job!.step(1440); } while (!done && dl.timeRemaining() > 3 && performance.now() - t0 < 12);
-    if (done) drawDates(); else { setDatesStatus(`Computing… ${Math.round(job!.progress() * 100)}%`, job!.progress()); idle(tick); }
+    // At least ~10 ms of work per slice (idle time is scarce while the 3D view animates), at most ~25 ms.
+    do { done = job!.step(720); } while (!done && (performance.now() - t0 < 8 || (dl.timeRemaining() > 3 && performance.now() - t0 < 25)));
+    if (done) drawDates(); else { setDatesStatus(`Computing… ${Math.round(job!.progress() * 100)}%`, job!.progress()); soon(tick); }
   };
-  if (job.progress() < 1) idle(tick);
+  if (job.progress() < 1) idle(tick); // first slice waits for idle time, so first paint is not delayed
 }
 
 function setDatesStatus(txt: string, p?: number) {
@@ -319,12 +329,14 @@ function drawDates() {
   const slipI = slip * perDay;
   const slipM = slip > 0 && slipI < s.n ? `<line x1="${x(slipI)}" x2="${x(slipI)}" y1="${T}" y2="${T + ph}" class="slipm"/><text x="${x(slipI) + 4}" y="${T + 24}" class="slipt">Slipped +${slip} d</text>` : '';
   const ci = Math.min(s.n - 1, Math.round(cursor * perDay));
+  const narrow = W < 560;
   const beyond = FS.clickSets === 'slip' && 90 * perDay < s.n
-    ? `<rect x="${x(90 * perDay)}" y="${T}" width="${W - R - x(90 * perDay)}" height="${ph}" class="beyond"/><text x="${W - R - 4}" y="${T + ph - 6}" text-anchor="end" class="muted">beyond the 90-day slip range</text>` : '';
+    ? `<rect x="${x(90 * perDay)}" y="${T}" width="${W - R - x(90 * perDay)}" height="${ph}" class="beyond"/>` : '';
+  host.classList.toggle('narrow', narrow);
   host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="slider" tabindex="0" id="dates-svg"
       aria-label="Landing date. Arrow keys move one day, Page Up and Page Down one week, Enter applies." aria-valuemin="0" aria-valuemax="${SPAN_D}" aria-valuenow="${cursor}" aria-valuetext="${esc(readText(s, cursor))}">
     ${beyond}${grid}
-    <line x1="${L}" x2="${L}" y1="${T}" y2="${T + ph}" class="basem"/><text x="${L + 4}" y="${T + 10}" class="baset">Baseline</text>
+    <line x1="${L}" x2="${L}" y1="${T}" y2="${T + ph}" class="basem"/>
     <path d="${path(s.sun)}" class="ln-sun"/><path d="${path(s.earth)}" class="ln-earth"/><path d="${path(s.both)}" class="ln-both"/>
     ${slipM}${bestM}
     <g class="cur"><line x1="${x(ci)}" x2="${x(ci)}" y1="${T}" y2="${T + ph}"/>${Number.isFinite(s.both[ci]) ? `<circle cx="${x(ci)}" cy="${y(s.both[ci])}" r="4"/>` : ''}</g>

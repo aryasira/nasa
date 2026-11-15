@@ -103,3 +103,6 @@ table.cmp td { white-space: nowrap; }
 table.cmp td.hz { font-size: .88rem; color: var(--ink-2); }
 .dates-chart svg text { paint-order: stroke; stroke: #0b0f14; stroke-width: 3px; stroke-linejoin: round; }
 .dates-chart .ln-sun { stroke-width: 5; stroke-opacity: .85; }
+.dates-chart.narrow .ln-sun { stroke-width: 3; }
+.dates-chart.narrow .ln-both { stroke-width: 1.8; }
+table.cmp th[scope="row"] { min-width: 150px; white-space: normal; }

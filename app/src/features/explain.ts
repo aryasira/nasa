@@ -45,6 +45,8 @@ export interface TourStep { title: string; body: string; action: TourAction }
 
 const latTxt = (v: number) => `${Math.abs(v).toFixed(2)}°${v < 0 ? 'S' : 'N'}`;
 const minute = (t: number) => fmtUtc(t).slice(0, 16);
+const show = (t: number) => fmtUtc(t).slice(0, 16).replace('T', ' ');
+const sgn = (v: number, d = 1) => `${v < 0 ? '−' : ''}${Math.abs(v).toFixed(d)}`;
 const clampT = (e: Ephem, t: number) => Math.min(e.tLast - 40 * DAY, Math.max(e.t0, t));
 const has = (c: TourCtx, id: string) => c.sites.some((s) => s.id === id) && c.horizons.has(id);
 const pick = (c: TourCtx, ids: string[], fallback: (s: Site) => number) =>
@@ -69,8 +71,8 @@ export function tourStep(i: number, c: TourCtx): TourStep {
     for (let j = 1; j <= sc.n; j++) if (sc.sunEl[j] > sc.sunEl[k]) k = j;
     const tMax = t0 + 3600 * k, limit = 90 - Math.abs(s.lat) + AXIAL_TILT_DEG;
     return mk(TOUR_TITLES[0],
-      `At ${s.name} (${latTxt(s.lat)}) the Sun can never climb higher than about (90° − ${Math.abs(s.lat).toFixed(2)}°) + ${AXIAL_TILT_DEG}° = ${limit.toFixed(2)}°, because the Moon’s axis is tilted only ${AXIAL_TILT_DEG}° from the plane of Earth’s orbit. ` +
-      `Over the 12 months from this date the engine finds the Sun’s highest point here at ${sc.sunEl[k].toFixed(2)}° (${minute(tMax)} UTC). So the Sun circles the sky low on the horizon, and a modest hill can hide it. “Show me” turns the lander camera to the Sun at that moment.`,
+      `At ${s.name} (${latTxt(s.lat)}) the Sun can never climb higher than about (90° − ${Math.abs(s.lat).toFixed(2)}°) + ${AXIAL_TILT_DEG}° ≈ ${limit.toFixed(1)}°, because the Moon’s axis is tilted only ${AXIAL_TILT_DEG}° from the plane of Earth’s orbit. ` +
+      `Over the 12 months from this date the engine finds the Sun’s highest point here at ${sc.sunEl[k].toFixed(2)}° (${show(tMax)} UTC). So the Sun circles the sky low on the horizon, and a modest hill can hide it. “Show me” turns the lander camera to the Sun at that moment.`,
       { state: { site: s.id, t: minute(tMax - DAY), slip: 0 }, sim: { cam: 'lander', t: tMax, look: 'sun', ab: 'a' } });
   }
   if (i === 1) {
@@ -96,7 +98,7 @@ export function tourStep(i: number, c: TourCtx): TourStep {
     return mk(TOUR_TITLES[1],
       `The Moon turns once per orbit, so it keeps the same face toward Earth and Earth hangs almost still in its sky. It only wobbles in a small box — libration. ` +
       `Over the 12 months from this date the point on the Moon directly below Earth moves between ${f(lo[0])} and ${f(hi[0])} in longitude and ${f(lo[1])} and ${f(hi[1])} in latitude. ` +
-      `Seen from ${s.name}, Earth stays within a ${azW}°-wide strip of sky over the next 30 days, at elevations from ${eMin.toFixed(1)}° to ${eMax.toFixed(1)}°` +
+      `Seen from ${s.name}, Earth stays within a ${azW}°-wide strip of sky over the next 30 days, at elevations from ${sgn(eMin)}° to ${sgn(eMax)}°` +
       (down > 0 ? `, so it is out of view for about ${Math.round((100 * down) / sc.n)}% of that month.` : ', always above the skyline.'),
       { state: { site: s.id, t: minute(t0), slip: 0 }, sim: { cam: 'lander', t: t0 + 1800 * kMax, look: 'earth', ab: 'a' } });
   }
@@ -107,7 +109,7 @@ export function tourStep(i: number, c: TourCtx): TourStep {
     const a = windowMetrics(c.ephem, f, hz, tb, tb + 7 * DAY, c.mode).metrics;
     const b = windowMetrics(c.ephem, f, hz, tb + 10 * DAY, tb + 17 * DAY, c.mode).metrics;
     return mk(TOUR_TITLES[2],
-      `A launch slip moves the whole surface stay later. At ${s.name}, a 7-day stay from ${minute(tb)} UTC has ${a.sunlit_h.toFixed(1)} h of sunlight and ${a.both_visible_h.toFixed(1)} h with both Sun and Earth in view; ` +
+      `A launch slip moves the whole surface stay later. At ${s.name}, a 7-day stay from ${show(tb)} UTC has ${a.sunlit_h.toFixed(1)} h of sunlight and ${a.both_visible_h.toFixed(1)} h with both Sun and Earth in view; ` +
       `slipping it 10 days gives ${b.sunlit_h.toFixed(1)} h and ${b.both_visible_h.toFixed(1)} h. A lunar day lasts about 29.5 Earth days, so 10 days is a third of the way round the day-night cycle. ` +
       `“Show me” loads this example; the brief below lists each cause.`,
       { state: { site: s.id, t: minute(tb), stay: 7, slip: 10 }, sim: { cam: 'orbit', t: tb + 10 * DAY + 3600, ab: 'b' } });
@@ -121,7 +123,7 @@ export function tourStep(i: number, c: TourCtx): TourStep {
     for (let k = 0; k < sc.n; k++) { flat += sc.sunVisSphere[k]; terr += sc.sunVis[k]; if (kb < 0 && sc.sunVisSphere[k] && !sc.sunVis[k]) kb = k; }
     const lost = (flat - terr) / 6;
     return mk(TOUR_TITLES[3],
-      `On a smooth ball the Sun would be up for ${(flat / 6).toFixed(1)} h of a 7-day stay at ${s.name} from ${minute(tb)} UTC. With the real LOLA terrain skyline the engine counts ${(terr / 6).toFixed(1)} h` +
+      `On a smooth ball the Sun would be up for ${(flat / 6).toFixed(1)} h of a 7-day stay at ${s.name} from ${show(tb)} UTC. With the real LOLA terrain skyline the engine counts ${(terr / 6).toFixed(1)} h` +
       (Math.abs(lost) >= 0.5 ? ` — terrain ${lost > 0 ? 'removes' : 'adds'} ${Math.abs(lost).toFixed(1)} h.` : ' — almost the same this time.') +
       ` With no air there is no twilight and no refraction: when the skyline covers the Sun, the lander is in hard, black shadow. ${kb >= 0 ? '“Show me” jumps to such a moment.' : ''}`,
       { state: { site: s.id, t: minute(tb), stay: 7, slip: 0 }, sim: { cam: 'lander', t: kb >= 0 ? tb + 600 * kb : tb, look: 'sun', ab: 'a' } });

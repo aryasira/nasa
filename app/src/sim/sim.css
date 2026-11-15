@@ -264,3 +264,4 @@ section.sim:fullscreen .sim-view { height: 100%; }
 .card-cd { margin: -2px 0 6px; font-size: 12px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-cd:empty { display: none; }
 @media (max-width: 720px) { .card-cd { font-size: 11px; white-space: normal; } }
+details.more dt.fn { grid-column: 1 / -1; font-size: 11px; color: var(--ink-3); line-height: 1.35; padding-top: 2px; }
