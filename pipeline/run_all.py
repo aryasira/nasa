@@ -52,11 +52,14 @@ def main():
     ap.add_argument("--skip-horizons", action="store_true")
     ap.add_argument("--horizons-only", action="store_true",
                     help="skip kernels, ephem.bin, fixtures and the residual check; redo horizons, doc, tests")
+    ap.add_argument("--masts", default="", help="extra observer heights in metres for terrain sites, e.g. 5,10")
     ap.add_argument("--fine", choices=["20", "40"], help="finer near-field grid for im1 and im2 (large download)")
     args = ap.parse_args()
     dem_args = [x for d in args.dem_dir for x in ("--dem-dir", d)]
     if args.fine:
         dem_args += ["--fine", args.fine]
+    if args.masts:
+        dem_args += ["--masts", args.masts]
 
     C.REPORTS.mkdir(parents=True, exist_ok=True)
     log_path = C.REPORTS / "run_log.txt"

@@ -29,6 +29,13 @@ N_EPOCHS = 10
 STEP_H = 71                       # 10 epochs x 71 h = 26.6 days
 TOL_DEG = 0.01
 DEFAULT_START = "2026-01-05T00:30:00Z"
+# The round-1 epochs were chosen when the ephemeris began in 2024. That date
+# stays the rule for them, so the first 140 fixtures keep their epochs now
+# that the ephemeris begins in 2023.
+BASE_FROM = "2024-01-01T00:00:00Z"
+# Extra series: site id -> step in hours, from half past the landing hour.
+# chandrayaan3 landed 23 Aug 2023: 10 epochs x 27 h runs to 2 Sep 2023.
+EXTRA_STEP_H = {"chandrayaan3": 27}
 
 
 def ephem_span():
@@ -41,6 +48,7 @@ def start_epoch(site):
     """Half past the landing hour when the landing is inside the ephemeris
     span, otherwise a fixed default date."""
     t0, t1 = ephem_span()
+    t0 = max(t0, C.parse_utc(BASE_FROM))
     span = datetime.timedelta(hours=STEP_H * (N_EPOCHS - 1))
     if site.get("landing_utc"):
         t = C.parse_utc(site["landing_utc"]).replace(minute=30, second=0, microsecond=0)
@@ -49,8 +57,22 @@ def start_epoch(site):
     return C.parse_utc(DEFAULT_START)
 
 
-def query_url(body, site, start):
-    stop = start + datetime.timedelta(hours=STEP_H * (N_EPOCHS - 1))
+def series(site):
+    """(start, step_h) for every fixture series of a site."""
+    out = [(start_epoch(site), STEP_H)]
+    step = EXTRA_STEP_H.get(site["id"])
+    if step and site.get("landing_utc"):
+        t0, t1 = ephem_span()
+        t = C.parse_utc(site["landing_utc"]).replace(minute=30, second=0, microsecond=0)
+        end = t + datetime.timedelta(hours=step * (N_EPOCHS - 1))
+        if t0 + datetime.timedelta(hours=1) <= t and end <= t1 - datetime.timedelta(hours=1) \
+                and t != out[0][0]:
+            out.append((t, step))
+    return out
+
+
+def query_url(body, site, start, step_h=STEP_H):
+    stop = start + datetime.timedelta(hours=step_h * (N_EPOCHS - 1))
     fmt = "%Y-%m-%d %H:%M"
     params = {
         "format": "text",
@@ -63,7 +85,7 @@ def query_url(body, site, start):
         "SITE_COORD": f"'{site['lon_e']:.6f},{site['lat']:.6f},{C.site_elev_km(site):.4f}'",
         "START_TIME": f"'{start.strftime(fmt)}'",
         "STOP_TIME": f"'{stop.strftime(fmt)}'",
-        "STEP_SIZE": f"'{STEP_H} h'",
+        "STEP_SIZE": f"'{step_h} h'",
         "QUANTITIES": "'4'",
         "APPARENT": "'AIRLESS'",
         "CSV_FORMAT": "'YES'",
@@ -132,10 +154,9 @@ def main():
     sites = [s for s in C.load_sites() if s.get("validation_use") == "numeric"]
     fixtures, report, markers = [], [], {}
     sample = None
-    for site in sites:
-        start = start_epoch(site)
+    for site, (start, step_h) in [(s_, x) for s_ in sites for x in series(s_)]:
         for body in BODIES:
-            url = query_url(body, site, start)
+            url = query_url(body, site, start, step_h)
             with urllib.request.urlopen(url, timeout=120) as resp:
                 text = resp.read().decode("utf-8", "replace")
             try:
@@ -157,10 +178,10 @@ def main():
                                  "body": body, "horizons_az": az, "horizons_el": el,
                                  "tol_deg": TOL_DEG, "query_url": url})
             report.append({"site_id": site["id"], "body": body, "rows": len(rows),
-                           "start_utc": C.iso_z(start),
+                           "start_utc": C.iso_z(start), "step_h": step_h,
                            "alt_km_sent": round(C.site_elev_km(site), 4),
                            "catalog_elev_missing": site.get("elev_m") is None})
-            print(f"{site['id']:14s} {body:5s} {len(rows):2d} epochs from {C.iso_z(start)}")
+            print(f"{site['id']:14s} {body:5s} {len(rows):2d} epochs from {C.iso_z(start)}, step {step_h} h")
             time.sleep(0.5)
     C.write_json(C.DATA / "fixtures.json",
                  {"schema_version": 1, "fixtures": fixtures,

@@ -139,8 +139,9 @@ function gcKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
 
 /** True when the named feature is the ground the site stands on (the site is inside its radius). */
 export function siteIsOn(hz: HorizonFile, f: Feature): boolean {
-  const su = (hz as HorizonFile & { site_used?: { lat: number; lon_e: number; stands_on?: string | null } }).site_used;
+  const su = (hz as HorizonFile & { site_used?: { lat: number; lon_e: number; stands_on?: string | string[] | null } }).site_used;
   if (!su) return false;
+  if (Array.isArray(su.stands_on)) return su.stands_on.includes(f.id);
   if (su.stands_on != null) return su.stands_on === f.id;
   return f.radius_km != null && gcKm(su.lat, su.lon_e, f.lat, f.lon_e) <= f.radius_km;
 }
