@@ -52,7 +52,7 @@ describe('sim/cause', () => {
     const hz = json<HorizonFile>('horizon/im2.json');
     const f = siteFrame(s);
     const local = featuresContaining(s, ff);
-    expect(local.has('mons_mouton')).toBe(true); // IM-2 sits on Mons Mouton → "local terrain"
+    expect(local.has('mons_mouton')).toBe(true); // IM-2 sits on Mons Mouton → named, "the feature the site stands on"
     let n = 0;
     for (let t = ephem.t0; t < ephem.t0 + 400 * 86400 && n < 5; t += 3600) {
       const r = readout(ephem, f, hz, feats, t, 'limb');
@@ -65,7 +65,7 @@ describe('sim/cause', () => {
       expect(c.text).toMatch(/^Sun blocked by /);
       expect(c.text).toContain(`Sun ${r.sun.el < 0 ? '−' : ''}${Math.abs(r.sun.el).toFixed(2)}°`);
       expect(c.text).toContain(`Ridge ${r.sun.blocker.horizonEl < 0 ? '−' : ''}${Math.abs(r.sun.blocker.horizonEl).toFixed(2)}°`);
-      if (r.sun.blocker.featureId === 'mons_mouton') expect(c.text).toContain('local terrain');
+      if (r.sun.blocker.featureId === 'mons_mouton') expect(c.text).toContain('the feature the site stands on');
       expect(powerWord(r).word).toBe('Blocked');
     }
     expect(n).toBeGreaterThan(0);

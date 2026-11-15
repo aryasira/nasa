@@ -132,7 +132,7 @@ describe.skipIf(!existsSync(root + D + '/ephem.bin'))('cause lines and slip opti
       if (l.kind === 'terrain' && l.dist_km != null && l.dist_km < 0.5) expect(l.text).toMatch(/< 0\.5 km/);
     }
     const ex = of(run('im1', '2024-02-13T00:00:00Z', 7, 6), 'slip').causes.find((l) => l.kind === 'terrain')!;
-    expect(ex.text).toBe('Sun gained 63 h — no longer blocked by unnamed terrain at az 82° (E), < 0.5 km');
+    expect(ex.text).toBe('Sun gained 63 h — no longer blocked by nearby terrain at az 82° (E), < 0.5 km');
   });
 
   it('8. non-terrain lines use az_deg null (contract number | null)', () => {
@@ -142,7 +142,7 @@ describe.skipIf(!existsSync(root + D + '/ephem.bin'))('cause lines and slip opti
     }
   });
 
-  it('9. a named feature the site stands on is called "local terrain"', () => {
+  it('9. a named feature the site stands on is named and marked as the feature the site stands on', () => {
     const hz = horizons.get('im2')!;
     const f = (id: string) => features.features.find((x) => x.id === id)!;
     expect(siteIsOn(hz, f('mons_mouton'))).toBe(true);
@@ -153,8 +153,7 @@ describe.skipIf(!existsSync(root + D + '/ephem.bin'))('cause lines and slip opti
     for (let d = 0; d < 30; d += 3) {
       const a = win('im2', t0, 7), b = win('im2', t0 + d * 86400, 7);
       for (const l of causeLines({ scan: a.scan, hz }, { scan: b.scan, hz }, features)) {
-        expect(l.text).not.toMatch(/Mons Mouton/);
-        if (l.feature_id === 'mons_mouton') { expect(l.text).toMatch(/local terrain/); seen++; }
+        if (l.feature_id === 'mons_mouton') { expect(l.text).toMatch(/Mons Mouton \(the feature the site stands on\)/); seen++; }
       }
     }
     expect(seen).toBeGreaterThan(0);
