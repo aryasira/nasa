@@ -166,7 +166,7 @@ function optionRows(opts: SlipOptionEx[], d: Data): string {
     const causes = isBase ? '' : `<tr class="causes k-${o.kind}"><td colspan="7">${o.note ? `<small>${esc(o.note)}</small>` : ''}
       ${shown.length ? `<ul class="cause" aria-label="Causes for ${esc(o.label)}">${shown.map(li).join('')}</ul>` : '<small> No change of half an hour or more in Sun or Earth visibility.</small>'}
       ${more.length ? `<details class="extra"><summary>${more.length} smaller cause${more.length > 1 ? 's' : ''}</summary><ul class="cause">${more.map(li).join('')}</ul></details>` : ''}</td></tr>`;
-    return `<tr class="${isBase ? 'base' : ''}"><td><strong>${esc(o.label)}</strong></td>
+    return `<tr class="${isBase ? 'base' : ''} r-${o.kind}"><td><strong>${esc(o.label)}</strong></td>
       <td class="num">${when(o.start_utc)}</td>
       <td class="num">${withBand(h1(m.sunlit_h), B ? bandRange(m, 'sunlit_h') : null)}</td><td class="num">${withBand(m.earth_visible_pct.toFixed(0) + '%', B ? bandRange(m, 'earth_visible_pct') : null)}</td>
       <td class="num"><strong>${h1(m.both_visible_h)}</strong>${withBand('', B ? bandRange(m, 'both_visible_h') : null)}</td>
@@ -232,7 +232,7 @@ function render(d: Data, s: State) {
       ${preset ? `<p class="note">${esc(preset.note)}${site.story ? ' ' + esc(site.story) : ''}</p>` : ''}</section>
     <section aria-labelledby="h-opt"><h2 id="h-opt">Options, ranked by time with both Sun and Earth in view</h2>
       <div style="overflow-x:auto"><table><thead><tr><th scope="col">Option</th><th scope="col">Landing</th><th scope="col">Sunlit (h)</th><th scope="col">Earth in view</th><th scope="col">Sun + Earth (h)</th><th scope="col">Longest dark gap (h)</th><th scope="col">Change vs baseline</th></tr></thead>
-      <tbody>${optionRows(opts, d)}</tbody></table></div>
+      <tbody>${optionRows(opts, d)}</tbody></table></div>${opts.some((o) => o.kind === 'alternate') ? '<p class="printonly">Alternate sites are listed in the on-screen version (open the link above).</p>' : ''}
       <p class="note">Each stay is ${s.stay} days from landing, sampled every 10 minutes. Per body, the cause lines sum to the change in that body's visible hours, apart from pieces under half an hour, which are not listed.
       Sunlit hours include time when Earth covers part or all of the Sun.${opts.some((o) => o.metrics.eclipse_h > 0) ? ` Eclipse (Earth covers the Sun): ${opts.filter((o) => o.metrics.eclipse_h > 0).map((o) => `${esc(o.label)} ${h1(o.metrics.eclipse_h)} h`).join(', ')}.` : ''}
       ${hasBand(hz) ? `Figures in brackets are the range when the terrain is lowered or raised by its published height error (σ = ${hz.dem.sigma_m} m).` : 'No terrain-error band is shown: the horizon file carries no terrain height error.'}

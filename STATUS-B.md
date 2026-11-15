@@ -17,6 +17,9 @@ will land on main; merge `main` again once PR #6 is merged. `main.ts` edits are 
 - Gloss lines for "libration" and "net of site height" appear under the summary when those words are used.
 - Alternate rows are shorter: "Alternate: <site>", "379 km away, same date.", two cause lines.
 - The date field is a text field in 24-hour UTC (`YYYY-MM-DD HH:MM`); links accept a space or `T`.
+- After PR #6 merged (12:06 CT), merged `origin/main` (d19e68e) as asked. C's new feature sections had pushed the
+  print brief to two pages; print now leaves out the landing-date explorer, site comparison and alternate rows
+  (with a line pointing to the on-screen version) and is back to one page on Letter and A4 for five scenarios.
 - Checks: `npm test` 42 passing, build passes, each item checked in headless Chrome; axe-core on the IM-2
   state: no new violations in B's parts.
 
