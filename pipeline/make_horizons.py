@@ -12,11 +12,19 @@ DEMs (downloaded to pipeline/cache/ if not found in --dem-dir):
     LDEM_60S_240MPP_ADJ.TIF  240 m/pix, 60S to the pole
   NASA GSFC PGDA product 78, Barker et al. 2021, Planet. Space Sci. 203, 105119
     Site01_final_adj_5mpp_surf.tif  5 m/pix, Connecting Ridge
+Each DEM's published per-pixel height error map (*_ERR.TIF, *_toterr.tif) is
+downloaded too and gives the uncertainty band (elev_lo_deg, elev_hi_deg).
+
+Optional finer near field for im1 and im2 (large downloads, same product 90):
+  --fine 40   LDEM_80S_40MPP_ADJ.TIF (685M) + _ERR (964M), used within 100 km
+  --fine 20   LDEM_80S_20MPP_ADJ.TIF (2.6G) + _ERR (3.7G), used within 55 km
 
 Usage:
   python pipeline/make_horizons.py
   python pipeline/make_horizons.py --dem-dir "C:\\path\\to\\existing\\dems"
   python pipeline/make_horizons.py --only im1
+  python pipeline/make_horizons.py --only im1 --only im2 --fine 40
+  python pipeline/make_horizons.py --no-bands
 """
 import argparse
 import os
@@ -29,14 +37,38 @@ import common as C
 
 P90 = "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/"
 P78 = "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/"
+# File names and sizes as listed on the two PGDA product pages (read 14 Nov 2026).
+# "err" is the per-pixel height error map published with each DEM, in metres.
 DEMS = {
     "LDEM_80S_80MPP_ADJ.TIF": {"url": P90 + "LDEM_80S_80MPP_ADJ.TIF", "res_m": 80,
-                               "product": "NASA GSFC PGDA 90 LDEM_80S_80MPP_ADJ"},
+                               "product": "NASA GSFC PGDA 90 LDEM_80S_80MPP_ADJ",
+                               "err": "LDEM_80S_80MPP_ADJ_ERR.TIF"},
     "LDEM_60S_240MPP_ADJ.TIF": {"url": P90 + "LDEM_60S_240MPP_ADJ.TIF", "res_m": 240,
-                                "product": "NASA GSFC PGDA 90 LDEM_60S_240MPP_ADJ"},
+                                "product": "NASA GSFC PGDA 90 LDEM_60S_240MPP_ADJ",
+                                "err": "LDEM_60S_240MPP_ADJ_ERR.TIF"},
     "Site01_final_adj_5mpp_surf.tif": {"url": P78 + "Site01/Site01_final_adj_5mpp_surf.tif",
-                                       "res_m": 5, "product": "NASA GSFC PGDA 78 Site01 5 m"},
+                                       "res_m": 5, "product": "NASA GSFC PGDA 78 Site01 5 m",
+                                       "err": "Site01_final_adj_5mpp_toterr.tif"},
+    "LDEM_80S_40MPP_ADJ.TIF": {"url": P90 + "LDEM_80S_40MPP_ADJ.TIF", "res_m": 40,
+                               "product": "NASA GSFC PGDA 90 LDEM_80S_40MPP_ADJ",
+                               "err": "LDEM_80S_40MPP_ADJ_ERR.TIF", "radius_km": 100.0},
+    "LDEM_80S_20MPP_ADJ.TIF": {"url": P90 + "LDEM_80S_20MPP_ADJ.TIF", "res_m": 20,
+                               "product": "NASA GSFC PGDA 90 LDEM_80S_20MPP_ADJ",
+                               "err": "LDEM_80S_20MPP_ADJ_ERR.TIF", "radius_km": 55.0},
 }
+ERR_URL = {
+    "LDEM_80S_80MPP_ADJ_ERR.TIF": P90 + "LDEM_80S_80MPP_ADJ_ERR.TIF",
+    "LDEM_60S_240MPP_ADJ_ERR.TIF": P90 + "LDEM_60S_240MPP_ADJ_ERR.TIF",
+    "LDEM_80S_40MPP_ADJ_ERR.TIF": P90 + "LDEM_80S_40MPP_ADJ_ERR.TIF",
+    "LDEM_80S_20MPP_ADJ_ERR.TIF": P90 + "LDEM_80S_20MPP_ADJ_ERR.TIF",
+    "Site01_final_adj_5mpp_toterr.tif": P78 + "Site01/Site01_final_adj_5mpp_toterr.tif",
+}
+# Sites inside the 80S grids that can take a finer near-field layer (--fine).
+FINE_SITES = {"im1", "im2"}
+FINE = {"40": "LDEM_80S_40MPP_ADJ.TIF", "20": "LDEM_80S_20MPP_ADJ.TIF"}
+BAND_METHOD = ("envelope: terrain raised by its published per-pixel height error and the "
+               "observer lowered by the error at the site (upper edge), and the reverse "
+               "(lower edge). Grid-spacing error is not included.")
 # Finest first. The first DEM with data at a ray sample wins.
 PLAN = {
     "im1": ["LDEM_80S_80MPP_ADJ.TIF", "LDEM_60S_240MPP_ADJ.TIF"],
@@ -124,7 +156,7 @@ def find_dem(name, dirs):
         if p.exists() and p.stat().st_size > 0:
             return p
     dest = C.CACHE / name
-    C.fetch(DEMS[name]["url"], dest)
+    C.fetch(DEMS[name]["url"] if name in DEMS else ERR_URL[name], dest)
     return dest
 
 
@@ -142,15 +174,40 @@ def sphere_doc(site):
             "meta": C.meta("pipeline/make_horizons.py")}
 
 
-def lola_doc(site, dirs, feats):
+def lola_doc(site, dirs, feats, fine=None, bands=True):
     from horizon_lib import horizon     # needs rasterio, pyproj, scipy
 
-    names = PLAN[site["id"]]
+    names = list(PLAN[site["id"]])
+    if fine and site["id"] in FINE_SITES:
+        names.insert(0, FINE[fine])
     paths = [find_dem(n, dirs) for n in names]
+    radii = [DEMS[n].get("radius_km") for n in names]
+    errs, band_note = None, "off (--no-bands)"
+    if bands:
+        try:
+            errs = [find_dem(DEMS[n]["err"], dirs) for n in names]
+            band_note = "ok"
+        except Exception as err:        # no error map: no band is claimed
+            band_note = f"no band: {type(err).__name__}: {err}"
+            print(f"  {site['id']}: {band_note}")
     point = OVERRIDE.get(site["id"], {"lat": site["lat"], "lon_e": site["lon_e"]})
     t = time.time()
-    h = horizon(point["lat"], point["lon_e"], paths, mast_m=MAST_M,
-                max_range_km=MAX_RANGE_KM, sigma_m=None)
+    try:
+        h = horizon(point["lat"], point["lon_e"], paths, mast_m=MAST_M,
+                    max_range_km=MAX_RANGE_KM, err_paths=errs, dem_radius_km=radii)
+    except ValueError as err:
+        if errs is None:
+            raise
+        band_note = f"no band: {err}"
+        print(f"  {site['id']}: {band_note}")
+        errs = None
+        h = horizon(point["lat"], point["lon_e"], paths, mast_m=MAST_M,
+                    max_range_km=MAX_RANGE_KM, dem_radius_km=radii)
+    has_band = errs is not None
+    occ_sig = h["occ_sigma_m"]
+    sigma = (round(float(np.nanmedian(occ_sig)), 3)
+             if has_band and np.isfinite(occ_sig).any() else None)
+    half = (h["elev_hi_deg"] - h["elev_lo_deg"]) / 2.0
     feature_id = match_features(h["occ_lat"], h["occ_lon_e"], feats)
     used = [d["file"] for d in h["dems"]]
     doc = {
@@ -162,7 +219,7 @@ def lola_doc(site, dirs, feats):
                      "lon_e": nullable(h["occ_lon_e"], 5), "feature_id": feature_id},
         "dem": {"product": " + ".join(DEMS[n]["product"] for n in used),
                 "res_m": min(DEMS[n]["res_m"] for n in used),
-                "sigma_m": None, "max_range_km": MAX_RANGE_KM, "layers": used},
+                "sigma_m": sigma, "max_range_km": MAX_RANGE_KM, "layers": used},
         "site_used": {"lat": point["lat"], "lon_e": point["lon_e"],
                       "elev_dem_m": round(h["site_height_m"], 2),
                       "elev_dem_from": h["site_height_from"],
@@ -170,6 +227,12 @@ def lola_doc(site, dirs, feats):
                       "differs_from_catalog": site["id"] in OVERRIDE},
         "meta": C.meta("pipeline/make_horizons.py"),
     }
+    if sigma is not None:
+        # dem.sigma_m is the median published height error at the occluder cells.
+        doc["band"] = {"method": BAND_METHOD,
+                       "site_sigma_m": round(float(h["site_sigma_m"]), 3),
+                       "occluder_sigma_m": nullable(occ_sig, 3),
+                       "err_maps": h["err_maps"]}
     e = h["elev_deg"]
     report = {
         "site_id": site["id"], "site_used": doc["site_used"], "dems": h["dems"],
@@ -182,6 +245,15 @@ def lola_doc(site, dirs, feats):
         "coverage_min_km": round(float(h["coverage_km"].min()), 1),
         "occluder_dist_km_median": (None if not np.isfinite(h["occ_dist_m"]).any()
                                     else round(float(np.nanmedian(h["occ_dist_m"])) / 1000, 2)),
+        "band": band_note, "sigma_m": sigma,
+        "site_sigma_m": None if sigma is None else round(float(h["site_sigma_m"]), 3),
+        "err_maps": h["err_maps"] if sigma is not None else [],
+        "band_half_width_deg_median": None if sigma is None else round(float(np.median(half)), 4),
+        "band_half_width_deg_max": None if sigma is None else round(float(half.max()), 4),
+        "band_half_width_deg_at_peak": None if sigma is None else round(float(half[int(e.argmax())]), 4),
+        "peak_occluder_dist_m": (None if not np.isfinite(h["occ_dist_m"][int(e.argmax())])
+                                 else round(float(h["occ_dist_m"][int(e.argmax())]), 0)),
+        "fine": fine if (fine and site["id"] in FINE_SITES) else None,
         "seconds": round(time.time() - t, 1),
     }
     return doc, report
@@ -192,6 +264,8 @@ def main():
     ap.add_argument("--dem-dir", action="append", default=[],
                     help="folder that already holds the DEM files; repeatable")
     ap.add_argument("--only", action="append", default=[], help="site id; repeatable")
+    ap.add_argument("--fine", choices=sorted(FINE), help="finer near-field grid for im1 and im2 (large download)")
+    ap.add_argument("--no-bands", action="store_true", help="skip the error maps and the uncertainty band")
     args = ap.parse_args()
     dirs = args.dem_dir + ([os.environ["LOLA_DEM_DIR"]] if os.environ.get("LOLA_DEM_DIR") else []) + [C.CACHE]
 
@@ -207,7 +281,7 @@ def main():
         out = C.DATA / "horizon" / f"{site['id']}.json"
         if site["terrain"] == "lola":
             try:
-                doc, rep = lola_doc(site, dirs, feats)
+                doc, rep = lola_doc(site, dirs, feats, fine=args.fine, bands=not args.no_bands)
             except Exception as err:                # keep going with other sites
                 failed.append(f"{site['id']}: {type(err).__name__}: {err}")
                 print(f"FAILED {failed[-1]}")
@@ -218,13 +292,17 @@ def main():
                   f"(catalogue {rep['site_used']['elev_catalog_m']}), null occluders "
                   f"{rep['null_occluder_share'] * 100:3.0f}%, named {rep['named_share'] * 100:3.0f}% "
                   f"{rep['names_seen']}, coverage min {rep['coverage_min_km']:6.1f} km, {rep['seconds']} s")
+            if rep["sigma_m"] is not None:
+                print(f"{'':17s} band: height error {rep['sigma_m']} m at occluders, {rep['site_sigma_m']} m at site; "
+                      f"half width median {rep['band_half_width_deg_median']} deg, at peak "
+                      f"{rep['band_half_width_deg_at_peak']} deg, max {rep['band_half_width_deg_max']} deg")
         else:
             doc = sphere_doc(site)
             reports[site["id"]] = {"site_id": site["id"], "sphere": True}
             print(f"{site['id']:17s} sphere: flat 0 deg horizon, null occluders")
         C.write_json(out, doc)
     C.write_json(C.REPORTS / "horizons.json", {"sites": reports, "mast_m": MAST_M,
-                 "max_range_km": MAX_RANGE_KM, "sigma_note": "pending: lo = hi = elev"}, indent=1)
+                 "max_range_km": MAX_RANGE_KM, "band_method": BAND_METHOD}, indent=1)
     if failed:
         raise SystemExit("SOME HORIZONS FAILED:\n" + "\n".join(failed))
     print("horizons written to app/public/data/horizon/")

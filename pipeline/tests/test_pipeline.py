@@ -95,6 +95,43 @@ def test_sigma_bands_and_nested_dems(tmp_path):
     assert len(h["dems"]) == 2 and h["coverage_km"].min() > 70
 
 
+def test_error_map_bands(tmp_path):
+    # Ridge 5 km away on a 10 m grid. Error map: 2 m everywhere, 0.5 m at the site.
+    plon, plat, _ = GEOD.fwd(LON, LAT, 60.0, 5000.0)
+    px, py = FWD.transform(plon, plat)
+    dem = write_dem(tmp_path / "d.tif", SX, SY, 8000, 10, bump(px, py, 600.0, 400.0))
+    err = write_dem(tmp_path / "e.tif", SX, SY, 8000, 10,
+                    lambda X, Y: np.where(np.hypot(X - SX, Y - SY) < 100, 0.5, 2.0))
+    h = hl.horizon(LAT, LON, [dem], az_step=1.0, max_range_km=7, err_paths=[err])
+    i = int(h["elev_deg"].argmax())
+    assert abs(h["site_sigma_m"] - 0.5) < 1e-6 and abs(h["occ_sigma_m"][i] - 2.0) < 1e-6
+    d = h["occ_dist_m"][i]
+    want = math.degrees((2.0 + 0.5) / d)          # small-angle estimate
+    up, down = h["elev_hi_deg"][i] - h["elev_deg"][i], h["elev_deg"][i] - h["elev_lo_deg"][i]
+    assert abs(up - want) < 0.15 * want and abs(down - want) < 0.15 * want
+    assert np.all(h["elev_lo_deg"] <= h["elev_deg"]) and np.all(h["elev_deg"] <= h["elev_hi_deg"])
+    # without an error map nothing is claimed
+    h0 = hl.horizon(LAT, LON, [dem], az_step=1.0, max_range_km=7)
+    assert np.array_equal(h0["elev_lo_deg"], h0["elev_hi_deg"]) and h0["site_sigma_m"] is None
+    assert np.allclose(h0["elev_deg"], h["elev_deg"])
+    # an error map with nonsense values is refused
+    bad = write_dem(tmp_path / "bad.tif", SX, SY, 8000, 10, lambda X, Y: np.full_like(X, -5.0))
+    with pytest.raises(ValueError):
+        hl.horizon(LAT, LON, [dem], az_step=5.0, max_range_km=7, err_paths=[bad])
+
+
+def test_fine_layer_is_used_only_inside_its_radius(tmp_path):
+    flon, flat_, _ = GEOD.fwd(LON, LAT, 135.0, 20000.0)
+    fx, fy = FWD.transform(flon, flat_)
+    # the fine grid would show a huge wall at 20 km, but it is limited to 5 km
+    fine = write_dem(tmp_path / "fine.tif", SX, SY, 30000, 20, bump(fx, fy, 9000.0, 2000.0))
+    coarse = write_dem(tmp_path / "coarse.tif", SX, SY, 30000, 100, lambda X, Y: np.zeros_like(X))
+    h = hl.horizon(LAT, LON, [fine, coarse], az_step=5.0, max_range_km=28, dem_radius_km=[5.0, None])
+    assert h["elev_deg"].max() < 1.0
+    far = h["occ_dist_m"] > 6000
+    assert not far.any() or np.all(h["occ_dem_index"][far] == 1)
+
+
 def test_null_occluders_where_only_the_assumed_sphere_is_higher(tmp_path):
     # Site on a narrow 1000 m spike over a plain at datum height. The plain
     # inside the DEM lies far below the sphere's limb as seen from the top,
@@ -147,6 +184,16 @@ def test_horizon_files_meet_the_contract(tmp_path, monkeypatch):
     assert set(rep["names_seen"]) == {"big_mons", "test_peak"}
     assert doc["site_used"]["differs_from_catalog"] is False
     assert doc["meta"]["ai_generated"] is True and doc["dem"]["sigma_m"] is None
+    assert "band" not in doc and rep["band"].startswith("no band")
+    # with an error map the band is filled and still meets the contract
+    write_dem(tmp_path / "a_err.tif", SX, SY, 6000, 10, lambda X, Y: np.full_like(X, 1.5))
+    monkeypatch.setattr(mh, "DEMS", {"a.tif": {"url": "", "res_m": 10, "product": "TEST", "err": "a_err.tif"}})
+    doc2, rep2 = mh.lola_doc(site, [tmp_path], feats)
+    check(doc2, "horizon.schema.json")
+    assert doc2["dem"]["sigma_m"] == 1.5 and doc2["band"]["site_sigma_m"] == 1.5
+    assert doc2["elev_deg"] == doc["elev_deg"] and rep2["band"] == "ok"
+    assert doc2["elev_hi_deg"][i] > doc2["elev_deg"][i] > doc2["elev_lo_deg"][i]
+    assert rep2["band_half_width_deg_max"] > 0
 
 
 def test_real_feature_list_is_valid_and_sourced():

@@ -16,6 +16,12 @@ Beyond the DEM coverage the terrain is assumed to sit at the reference
 sphere. Where no real terrain rises above that assumed surface, the horizon
 is the sphere's limb and the occluder is null.
 
+Uncertainty band (optional): each DEM can come with its published per-pixel
+height error map. The band is the horizon recomputed with every terrain cell
+raised by its error and the observer lowered by the error at the site (upper
+edge), and the reverse (lower edge). It is an envelope from the published
+errors. It does not include the error from the grid spacing itself.
+
 Heights are metres above the DEM's reference sphere (1737.4 km for the LOLA
 products). Azimuth is clockwise from north. Frame: the DEM's body-fixed frame
 (MOON_ME, DE421, for the NASA GSFC PGDA LOLA products).
@@ -118,18 +124,25 @@ def ray_distances(start, stop, growth):
 
 
 def horizon(lat, lon, dem_paths, mast_m=2.0, az_step=0.5, max_range_km=220.0,
-            growth=0.004, sigma_m=None):
+            growth=0.004, sigma_m=None, err_paths=None, dem_radius_km=None):
     """Horizon profile and occluders for one site.
 
-    dem_paths: finest first. sigma_m: None, or one height sigma (metres) per
-    DEM in dem_paths; terrain is raised and lowered by it for the hi/lo bands.
+    dem_paths: finest first.
+    sigma_m: None, or one height error (metres) per DEM in dem_paths.
+    err_paths: None, or one per-pixel height error raster (metres) per DEM in
+      dem_paths. Takes precedence over sigma_m. All layers used need one.
+    dem_radius_km: None, or per DEM the radius to load around the site (None
+      = max range). Lets a fine grid cover the near field at full resolution.
     Returns a dict of numpy arrays (NaN where the occluder is null).
     """
     max_range = max_range_km * 1000.0
     dems, skipped = [], []
     for k, p in enumerate(dem_paths):
+        rad = max_range
+        if dem_radius_km is not None and dem_radius_km[k] is not None:
+            rad = min(max_range, dem_radius_km[k] * 1000.0)
         try:
-            d = Dem(p, lon, lat, max_range)
+            d = Dem(p, lon, lat, rad)
             d.order = k
             dems.append(d)
         except ValueError as err:
@@ -181,9 +194,9 @@ def horizon(lat, lon, dem_paths, mast_m=2.0, az_step=0.5, max_range_km=220.0,
     c = np.maximum(np.maximum(coverage, d_tan), s[0]) / R
     floor = np.degrees(np.arctan2(R * np.cos(c) - r0, R * np.sin(c)))
 
-    def skyline(heights):
+    def skyline(heights, r_obs=r0):
         r1 = R + heights
-        elev = np.degrees(np.arctan2(r1 * np.cos(th2) - r0, r1 * np.sin(th2)))
+        elev = np.degrees(np.arctan2(r1 * np.cos(th2) - r_obs, r1 * np.sin(th2)))
         elev = np.where(np.isfinite(elev), elev, -np.inf)
         i = elev.argmax(axis=1)
         return elev[rows, i], i
@@ -196,19 +209,48 @@ def horizon(lat, lon, dem_paths, mast_m=2.0, az_step=0.5, max_range_km=220.0,
     occ_lon = np.where(real, p_lon[rows, idx], np.nan)
     occ_src = np.where(real, src[rows, idx], -1)
 
-    if sigma_m is None:
-        lo, hi = mid.copy(), mid.copy()
-    else:
+    site_sigma, occ_sigma, err_info = None, np.full(len(az), np.nan), []
+    if err_paths is not None:
+        # Per-pixel published height error, read on the same ray samples.
+        sig_grid = np.full(h.shape, np.nan)
+        for k, d in enumerate(dems):
+            ep = err_paths[d.order]
+            if ep is None:
+                raise ValueError(f"no error map for {d.path.name}")
+            e = Dem(ep, lon, lat, max_range if dem_radius_km is None or dem_radius_km[d.order] is None
+                    else min(max_range, dem_radius_km[d.order] * 1000.0))
+            med = float(np.nanmedian(e.z))
+            if not (0.0 <= med < 1000.0) or np.nanmin(e.z) < 0.0:
+                raise ValueError(f"{e.path.name}: values do not look like a height error in metres")
+            mine = src == k
+            v = e.sample(*e.fwd.transform(p_lon[mine], p_lat[mine]))
+            sig_grid[mine] = np.where(np.isfinite(v), v, med)   # gaps: layer median
+            if h0_file == d.path.name:
+                sv = float(e.sample(*e.fwd.transform(lon, lat)))
+                site_sigma = sv if np.isfinite(sv) else med
+            err_info.append({"file": e.path.name, "for": d.path.name, "median_m": round(med, 3),
+                             "native_res_m": e.info["native_res_m"]})
+        del mine
+    elif sigma_m is not None:
         sig = np.asarray([sigma_m[d.order] for d in dems], dtype="float64")
         sig_grid = np.where(src >= 0, sig[np.clip(src, 0, None)], np.nan)
-        hi = np.maximum(skyline(h + sig_grid)[0], floor)
-        lo = np.maximum(skyline(h - sig_grid)[0], floor)
+        site_sigma = 0.0
+    else:
+        sig_grid = None
+
+    if sig_grid is None:
+        lo, hi = mid.copy(), mid.copy()
+    else:
+        hi = np.maximum(skyline(h + sig_grid, r0 - site_sigma)[0], floor)
+        lo = np.maximum(skyline(h - sig_grid, r0 + site_sigma)[0], floor)
         lo, hi = np.minimum(lo, mid), np.maximum(hi, mid)
+        occ_sigma = np.where(real, sig_grid[rows, idx], np.nan)
 
     return {
         "az_deg": az, "elev_deg": mid, "elev_lo_deg": lo, "elev_hi_deg": hi,
         "occ_dist_m": occ_dist, "occ_lat": occ_lat, "occ_lon_e": occ_lon,
-        "occ_dem_index": occ_src, "coverage_km": coverage / 1000.0,
+        "occ_dem_index": occ_src, "occ_sigma_m": occ_sigma, "site_sigma_m": site_sigma,
+        "err_maps": err_info, "coverage_km": coverage / 1000.0,
         "site_height_m": h0, "site_height_from": h0_file, "radius_m": R,
         "dems": [d.info for d in dems], "skipped": skipped,
         "n_ray_samples": int(len(s)), "max_range_km": max_range_km,

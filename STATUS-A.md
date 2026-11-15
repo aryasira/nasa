@@ -1,6 +1,6 @@
 # STATUS-A
 
-_Updated: Sat 14 Nov 2026, 19:25 CT_
+_Updated: Sat 14 Nov 2026, 19:55 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
 
@@ -47,13 +47,20 @@ _Updated: Sat 14 Nov 2026, 19:25 CT_
   no banned claims. Fixed one gap: `pipeline/reports/*.json` had no `meta` block. `write_json`
   now adds it; the five existing reports are stamped with the commit that produced them.
 
+- 19:55: uncertainty band code is written and tested on synthetic DEMs (30 tests passing).
+  Not run on real data yet, so the committed horizon files still have `sigma_m: null`.
+  - Source: the per-pixel height error map published with each DEM (PGDA 90 `*_ERR.TIF`,
+    PGDA 78 `Site01_final_adj_5mpp_toterr.tif`). File names read from the product pages.
+  - Method: envelope. Terrain raised by its error and observer lowered by the site error
+    for the upper edge, the reverse for the lower edge. Grid-spacing error is not included.
+  - New optional near-field layer for im1 and im2: `--fine 40` or `--fine 20`.
+  - `run_all.py --horizons-only` redoes horizons, doc and tests without touching ephem or fixtures.
+
 ## In progress
-- Uncertainty bands from the DEM error maps (currently lo = hi = elev, `sigma_m: null`).
+- Waiting for the human to run `python pipeline/run_all.py --horizons-only --fine 40`.
 
 ## Next
-- Sun 09:00: bands for all four LOLA horizons. Sun 13:00: validation report.
-- Finer near-field terrain for `im1` if a PGDA 5 m tile covers it (its peak occluder is 400 m away
-  on the 80 m grid, so the 11.05 deg peak is sensitive to grid size).
+- Commit the banded horizons. Check band widths are sane. Sun 13:00: validation report.
 
 ## Blocked / needs other agent
 - **Human:** `main` is still the scaffold commit 84dcbb4 at 19:25 CT. The 17:00 merge did not
@@ -83,3 +90,6 @@ _Updated: Sat 14 Nov 2026, 19:25 CT_
   `terrain: sphere` sites have a flat 0 deg horizon as the brief asks; the true smooth-sphere dip
   for a 2 m mast is -0.087 deg.
 - **B / C:** uncertainty is not real yet. Do not show a band until `dem.sigma_m` is non-null.
+  When it is: `dem.sigma_m` is the median height error at the occluder cells, in metres. A new
+  top-level `band` object gives the method text, `site_sigma_m` and `occluder_sigma_m` per azimuth.
+  Call it an envelope from published DEM errors, not a confidence interval.

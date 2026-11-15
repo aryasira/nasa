@@ -50,19 +50,28 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dem-dir", action="append", default=[])
     ap.add_argument("--skip-horizons", action="store_true")
+    ap.add_argument("--horizons-only", action="store_true",
+                    help="skip kernels, ephem.bin, fixtures and the residual check; redo horizons, doc, tests")
+    ap.add_argument("--fine", choices=["20", "40"], help="finer near-field grid for im1 and im2 (large download)")
     args = ap.parse_args()
     dem_args = [x for d in args.dem_dir for x in ("--dem-dir", d)]
+    if args.fine:
+        dem_args += ["--fine", args.fine]
 
     C.REPORTS.mkdir(parents=True, exist_ok=True)
     log_path = C.REPORTS / "run_log.txt"
     results = {}
     with open(log_path, "w", encoding="utf-8") as log:
         log.write(f"pipeline commit {C.git_sha()}\npython {sys.version}\n")
-        results["1 kernels"] = step(log, "1. kernels", ["pipeline/get_kernels.py"])
-        results["2 ephem.bin"] = results["1 kernels"] and step(log, "2. ephem.bin (SPICE)", ["pipeline/make_ephem.py"])
-        results["3 Horizons fixtures"] = step(log, "3. Horizons fixtures", ["pipeline/fetch_horizons.py"])
-        results["4 residual check"] = (results["2 ephem.bin"] and results["3 Horizons fixtures"]
-                                       and step(log, "4. residual check", ["pipeline/check_vs_horizons.py"]))
+        if args.horizons_only:
+            for k in ("1 kernels", "2 ephem.bin", "3 Horizons fixtures", "4 residual check"):
+                results[k] = None
+        else:
+            results["1 kernels"] = step(log, "1. kernels", ["pipeline/get_kernels.py"])
+            results["2 ephem.bin"] = results["1 kernels"] and step(log, "2. ephem.bin (SPICE)", ["pipeline/make_ephem.py"])
+            results["3 Horizons fixtures"] = step(log, "3. Horizons fixtures", ["pipeline/fetch_horizons.py"])
+            results["4 residual check"] = (results["2 ephem.bin"] and results["3 Horizons fixtures"]
+                                           and step(log, "4. residual check", ["pipeline/check_vs_horizons.py"]))
         if args.skip_horizons:
             results["5 horizons"] = None
         else:
