@@ -62,7 +62,7 @@ footer { margin-top: 18px; color: var(--muted); font-size: .84rem; }
   .extra, #sim-slot, .brief-h, .legend, tr.causes small, .note { display: none !important; }
   h1 { font-size: 15pt; } h2 { font-size: 11pt; margin-bottom: 4px; } header.top p { display: none; }
   th, td { padding: 2px 6px; } ul.cause { margin: 1px 0 2px; } ul.cause li { padding: 0 0 0 20px; } p { margin: 3px 0; }
-  svg { max-height: 22mm; } tr.r-alternate { display: none; } td.num { white-space: nowrap; } .ph, tr.k-alternate, tr.k-recover { display: none; } ul.cause li:nth-child(n+4) { display: none; } dl { font-size: 8pt !important; } .headline, .headline.why { font-size: 9.5pt; } section { padding: 4px 0 !important; margin-top: 4px !important; border-radius: 0 !important; }
+  svg { max-height: 17mm; } .sphere-note { font-size: 8pt; margin: 2px 0 !important; padding: 0 !important; } tr.r-alternate { display: none; } td.num { white-space: nowrap; } .ph, tr.k-alternate, tr.k-recover { display: none; } ul.cause li:nth-child(n+4) { display: none; } dl { font-size: 8pt !important; } .headline, .headline.why { font-size: 9.5pt; } section { padding: 4px 0 !important; margin-top: 4px !important; border-radius: 0 !important; }
   /* One-page brief: the landing-date explorer and site comparison (features/) stay on screen only. */
   #feat-dates, #feat-cmp, #custom-site, .tour { display: none !important; }
   #app { padding: 0 !important; } dd, dt { line-height: 1.2; } .grid2 { grid-template-columns: 1fr 1fr; gap: 8px; } dl { font-size: 8.5pt; } footer { font-size: 8pt; margin-top: 6px; }
