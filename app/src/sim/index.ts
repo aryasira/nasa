@@ -1,7 +1,7 @@
 // AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
 // 3D mission simulator (hero of the page). Mounted by a small hook in main.ts; state (site, baseline date,
 // stay, slip, mode) stays in main.ts's permalink state, the sim only adds view parameters
-// (cam, simt, ab, size) to the query string. All Sun/Earth numbers come from the engine's observe().
+// (cam, simt, ab, size, compass, q) to the query string. All Sun/Earth numbers come from the engine's observe().
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { FeaturesFile, HorizonFile, Site } from '@contracts/types';
@@ -11,11 +11,16 @@ import { siteFrame, type SiteFrame } from '../engine/geometry';
 import { scanWindow, type Scan } from '../engine/metrics';
 import { compass } from '../engine/causes';
 import type { Mode } from '../engine/visibility';
-import { dirFromAzEl, featureIndex, fmtAz, fmtEl, fmtMet, readout, type BodyReadout, type FeatureIndex, type Readout } from './astro';
+import { dirFromAzEl, featureIndex, fmtMet, readout, type BodyReadout, type FeatureIndex, type Readout } from './astro';
+import { az3, blockerName, causeLine, commWord, deg2, distText, esc, featuresContaining, powerWord } from './cause';
 import { Terrain } from './terrain';
-import { Lander } from './lander';
+import { Lander, disposeLanderEnv, landerEnv } from './lander';
 import { Sky, SKY_R } from './sky';
 import { Globe } from './globe';
+import { Post } from './post';
+import { makeSunUniforms } from './regolith';
+import { disposeTextures } from './textures';
+import { CAMS, CONSOLE_HTML, ICON, OVERLAY_HTML, STATUS_HTML } from './ui';
 import './sim.css';
 
 export interface SimState { site: string; t: string; stay: number; slip: number; mode: Mode }
@@ -33,15 +38,15 @@ export interface SimContext {
 type Cam = 'lander' | 'orbit' | 'globe';
 type AB = 'a' | 'b';
 const DAY = 86400, HOUR = 3600;
-const SPEEDS = [{ v: 3600, label: '1 h/s' }, { v: 21600, label: '6 h/s' }, { v: 86400, label: '1 day/s' }, { v: 259200, label: '3 days/s' }];
-const SIZES = [1, 3, 6, 12];
-const CAMS: { id: Cam; label: string }[] = [{ id: 'lander', label: 'Lander cam' }, { id: 'orbit', label: 'Orbit' }, { id: 'globe', label: 'Moon globe' }];
+const SUN_LUX = 6.0; // directional light intensity for the Sun (scene units, tuned with the exposure)
 // Captured at import time: main.ts rewrites the query string on every render and keeps only its own keys.
 const INITIAL = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+const REDUCED = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const v3 = (a: [number, number, number]) => new THREE.Vector3(a[0], a[1], a[2]);
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
 const utcMin = (t: number) => fmtUtc(t).slice(0, 16) + 'Z';
+const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const wrap180 = (d: number) => ((d + 540) % 360) - 180;
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', html = ''): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -50,6 +55,8 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', html = ''):
   return e;
 }
 
+interface Pose { pos: THREE.Vector3; quat: THREE.Quaternion; fov: number }
+
 class Simulator {
   readonly root = el('section', 'sim');
   private ctx!: SimContext;
@@ -57,36 +64,47 @@ class Simulator {
   private hz!: HorizonFile;
   private frameF!: SiteFrame;
   private feats: FeatureIndex = new Map();
+  private local = new Set<string>();
   private siteKey = '';
   // time
   private t = 0;
   private ab: AB = (INITIAL.get('ab') === 'b' ? 'b' : 'a');
-  private playing = !matchMedia('(prefers-reduced-motion: reduce)').matches && !INITIAL.has('simt');
+  private playing = !REDUCED && !INITIAL.has('simt');
   private speed = 21600;
   private slipPreview: number | null = null;
   private keepMet: number | null = null; // mission-elapsed time to restore after a commit re-renders the page
   private cam: Cam = (['lander', 'orbit', 'globe'] as const).find((c) => c === INITIAL.get('cam')) ?? 'orbit';
-  private size = SIZES.includes(Number(INITIAL.get('size'))) ? Number(INITIAL.get('size')) : 6;
+  private size = INITIAL.has('size') && Number(INITIAL.get('size')) > 1 ? 6 : 1;
+  private showCompass = INITIAL.get('compass') !== '0';
   private pendingSimT: number | null = INITIAL.has('simt') ? (() => { try { return parseUtc(INITIAL.get('simt')!); } catch { return null; } })() : null;
   private ro: Readout | null = null;
   private scan: Scan | null = null;
   // three
   private renderer: THREE.WebGLRenderer | null = null;
+  private post: Post | null = null;
   private scene = new THREE.Scene();
   private camLander = new THREE.PerspectiveCamera(70, 1, 0.05, 400_000);
-  private camOrbit = new THREE.PerspectiveCamera(58, 1, 0.1, 400_000);
-  private insetCam = new THREE.PerspectiveCamera(32, 1, 0.01, 100);
+  private camOrbit = new THREE.PerspectiveCamera(50, 1, 0.1, 400_000);
+  private camView = new THREE.PerspectiveCamera(60, 1, 0.05, 400_000);
   private orbit: OrbitControls | null = null;
   private globeCtl: OrbitControls | null = null;
-  private sunLight = new THREE.DirectionalLight(0xfff3e0, 0);
-  private earthLight = new THREE.DirectionalLight(0x9fc9ff, 0);
-  private ambient = new THREE.AmbientLight(0xb8c4d6, 0.02);
+  private sunLight = new THREE.DirectionalLight(0xfff4e6, 0);
+  private earthLight = new THREE.DirectionalLight(0xa9c8ff, 0);
+  private uni = makeSunUniforms();
+  private env: THREE.Texture | null = null;
   private terrain: Terrain | null = null;
   private lander: Lander | null = null;
   private sky: Sky | null = null;
   private globe: Globe | null = null;
   private yaw = 0;
   private pitch = 4;
+  private lookTween: { y0: number; p0: number; y1: number; p1: number; t0: number } | null = null;
+  private camTween: { from: Pose; t0: number; dur: number } | null = null;
+  private globeTween: { d0: number; d1: number; t0: number } | null = null;
+  private exposure = -1;
+  private quality = INITIAL.get('q') === 'low' ? 0 : 2;
+  private qLocked = INITIAL.has('q');
+  private frameTimes: number[] = [];
   private raf = 0;
   private last = 0;
   private dirty = true;
@@ -97,20 +115,17 @@ class Simulator {
   private liveText = '';
   private textCache = new WeakMap<Element, string>();
   // DOM
+  private stage = el('div', 'sim-stage');
   private view = el('div', 'sim-view');
   private canvas = el('canvas', 'sim-canvas');
   private compassC = el('canvas', 'sim-compass');
   private labels = el('div', 'sim-labels');
-  private lblSun = el('span', 'lbl lbl-sun');
-  private lblEarth = el('span', 'lbl lbl-earth');
-  private lblSite = el('span', 'lbl lbl-site');
-  private hudClock = el('div', 'hud hud-clock');
-  private hudSys = el('div', 'hud hud-sys');
-  private hudCause = el('div', 'hud hud-cause');
-  private hudSize = el('div', 'hud hud-size');
-  private siteList = el('div', 'hud sim-sites');
+  private pinsEl = el('div', 'sim-pins');
+  private status = el('div', 'sim-status', STATUS_HTML);
+  private cause = el('div', 'sim-cause', '<span class="dot" aria-hidden="true"></span><p data-f="cause"></p>');
   private fallback = el('div', 'sim-fallback');
   private live = el('p', 'sr-only');
+  private tags: Record<string, HTMLElement> = {};
   private q = <T extends Element>(sel: string) => this.root.querySelector(sel) as T;
   private resizeObs: ResizeObserver | null = null;
   private interObs: IntersectionObserver | null = null;
@@ -118,113 +133,130 @@ class Simulator {
 
   constructor() {
     this.root.setAttribute('aria-labelledby', 'sim-h');
-    this.root.innerHTML = `
-      <div class="sim-head"><h2 id="sim-h">Mission simulator</h2><span class="sim-where"></span><span class="sim-mock" hidden>MOCK DATA — synthetic, not results</span></div>`;
     this.canvas.setAttribute('role', 'img');
-    this.canvas.setAttribute('aria-label', '3D view of the landing site: the terrain skyline from the horizon profile, a generic lander, and the Sun and Earth at their computed positions. The same status is given as text below.');
+    this.canvas.setAttribute('aria-label', '3D view of the landing site: the terrain skyline from the horizon profile, a generic lander, and the Sun and Earth at their computed positions. The same status is given as text in the cards and the line below the view.');
     this.canvas.tabIndex = 0;
-    this.labels.append(this.lblSun, this.lblEarth, this.lblSite);
-    for (const h of [this.hudClock, this.hudSys, this.hudCause, this.hudSize, this.labels, this.compassC]) h.setAttribute('aria-hidden', 'true');
+    for (const k of ['sun', 'earth', 'ridge0', 'ridge1', 'gEarth', 'gSun']) {
+      const t = el('div', `mk mk-${k.replace(/\d$/, '')}`, '<span class="mk-t"></span>');
+      t.hidden = true;
+      this.tags[k] = t;
+      this.labels.append(t);
+    }
+    for (const h of [this.labels, this.compassC]) h.setAttribute('aria-hidden', 'true');
     this.fallback.hidden = true;
-    this.view.append(this.canvas, this.compassC, this.labels, this.hudClock, this.hudSys, this.hudCause, this.hudSize, this.siteList, this.fallback);
-    this.root.append(this.view, this.buildConsole(), this.live);
+    this.view.append(this.canvas, this.compassC, this.labels, this.pinsEl, this.fallback);
+    this.view.insertAdjacentHTML('beforeend', OVERLAY_HTML);
+    this.stage.append(this.view, this.status, this.cause);
+    const con = el('div', 'sim-console', CONSOLE_HTML);
+    this.root.append(this.stage, con, this.live);
     this.live.setAttribute('aria-live', 'polite');
     this.live.id = 'sim-live';
-    this.hudClock.innerHTML = `<div class="k">UTC</div><div class="clock" data-f="utc"></div>
-      <div class="row2"><span class="k">MET</span> <span data-f="met"></span></div>
-      <div class="row2"><span class="k">STAY</span> <span data-f="stay"></span></div>
-      <div class="row2 view-row"><span class="k">VIEW</span> <span data-f="view"></span></div>`;
-    this.hudSys.innerHTML = `
-      <div class="sys sys-sun"><div class="sys-h"><span class="k">POWER</span><span class="state" data-f="pstate"></span></div>
-        <div class="bar"><i data-f="pbar"></i></div><div class="pct" data-f="ppct"></div>
-        <dl><dt>SUN AZ</dt><dd data-f="saz"></dd><dt>SUN EL</dt><dd data-f="sel"></dd><dt>HORIZON</dt><dd data-f="sh"></dd></dl></div>
-      <div class="sys sys-earth"><div class="sys-h"><span class="k">COMM</span><span class="state" data-f="cstate"></span></div>
-        <div class="bar"><i data-f="cbar"></i></div><div class="pct" data-f="cpct"></div>
-        <dl><dt>EARTH AZ</dt><dd data-f="eaz"></dd><dt>EARTH EL</dt><dd data-f="eel"></dd><dt>HORIZON</dt><dd data-f="eh"></dd></dl></div>`;
-    this.hudCause.innerHTML = `<div class="cause-line" data-f="csun"></div><div class="cause-line" data-f="cearth"></div>`;
+    this.wireConsole(con);
     this.initThree();
     document.addEventListener('keydown', this.onKey);
+    document.addEventListener('pointerdown', this.onDocDown);
+    document.addEventListener('fullscreenchange', this.onFs);
   }
 
   // ---------------------------------------------------------------- console (real controls)
-  private buildConsole(): HTMLElement {
-    const c = el('div', 'sim-console');
-    c.innerHTML = `
-      <div class="c-row c-transport" role="group" aria-label="Time controls">
-        <button type="button" data-a="back" aria-label="Step back 1 hour">−1 h</button>
-        <button type="button" data-a="play" class="btn-play" aria-label="Play"></button>
-        <button type="button" data-a="fwd" aria-label="Step forward 1 hour">+1 h</button>
-        <label class="inline">Speed <select data-a="speed">${SPEEDS.map((s) => `<option value="${s.v}">${s.label}</option>`).join('')}</select></label>
-        <span class="c-hint">Space: play/pause · ←/→: step 1 h</span>
-      </div>
-      <div class="c-row c-scrub">
-        <label for="sim-scrub" class="k">TIME</label>
-        <div class="scrub">
-          <div class="scrub-bands"></div>
-          <canvas class="scrub-strip" aria-hidden="true"></canvas>
-          <input id="sim-scrub" type="range" min="0" max="1" step="600" aria-describedby="sim-scrub-help">
-        </div>
-        <span id="sim-scrub-help" class="c-legend"><span class="sw-sun"></span>Sun in view <span class="sw-earth"></span>Earth in view</span>
-      </div>
-      <div class="c-row c-setup">
-        <div class="slipbox"><label for="sim-slip">LAUNCH SLIP: <output data-f="slipv"></output></label>
-          <input id="sim-slip" type="range" min="0" max="60" step="1" class="slip"><div class="ticks" aria-hidden="true"><span>0</span><span>15</span><span>30</span><span>45</span><span>60 d</span></div></div>
-        <div class="seg" role="group" aria-label="Which stay to play">
-          <button type="button" data-ab="a">BASELINE</button><button type="button" data-ab="b">SLIPPED</button></div>
-        <div class="seg" role="group" aria-label="Camera">${CAMS.map((x) => `<button type="button" data-cam="${x.id}">${x.label}</button>`).join('')}</div>
-        <label class="inline">Body size <select data-a="size">${SIZES.map((s) => `<option value="${s}">×${s}${s === 1 ? ' (true size)' : ''}</option>`).join('')}</select></label>
-        <span class="look" role="group" aria-label="Point the lander cam"><button type="button" data-look="sun">Look at Sun</button><button type="button" data-look="earth">Look at Earth</button></span>
-      </div>
-      <p class="sim-caption"></p>`;
-    c.addEventListener('click', (e) => {
+  private wireConsole(c: HTMLElement) {
+    this.root.addEventListener('click', (e) => {
       const b = (e.target as HTMLElement).closest('button');
-      if (!b) return;
-      if (b.dataset.a === 'play') this.setPlaying(!this.playing);
-      else if (b.dataset.a === 'back') this.step(-HOUR);
-      else if (b.dataset.a === 'fwd') this.step(HOUR);
+      if (!b || !this.root.contains(b)) return;
+      const a = b.dataset.a;
+      if (a === 'play') this.setPlaying(!this.playing);
+      else if (a === 'back') this.step(-HOUR);
+      else if (a === 'fwd') this.step(HOUR);
+      else if (a === 'fs') this.toggleFullscreen();
+      else if (a === 'compass') { this.showCompass = !this.showCompass; this.syncButtons(); this.writeUrl(true); this.dirty = true; }
+      else if (b.dataset.speed) { this.speed = Number(b.dataset.speed); this.syncButtons(); }
       else if (b.dataset.ab) this.setAB(b.dataset.ab as AB);
       else if (b.dataset.cam) this.setCam(b.dataset.cam as Cam);
       else if (b.dataset.look) this.look(b.dataset.look as 'sun' | 'earth');
+      else if (b.dataset.size) { this.size = Number(b.dataset.size); this.syncButtons(); this.writeUrl(true); this.dirty = true; }
+      else if (b.dataset.pop) this.togglePop(b.dataset.pop);
+      else if (b.dataset.site) { if (b.dataset.site !== this.site.id) this.commit({ site: b.dataset.site }); }
     });
-    const speed = c.querySelector<HTMLSelectElement>('[data-a="speed"]')!;
-    speed.value = String(this.speed);
-    speed.addEventListener('change', () => { this.speed = Number(speed.value); });
-    const size = c.querySelector<HTMLSelectElement>('[data-a="size"]')!;
-    size.value = String(this.size);
-    size.addEventListener('change', () => { this.size = Number(size.value); this.dirty = true; this.writeUrl(); });
     const scrub = c.querySelector<HTMLInputElement>('#sim-scrub')!;
     scrub.addEventListener('input', () => {
       this.t = Number(scrub.value);
       const [a, b] = this.stays();
       if (b && (this.t < (this.ab === 'a' ? a.t0 : b.t0) || this.t > (this.ab === 'a' ? a.t1 : b.t1))) {
         this.ab = this.t >= b.t0 && this.t <= b.t1 ? 'b' : 'a';
+        this.syncButtons();
       }
       this.dirty = true;
     });
-    scrub.addEventListener('change', () => this.writeUrl());
+    scrub.addEventListener('change', () => this.writeUrl(true));
     const slip = c.querySelector<HTMLInputElement>('#sim-slip')!;
+    const slipN = c.querySelector<HTMLInputElement>('#sim-slip-n')!;
     slip.addEventListener('input', () => {
       // Preview the slipped stay locally; commit to the page state on release.
       const met = this.t - this.activeStart();
       this.slipPreview = Number(slip.value);
       if (this.ab === 'b') this.t = this.activeStart() + met;
+      slipN.value = slip.value;
       this.afterStaysChange();
     });
-    slip.addEventListener('change', () => {
-      const v = Number(slip.value);
+    const commitSlip = (v: number) => {
+      v = Math.round(clamp(v, -90, 90));
       this.keepMet = this.t - this.activeStart(); // measured against the previewed stay
       this.slipPreview = null;
       if (this.ab === 'b' && v === 0) this.ab = 'a';
       this.commit({ slip: v });
+    };
+    slip.addEventListener('change', () => commitSlip(Number(slip.value)));
+    slipN.addEventListener('change', () => { if (slipN.value !== '' && Number.isFinite(Number(slipN.value))) commitSlip(Number(slipN.value)); });
+    c.querySelectorAll<HTMLElement>('.pop').forEach((p) => p.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.stopPropagation(); this.closePops(true); }
+    }));
+    this.view.querySelector<HTMLSelectElement>('.site-select')!.addEventListener('change', (e) => {
+      const id = (e.target as HTMLSelectElement).value;
+      if (id !== this.site.id) this.commit({ site: id });
     });
-    return c;
   }
+
+  private togglePop(id: string) {
+    const p = this.q<HTMLElement>(`#sim-pop-${id}`);
+    const open = p.hidden;
+    this.closePops(false);
+    if (open) {
+      p.hidden = false;
+      this.q<HTMLElement>(`[data-pop="${id}"]`).setAttribute('aria-expanded', 'true');
+      p.querySelector<HTMLElement>('button')?.focus({ preventScroll: true });
+    }
+  }
+  private closePops(refocus: boolean) {
+    this.root.querySelectorAll<HTMLElement>('.pop').forEach((p) => {
+      if (p.hidden) return;
+      p.hidden = true;
+      const b = this.q<HTMLElement>(`[data-pop="${p.id.replace('sim-pop-', '')}"]`);
+      b.setAttribute('aria-expanded', 'false');
+      if (refocus) b.focus({ preventScroll: true });
+    });
+  }
+  private onDocDown = (e: PointerEvent) => {
+    const t = e.target as HTMLElement;
+    if (!t.closest('.pop') && !t.closest('[data-pop]')) this.closePops(false);
+  };
+
+  private toggleFullscreen() {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void this.root.requestFullscreen?.().catch(() => {});
+  }
+  private onFs = () => {
+    const fs = document.fullscreenElement === this.root;
+    const b = this.q<HTMLButtonElement>('[data-a="fs"]');
+    b.innerHTML = fs ? ICON.shrink : ICON.expand;
+    b.setAttribute('aria-label', fs ? 'Exit full screen' : 'Full screen');
+    b.title = fs ? 'Exit full screen (Esc)' : 'Full screen';
+  };
 
   private commit(patch: Partial<Pick<SimState, 'site' | 'slip'>>) {
     const f = document.activeElement as HTMLElement | null;
+    const sel = f && this.root.contains(f) ? (f.id ? `#${CSS.escape(f.id)}` : f.dataset.site ? `[data-site="${CSS.escape(f.dataset.site)}"]` : f.dataset.a ? `[data-a="${f.dataset.a}"]` : null) : null;
     this.ctx.setState(patch);
-    if (f && this.root.contains(f) && document.activeElement !== f) f.focus({ preventScroll: true });
-    else if (f?.dataset.site) this.siteList.querySelector<HTMLButtonElement>(`button[data-site="${CSS.escape(f.dataset.site)}"]`)?.focus({ preventScroll: true });
+    if (sel && document.activeElement !== f) this.root.querySelector<HTMLElement>(sel)?.focus({ preventScroll: true });
   }
 
   // ---------------------------------------------------------------- three.js
@@ -232,41 +264,40 @@ class Simulator {
     try {
       // Probe on a throwaway canvas so three.js gets the real canvas with its own context attributes.
       if (!document.createElement('canvas').getContext('webgl2')) throw new Error('WebGL 2 is not available');
-      this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, logarithmicDepthBuffer: true, powerPreference: 'high-performance' });
+      this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: false, logarithmicDepthBuffer: true, powerPreference: 'high-performance' });
     } catch (e) {
       this.renderer = null;
-      this.showFallback(`The 3D view needs WebGL 2, which this browser or device does not provide (${(e as Error).message}). The readouts and controls below still work, and so does the mission brief.`);
+      this.showFallback(`The 3D view needs WebGL 2, which this browser or device does not provide (${(e as Error).message}). The status cards, cause line and controls still work, and so does the mission brief.`);
       return;
     }
     const r = this.renderer;
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     r.shadowMap.enabled = true;
-    r.shadowMap.type = THREE.VSMShadowMap; // soft, without the streaks PCF gives at grazing Sun angles
+    r.shadowMap.type = THREE.PCFSoftShadowMap;
     r.toneMapping = THREE.ACESFilmicToneMapping;
-    r.toneMappingExposure = 1.05;
+    r.toneMappingExposure = 1;
     r.outputColorSpace = THREE.SRGBColorSpace;
-    r.setClearColor(0x020306, 1);
+    r.setClearColor(0x000000, 1);
     this.canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.showFallback('The 3D view lost its graphics context. Reload the page to restore it; the readouts below still work.'); });
+    this.post = new Post(r, 4);
+    this.env = landerEnv(r);
 
-    this.scene.background = new THREE.Color(0x020306);
-    this.sunLight.castShadow = true;
+    this.scene.background = new THREE.Color(0x000000);
+    this.sunLight.castShadow = true; // must stay the only shadow caster: it is directional light 0 in the shaders
     this.sunLight.shadow.mapSize.set(2048, 2048);
-    const sc = this.sunLight.shadow.camera;
-    sc.left = -14; sc.right = 14; sc.top = 14; sc.bottom = -14; sc.near = 1; sc.far = 600;
-    this.sunLight.shadow.bias = -0.0005;
-    this.sunLight.shadow.normalBias = 0.04;
-    this.sunLight.shadow.radius = 3;
-    this.sunLight.shadow.blurSamples = 10;
-    this.scene.add(this.sunLight, this.sunLight.target, this.earthLight, this.earthLight.target, this.ambient);
+    this.sunLight.shadow.bias = -0.0004;
+    this.sunLight.shadow.normalBias = 0.03;
+    this.sunLight.shadow.radius = 2.5;
+    this.scene.add(this.sunLight, this.sunLight.target, this.earthLight, this.earthLight.target);
     this.sky = new Sky();
     this.scene.add(this.sky.group);
     this.camLander.rotation.order = 'YXZ';
 
     this.orbit = new OrbitControls(this.camOrbit, this.canvas);
-    this.orbit.enableDamping = true;
-    this.orbit.dampingFactor = 0.12;
-    this.orbit.minDistance = 3; this.orbit.maxDistance = 90;
-    this.orbit.maxPolarAngle = Math.PI * 0.495;
+    this.orbit.enableDamping = !REDUCED;
+    this.orbit.dampingFactor = 0.1;
+    this.orbit.minDistance = 3; this.orbit.maxDistance = 70;
+    this.orbit.maxPolarAngle = Math.PI * 0.49;
     this.orbit.target.set(0, 1.1, 0);
     this.orbit.addEventListener('change', () => { this.dirty = true; });
 
@@ -276,8 +307,27 @@ class Simulator {
     this.canvas.addEventListener('pointercancel', () => { this.drag = null; });
     this.resizeObs = new ResizeObserver(() => this.resize());
     this.resizeObs.observe(this.view);
-    this.interObs = new IntersectionObserver((es) => { this.onScreen = es.some((x) => x.isIntersecting); if (this.onScreen) this.dirty = true; }, { threshold: 0.05 });
+    this.interObs = new IntersectionObserver((es) => { this.onScreen = es.some((x) => x.isIntersecting); if (this.onScreen) this.dirty = true; }, { threshold: 0.02 });
     this.interObs.observe(this.view);
+    this.applyQuality();
+  }
+
+  private applyQuality() {
+    if (!this.renderer || !this.post) return;
+    const q = this.quality;
+    this.post.bloomOn = q >= 2;
+    const size = q >= 2 ? 2048 : 1024;
+    if (this.sunLight.shadow.mapSize.x !== size) {
+      this.sunLight.shadow.mapSize.set(size, size);
+      this.sunLight.shadow.map?.dispose();
+      this.sunLight.shadow.map = null;
+    }
+    this.renderer.setPixelRatio(q >= 1 ? Math.min(window.devicePixelRatio || 1, 2) : 1);
+    this.uni.uHFOn.value = q >= 1 ? 1 : 0;
+    const label = ['Low', 'Medium', 'High'][q];
+    const note = this.q<HTMLElement>('[data-f="quality"]');
+    if (note) note.textContent = `Render quality: ${label}${this.qLocked ? ' (fixed by the link)' : ' (adapts to frame time)'}.`;
+    this.resize();
   }
 
   private showFallback(msg: string) {
@@ -287,7 +337,7 @@ class Simulator {
     this.canvas.hidden = true;
     this.view.classList.add('no-gl');
     // Camera and drawing controls have nothing to drive without WebGL.
-    this.root.querySelectorAll<HTMLButtonElement | HTMLSelectElement>('[data-cam], [data-look], [data-a="size"]').forEach((x) => { x.disabled = true; });
+    this.root.querySelectorAll<HTMLButtonElement>('[data-cam], [data-look], [data-size], [data-a="compass"]').forEach((x) => { x.disabled = true; });
   }
 
   // ---------------------------------------------------------------- mounting
@@ -303,6 +353,7 @@ class Simulator {
     if (!site || !hz) { this.showFallback('No site loaded.'); return; }
     if (ctx.state.slip === 0 && this.ab === 'b') this.ab = 'a';
     this.feats = featureIndex(ctx.features);
+    this.local = featuresContaining(site, ctx.features);
     const key = `${site.id}|${ctx.mock}`;
     const siteChanged = key !== this.siteKey;
     this.site = site; this.hz = hz; this.frameF = siteFrame(site);
@@ -317,15 +368,23 @@ class Simulator {
     } else this.t = (prev ? met : 0) + this.activeStart();
     if (!Number.isFinite(this.t)) this.t = a.t0;
     this.q<HTMLElement>('.sim-mock').hidden = !ctx.mock;
-    this.q<HTMLElement>('.sim-where').textContent =
-      `${site.name} · ${Math.abs(site.lat).toFixed(3)}°${site.lat < 0 ? 'S' : 'N'} ${site.lon_e.toFixed(3)}°E`;
-    this.q<HTMLElement>('.sim-caption').textContent = hz.dem.product === 'sphere'
-      ? 'No terrain model for this site: smooth-sphere (flat) horizon. Near-field ground and lander are illustrative. Sun and Earth positions are computed; their drawn size is enlarged by the body-size factor.'
-      : 'Terrain silhouette from the LOLA horizon profile; near-field ground is illustrative. Ridge distances are clamped to 0.3–20 km for drawing (elevation angles are exact). Sun and Earth positions are computed; their drawn size is enlarged by the body-size factor.';
-    this.siteList.innerHTML = `<div class="k">SITES — click to select</div>` + ctx.sites.map((s) =>
-      `<button type="button" data-site="${esc(s.id)}" aria-pressed="${s.id === site.id}">${esc(s.name)}</button>`).join('');
-    this.siteList.querySelectorAll<HTMLButtonElement>('button[data-site]').forEach((b) =>
-      b.addEventListener('click', () => { if (b.dataset.site !== this.site.id) this.commit({ site: b.dataset.site! }); }));
+    const sel = this.view.querySelector<HTMLSelectElement>('.site-select')!;
+    sel.innerHTML = ctx.sites.map((s) => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
+    sel.value = site.id;
+    this.set('coords', `${Math.abs(site.lat).toFixed(3)}°${site.lat < 0 ? 'S' : 'N'}  ${site.lon_e.toFixed(3)}°E`);
+    this.buildPins();
+    const sphere = hz.dem.product === 'sphere';
+    this.set('note', sphere
+      ? 'No terrain model for this site: flat (smooth-sphere) horizon. Sun and Earth positions are computed; ground, Earth pattern and stars are illustrative.'
+      : 'Skyline from the LOLA horizon profile (exact elevation angles); ground detail, rocks, Earth pattern and stars are illustrative.');
+    this.set('about', [
+      sphere ? 'This site has no terrain model, so the horizon is a smooth sphere (flat skyline).'
+        : 'The skyline is the LOLA horizon profile: seen from the mast, each of the 720 azimuth samples sits at its exact elevation angle. Ridge distances are smoothed and clamped to 0.3–20 km for drawing only.',
+      'Sun and Earth positions, disc fractions, the status cards and the line under the view come from the validated engine (JPL ephemeris, topocentric Earth).',
+      'Illustrative only: craters, rocks and ground texture in front of the skyline (kept below the line of sight), far-terrain shading, the lander design, Earth’s surface pattern and the star field.',
+      'Lighting: airless — black shadows, no fill light except faint earthshine. The ground uses a lunar (Lommel-Seeliger) reflectance with an opposition surge.',
+      this.size === 1 ? 'Sun and Earth are drawn at true angular size.' : 'Sun and Earth are drawn 6× larger than their true angular size.',
+    ].map((x) => `<li>${esc(x)}</li>`).join(''), true);
     if (siteChanged || !prev) this.frameCameras();
     this.afterStaysChange();
     this.syncButtons();
@@ -337,43 +396,46 @@ class Simulator {
     if (!this.renderer) return;
     this.terrain?.dispose();
     this.lander?.dispose();
-    this.terrain = new Terrain(this.hz);
-    this.lander = new Lander(this.hz.mast_m);
+    this.terrain = new Terrain(this.hz, this.uni);
+    this.lander = new Lander(this.hz.mast_m, this.uni, this.env);
     this.scene.add(this.terrain.group, this.lander.group);
     this.camLander.position.set(0, this.hz.mast_m, 0);
+    this.terrain.setResolution(this.view.clientWidth, this.view.clientHeight);
+  }
+
+  private buildPins() {
+    this.pinsEl.innerHTML = this.ctx.sites.map((s) =>
+      `<button type="button" class="pin" data-site="${esc(s.id)}" aria-pressed="${s.id === this.site.id}" aria-label="Select site ${esc(s.name)}"><i></i><span>${esc(s.name)}</span></button>`).join('');
   }
 
   private setupGlobeControls() {
     if (!this.globe || !this.renderer) return;
     this.globeCtl = new OrbitControls(this.globe.camera, this.canvas);
     this.globeCtl.enablePan = false;
-    this.globeCtl.minDistance = 1.6; this.globeCtl.maxDistance = 9;
-    this.globeCtl.enableDamping = true;
+    this.globeCtl.minDistance = 1.5; this.globeCtl.maxDistance = 9;
+    this.globeCtl.enableDamping = !REDUCED;
+    this.globeCtl.rotateSpeed = 0.6;
     this.globeCtl.addEventListener('change', () => { this.dirty = true; });
     this.globeCtl.enabled = this.cam === 'globe';
   }
 
   private frameCameras() {
     if (!this.ctx) return;
-    // Orbit: low, 3/4 view toward the Sun (or Earth if the Sun is down) so the lit side and the skyline both show.
+    // Orbit: low 3/4 view toward the Sun (or Earth if the Sun is down) so the lit side and the skyline both show.
     const t0 = this.activeStart();
     const r = readout(this.ctx.ephem, this.frameF, this.hz, this.feats, clamp(this.t || t0, this.ctx.ephem.t0, this.ctx.ephem.tLast), this.ctx.state.mode);
-    // Aim between the Sun and Earth when both are up and close enough to share the frame.
     const sunUp = r.sun.aboveFlat || r.sun.visible, earthUp = r.earth.aboveFlat || r.earth.visible;
     let az = sunUp ? r.sun.az : r.earth.az;
-    const gap = ((r.earth.az - r.sun.az + 540) % 360) - 180;
-    const both = sunUp && earthUp && Math.abs(gap) < 60;
+    const gap = wrap180(r.earth.az - r.sun.az);
+    const both = sunUp && earthUp && Math.abs(gap) < 70;
     if (both) az = r.sun.az + gap / 2;
-    const look = dirFromAzEl(az + (both ? 0 : 22), 0);
-    this.camOrbit.position.set(-look[0] * 9.5, 2.3, -look[2] * 9.5);
-    this.orbit?.target.set(0, 1.6, 0);
+    const look = dirFromAzEl(az + (both ? 0 : 28), 0);
+    this.camOrbit.position.set(-look[0] * 8.5, 2.6, -look[2] * 8.5);
+    this.orbit?.target.set(0, 1.25, 0);
     this.orbit?.update();
     this.yaw = az; this.pitch = clamp((r.sun.aboveFlat ? r.sun.el : r.earth.el) * 0.5, -10, 30);
-    if (this.globe) {
-      this.globe.frame(this.site.id);
-      this.globeCtl?.update();
-      this.globe.frame(this.site.id, this.insetCam, 3.4);
-    }
+    if (this.globe) { this.globe.frame(this.site.id); this.globeCtl?.update(); }
+    this.camTween = null;
   }
 
   // ---------------------------------------------------------------- time & stays
@@ -403,28 +465,42 @@ class Simulator {
     const step = Math.max(600, Math.ceil((sp.t1 - sp.t0) / 900 / 600) * 600);
     try { this.scan = scanWindow(this.ctx.ephem, this.frameF, this.hz.elev_deg, sp.t0, sp.t1, this.ctx.state.mode, step); } catch { this.scan = null; }
     this.drawScrub();
+    this.syncButtons();
     this.dirty = true;
   }
 
   private drawScrub() {
+    if (!this.ctx) return;
     const sp = this.span(), [a, b] = this.stays();
     const scrub = this.q<HTMLInputElement>('#sim-scrub');
     scrub.min = String(sp.t0); scrub.max = String(sp.t1);
     const pct = (t: number) => (100 * (t - sp.t0)) / Math.max(1, sp.t1 - sp.t0);
-    const band = (x: { t0: number; t1: number }, cls: string, label: string) =>
-      `<div class="band ${cls}" style="left:${pct(x.t0)}%;width:${pct(x.t1) - pct(x.t0)}%"><span>${label}</span></div>`;
-    this.q<HTMLElement>('.scrub-bands').innerHTML = band(a, 'band-a', 'BASELINE') + (b ? band(b, 'band-b', 'SLIPPED') : '');
-    const cv = this.q<HTMLCanvasElement>('.scrub-strip');
-    const w = Math.max(200, cv.clientWidth || 600), h = 14;
-    cv.width = w; cv.height = h;
+    const range = (x: { t0: number; t1: number }, cls: string, label: string) =>
+      `<div class="rng ${cls}" style="left:${pct(x.t0).toFixed(3)}%;width:${(pct(x.t1) - pct(x.t0)).toFixed(3)}%"><span>${label}</span></div>`;
+    const day = (x: { t0: number }) => fmtUtc(x.t0).slice(5, 10).replace('-', '/');
+    this.q<HTMLElement>('.tl-ranges').innerHTML = range(a, 'rng-a' + (this.ab === 'a' ? ' on' : ''), `Baseline · ${day(a)}`)
+      + (b ? range(b, 'rng-b' + (this.ab === 'b' ? ' on' : ''), `Slipped · ${day(b)}`) : '');
+    const cv = this.q<HTMLCanvasElement>('.tl-strip');
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    const w = Math.max(100, cv.clientWidth || 600), h = Math.max(20, cv.clientHeight || 26);
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
     const g = cv.getContext('2d');
-    if (!g || !this.scan) return;
+    if (!g) return;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, w, h);
+    const rowH = Math.floor((h - 6) / 2);
+    g.fillStyle = 'rgba(255,255,255,0.05)';
+    g.fillRect(0, 0, w, rowH); g.fillRect(0, h - rowH, w, rowH);
+    // day ticks
+    g.fillStyle = 'rgba(255,255,255,0.12)';
+    for (let t = Math.ceil(sp.t0 / DAY) * DAY; t <= sp.t1; t += DAY) g.fillRect(Math.round((pct(t) / 100) * w), 0, 1, h);
+    if (!this.scan) return;
     const s = this.scan;
     for (let k = 0; k < s.n; k++) {
-      const x0 = Math.floor((k / s.n) * w), x1 = Math.ceil(((k + 1) / s.n) * w);
-      if (s.sunVis[k]) { g.fillStyle = '#e69f00'; g.fillRect(x0, 0, x1 - x0, 6); }
-      if (s.earthVis[k]) { g.fillStyle = '#56b4e9'; g.fillRect(x0, 8, x1 - x0, 6); }
+      const x0 = (k / s.n) * w, x1 = ((k + 1) / s.n) * w;
+      if (s.sunVis[k]) { g.fillStyle = '#e69f00'; g.fillRect(x0, 0, x1 - x0 + 0.5, rowH); }
+      if (s.earthVis[k]) { g.fillStyle = '#56b4e9'; g.fillRect(x0, h - rowH, x1 - x0 + 0.5, rowH); }
+      if (s.sunVis[k] && s.earthVis[k]) { g.fillStyle = '#009e73'; g.fillRect(x0, rowH + 2, x1 - x0 + 0.5, h - 2 * rowH - 4); }
     }
   }
 
@@ -432,14 +508,14 @@ class Simulator {
     this.playing = p;
     if (p) { const sp = this.span(); if (this.t >= sp.t1 - 1) this.t = this.activeStart(); }
     this.syncButtons();
-    if (!p) this.writeUrl();
+    if (!p) this.writeUrl(true);
     this.dirty = true;
   }
   private step(dt: number) {
     const sp = this.span();
     this.t = clamp(Math.round((this.t + dt) / 60) * 60, sp.t0, sp.t1);
     this.dirty = true;
-    this.writeUrl();
+    this.writeUrl(true);
     this.announce(true);
   }
   private setAB(ab: AB) {
@@ -449,43 +525,65 @@ class Simulator {
     this.ab = ab;
     this.t = this.activeStart() + met;
     this.afterStaysChange();
-    this.syncButtons();
-    this.writeUrl();
+    this.writeUrl(true);
     this.announce(true);
   }
+
+  private pose(c: THREE.PerspectiveCamera): Pose { return { pos: c.position.clone(), quat: c.quaternion.clone(), fov: c.fov }; }
   private setCam(c: Cam) {
+    if (c === this.cam) return;
+    const prev = this.cam;
+    const instant = REDUCED || !this.renderer;
+    if (prev !== 'globe' && c !== 'globe' && !instant) this.camTween = { from: this.pose(this.camView), t0: performance.now(), dur: 950 };
+    else this.camTween = null;
+    if ((prev === 'globe' || c === 'globe') && !instant) {
+      this.canvas.classList.add('fade');
+      setTimeout(() => this.canvas.classList.remove('fade'), 180);
+      if (c === 'globe' && this.globe) {
+        this.globe.frame(this.site.id, this.globe.camera, 1.6);
+        this.globeTween = { d0: 1.6, d1: 5.2, t0: performance.now() + 120 };
+      }
+      if (prev === 'globe') this.camTween = { from: { pos: new THREE.Vector3(0, 40, 0).add(this.camOrbit.position.clone().multiplyScalar(3)), quat: this.camOrbit.quaternion.clone(), fov: 50 }, t0: performance.now(), dur: 1100 };
+    } else if (c === 'globe' && this.globe) this.globe.frame(this.site.id);
     this.cam = c;
     if (this.orbit) this.orbit.enabled = c === 'orbit';
     if (this.globeCtl) this.globeCtl.enabled = c === 'globe';
     this.syncButtons();
-    this.writeUrl();
+    this.writeUrl(true);
     this.dirty = true;
   }
   private look(which: 'sun' | 'earth') {
     if (!this.ro) return;
     if (this.cam !== 'lander') this.setCam('lander');
     const b = which === 'sun' ? this.ro.sun : this.ro.earth;
-    this.yaw = b.az; this.pitch = clamp(b.el, -20, 75);
+    const y1 = this.yaw + wrap180(b.az - this.yaw), p1 = clamp(b.el, -20, 75);
+    if (REDUCED) { this.yaw = b.az; this.pitch = p1; }
+    else this.lookTween = { y0: this.yaw, p0: this.pitch, y1, p1, t0: performance.now() };
     this.dirty = true;
   }
 
   private syncButtons() {
+    if (!this.ctx) return;
     const play = this.q<HTMLButtonElement>('[data-a="play"]');
-    play.textContent = this.playing ? '❚❚ PAUSE' : '▶ PLAY';
+    play.innerHTML = this.playing ? ICON.pause : ICON.play;
     play.setAttribute('aria-label', this.playing ? 'Pause' : 'Play');
     play.setAttribute('aria-pressed', String(this.playing));
     const [, b] = this.stays();
-    this.root.querySelectorAll<HTMLButtonElement>('[data-ab]').forEach((x) => {
-      x.setAttribute('aria-pressed', String(x.dataset.ab === this.ab));
-      x.disabled = x.dataset.ab === 'b' && !b;
-    });
-    this.root.querySelectorAll<HTMLButtonElement>('[data-cam]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.cam === this.cam)));
-    this.q<HTMLElement>('.look').hidden = this.cam === 'globe';
-    const slip = this.q<HTMLInputElement>('#sim-slip');
+    const press = (sel: string, on: (x: HTMLButtonElement) => boolean) => this.root.querySelectorAll<HTMLButtonElement>(sel).forEach((x) => x.setAttribute('aria-pressed', String(on(x))));
+    press('[data-ab]', (x) => x.dataset.ab === this.ab);
+    this.root.querySelectorAll<HTMLButtonElement>('[data-ab="b"]').forEach((x) => { x.disabled = !b; x.title = b ? '' : 'Set a launch slip to compare a slipped stay'; });
+    press('[data-cam]', (x) => x.dataset.cam === this.cam);
+    press('[data-speed]', (x) => Number(x.dataset.speed) === this.speed);
+    press('[data-size]', (x) => Number(x.dataset.size) === this.size);
+    press('.pin', (x) => x.dataset.site === this.site.id);
+    this.q<HTMLElement>('[data-a="compass"]').setAttribute('aria-checked', String(this.showCompass));
+    const slip = this.q<HTMLInputElement>('#sim-slip'), slipN = this.q<HTMLInputElement>('#sim-slip-n');
     const s = this.slipDays();
     if (document.activeElement !== slip) slip.value = String(clamp(s, 0, 60));
-    this.q<HTMLOutputElement>('[data-f="slipv"]').textContent = `${s >= 0 ? '+' : '−'}${Math.abs(s)} days${s < 0 || s > 60 ? ' (set in the brief controls)' : ''}`;
+    if (document.activeElement !== slipN) slipN.value = String(s);
+    slip.setAttribute('aria-valuetext', `${s} days`);
     this.view.dataset.cam = this.cam;
+    this.root.classList.toggle('cam-globe', this.cam === 'globe');
   }
 
   private writeUrl(force = false) {
@@ -496,7 +594,9 @@ class Simulator {
     q.set('cam', this.cam);
     q.set('simt', utcMin(this.t));
     if (this.ab === 'b') q.set('ab', 'b'); else q.delete('ab');
-    q.set('size', String(this.size));
+    if (this.size !== 1) q.set('size', String(this.size)); else q.delete('size');
+    if (!this.showCompass) q.set('compass', '0'); else q.delete('compass');
+    if (this.qLocked) q.set('q', this.quality === 0 ? 'low' : 'high');
     history.replaceState(history.state, '', `${location.pathname}?${q}`);
   }
 
@@ -504,10 +604,11 @@ class Simulator {
   private onKey = (e: KeyboardEvent) => {
     if (!this.root.isConnected || !this.onScreen || e.altKey || e.ctrlKey || e.metaKey) return;
     const tg = e.target as HTMLElement | null;
-    if (tg && (tg.closest('input, select, textarea, button, a, [contenteditable="true"], summary'))) return;
+    if (tg && (tg.closest('input, select, textarea, button, a, [contenteditable="true"], summary, .pop'))) return;
     if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); this.setPlaying(!this.playing); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); this.step(-HOUR); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); this.step(HOUR); }
+    else { const c = CAMS.find((x) => x.key === e.key); if (c && this.renderer) this.setCam(c.id); }
   };
   private onDown = (e: PointerEvent) => {
     this.drag = { x: e.clientX, y: e.clientY, moved: false, id: e.pointerId };
@@ -518,6 +619,7 @@ class Simulator {
     const dx = e.clientX - this.drag.x, dy = e.clientY - this.drag.y;
     if (Math.abs(dx) + Math.abs(dy) > 3) this.drag.moved = true;
     if (this.cam === 'lander') {
+      this.lookTween = null;
       const k = this.camLander.fov / Math.max(200, this.canvas.clientHeight);
       this.yaw = (((this.yaw - dx * k) % 360) + 360) % 360;
       this.pitch = clamp(this.pitch + dy * k, -60, 85);
@@ -528,58 +630,65 @@ class Simulator {
   private onUp = (e: PointerEvent) => {
     const d = this.drag;
     this.drag = null;
-    if (!d || d.moved) return;
+    if (!d || d.moved || this.cam !== 'globe' || !this.globe) return;
     const rect = this.canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left, y = e.clientY - rect.top;
-    if (this.cam === 'globe' && this.globe) {
-      const ray = new THREE.Raycaster();
-      ray.setFromCamera(new THREE.Vector2((x / rect.width) * 2 - 1, -(y / rect.height) * 2 + 1), this.globe.camera);
-      const id = this.globe.pick(ray);
-      if (id && id !== this.site.id) this.commit({ site: id });
-    } else {
-      const ins = this.insetRect();
-      if (ins && x >= ins.x && x <= ins.x + ins.s && y >= rect.height - ins.y - ins.s && y <= rect.height - ins.y) this.setCam('globe');
-    }
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), this.globe.camera);
+    const id = this.globe.pick(ray);
+    if (id && id !== this.site.id) this.commit({ site: id });
   };
 
   // ---------------------------------------------------------------- frame loop
   private resize() {
-    if (!this.renderer) return;
+    if (!this.renderer || !this.post) return;
     const w = Math.max(1, this.view.clientWidth), h = Math.max(1, this.view.clientHeight);
     this.renderer.setSize(w, h, false);
-    for (const c of [this.camLander, this.camOrbit]) { c.aspect = w / h; c.updateProjectionMatrix(); }
-    if (this.globe) { this.globe.camera.aspect = w / h; this.globe.camera.updateProjectionMatrix(); }
-    this.compassC.width = w * Math.min(2, devicePixelRatio || 1);
-    this.compassC.height = 40 * Math.min(2, devicePixelRatio || 1);
+    this.post.setSize(w, h);
+    for (const c of [this.camLander, this.camOrbit, this.camView]) { c.aspect = w / h; c.updateProjectionMatrix(); }
+    // Keep the lander view's horizontal field reasonable on tall (mobile) screens.
+    this.camLander.fov = w / h < 1 ? 82 : 66; this.camLander.updateProjectionMatrix();
+    this.camOrbit.fov = w / h < 1 ? 64 : 48; this.camOrbit.updateProjectionMatrix();
+    if (this.globe) { this.globe.camera.aspect = w / h; this.globe.camera.updateProjectionMatrix(); this.globe.setPixelRatio(this.renderer.getPixelRatio()); }
+    this.terrain?.setResolution(w, h);
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    this.compassC.width = Math.round(w * dpr);
+    this.compassC.height = Math.round(44 * dpr);
     this.drawScrub();
     // Resizing clears the canvas: redraw now (ResizeObserver runs before paint) instead of on the next frame.
     if (this.ctx) this.update(performance.now()); else this.dirty = true;
   }
 
-  private insetRect() {
-    if (this.cam === 'globe' || !this.renderer) return null;
-    const w = this.view.clientWidth;
-    const s = w < 700 ? 0 : w < 1000 ? 120 : 150;
-    return s ? { x: 12, y: 12, s } : null;
-  }
-
   private loop = (now: number) => {
     this.raf = requestAnimationFrame(this.loop);
-    const dt = Math.min(0.1, (now - this.last) / 1000);
+    const dtMs = now - this.last;
+    const dt = Math.min(0.1, dtMs / 1000);
     this.last = now;
     if (!this.ctx) return;
+    let continuous = false;
     if (this.playing) {
       const sp = this.span();
       this.t += dt * this.speed;
       if (this.t >= sp.t1) { this.t = sp.t1; this.setPlaying(false); }
-      this.dirty = true;
+      this.dirty = continuous = true;
     }
-    if (this.orbit?.enabled && this.orbit.update()) this.dirty = true;
-    if (this.globeCtl?.enabled && this.globeCtl.update()) this.dirty = true;
+    if (this.orbit?.enabled && this.orbit.update()) this.dirty = continuous = true;
+    if (this.globeCtl?.enabled && this.globeCtl.update()) this.dirty = continuous = true;
+    if (this.camTween || this.lookTween || this.globeTween || this.drag?.moved) this.dirty = continuous = true;
     if (!this.dirty || !this.onScreen) return;
     this.dirty = false;
+    if (continuous && this.renderer) this.trackFrame(dtMs);
     this.update(now);
   };
+
+  /** Degrade gracefully: if sustained frames are slow, drop bloom, then shadow size, pixel ratio and the march. */
+  private trackFrame(ms: number) {
+    if (this.qLocked || this.quality === 0 || document.hidden) return;
+    this.frameTimes.push(ms);
+    if (this.frameTimes.length < 90) return;
+    const avg = this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length;
+    this.frameTimes.length = 0;
+    if (avg > 40) { this.quality--; this.applyQuality(); console.info(`[sim] average frame ${avg.toFixed(0)} ms: render quality lowered to ${this.quality}`); }
+  }
 
   private update(now: number) {
     const ctx = this.ctx;
@@ -587,55 +696,98 @@ class Simulator {
     try { r = readout(ctx.ephem, this.frameF, this.hz, this.feats, this.t, ctx.state.mode); }
     catch { return; }
     this.ro = r;
-    if (now - this.lastHud > 60 || !this.playing) { this.lastHud = now; this.updateHud(r); }
+    if (now - this.lastHud > 66 || !this.playing) { this.lastHud = now; this.updateHud(r); }
     this.announce(false);
     if (this.playing) this.writeUrl();
-    if (!this.renderer || !this.sky || !this.terrain || !this.lander) return;
+    if (!this.renderer || !this.post || !this.sky || !this.terrain || !this.lander) return;
 
     const sunDir = v3(dirFromAzEl(r.sun.az, r.sun.el));
     const earthDir = v3(dirFromAzEl(r.earth.az, r.earth.el));
-    const sunK = r.power.pct / 100; // disc fraction above terrain (0 when hidden or totally eclipsed)
-    this.sunLight.intensity = 3.2 * sunK;
-    this.sunLight.position.copy(sunDir).multiplyScalar(300);
-    this.sunLight.visible = sunK > 0;
+    const sunK = r.power.pct / 100; // disc fraction above terrain at the lander (0 when hidden or totally eclipsed)
+    const night = !r.sun.aboveFlat && !r.sun.visible;
+    // Sun light: on whenever any part of the Sun is above the true horizon somewhere; the shaders apply the
+    // engine's disc fraction at the lander and the terrain march elsewhere.
+    this.uni.uSunW.value.copy(sunDir);
+    this.uni.uSunR.value = (r.sun.r * Math.PI) / 180;
+    this.uni.uSunK.value = sunK;
+    this.sunLight.intensity = r.sun.el > -3 ? SUN_LUX : 0;
     const earthK = r.earth.visible ? r.earth.frac * r.earthLitFrac : 0;
-    this.earthLight.intensity = 0.7 * earthK; // earthshine, strongly exaggerated so the night scene is readable
-    this.earthLight.position.copy(earthDir).multiplyScalar(300);
-    this.ambient.intensity = 0.02 + 0.22 * sunK + 0.06 * earthK; // regolith bounce when sunlit
+    this.earthLight.intensity = 0.12 * earthK; // earthshine: faint, the only "fill" in an airless scene
+    this.earthLight.position.copy(earthDir).multiplyScalar(100);
+    this.uni.uEnvK.value = 0.04 + 0.96 * sunK;
     this.lander.point(sunDir, earthDir);
-    this.terrain.setHighlight(0, r.sun.blocker ? r.sun.az : null);
-    this.terrain.setHighlight(1, r.earth.blocker ? r.earth.az : null);
+    this.terrain.setHighlight(0, r.sun.blocker ? r.sun.blocker.az : null);
+    this.terrain.setHighlight(1, r.earth.blocker ? r.earth.blocker.az : null);
 
-    const cam = this.cam === 'orbit' ? this.camOrbit : this.camLander;
-    if (this.cam === 'lander') this.camLander.rotation.set((this.pitch * Math.PI) / 180, (-this.yaw * Math.PI) / 180, 0, 'YXZ');
-    this.sky.update(sunDir, r.sun.r, earthDir, r.earth.r, this.size, sunK > 0.02 ? 0 : 1, cam, r.sun.visible, r.earth.visible);
+    // Cameras: tweens between lander and orbit; lander look tween.
+    if (this.lookTween) {
+      const k = clamp((now - this.lookTween.t0) / 700, 0, 1), e = ease(k);
+      this.yaw = ((this.lookTween.y0 + (this.lookTween.y1 - this.lookTween.y0) * e) % 360 + 360) % 360;
+      this.pitch = this.lookTween.p0 + (this.lookTween.p1 - this.lookTween.p0) * e;
+      if (k >= 1) this.lookTween = null;
+    }
+    this.camLander.rotation.set((this.pitch * Math.PI) / 180, (-this.yaw * Math.PI) / 180, 0, 'YXZ');
+    this.camLander.updateMatrixWorld();
+    const target = this.cam === 'orbit' ? this.camOrbit : this.camLander;
+    if (this.camTween) {
+      const k = clamp((now - this.camTween.t0) / this.camTween.dur, 0, 1), e = ease(k);
+      const f = this.camTween.from;
+      this.camView.position.lerpVectors(f.pos, target.position, e);
+      this.camView.quaternion.slerpQuaternions(f.quat, target.quaternion, e);
+      this.camView.fov = f.fov + (target.fov - f.fov) * e;
+      if (k >= 1) this.camTween = null;
+    } else {
+      this.camView.position.copy(target.position);
+      this.camView.quaternion.copy(target.quaternion);
+      this.camView.fov = target.fov;
+    }
+    this.camView.updateProjectionMatrix();
+    this.camView.updateMatrixWorld();
+    const cam = this.camView;
+
+    // Shadow frustum: tight around what the camera looks at (lander or orbit target).
+    const center = this.cam === 'orbit' ? this.orbit!.target.clone().setY(0) : new THREE.Vector3();
+    const rad = this.cam === 'orbit' ? clamp(this.camOrbit.position.distanceTo(this.orbit!.target) * 2.4, 18, 64) : 40;
+    const sc = this.sunLight.shadow.camera;
+    if (sc.right !== rad) { sc.left = -rad; sc.right = rad; sc.top = rad; sc.bottom = -rad; sc.near = 1; sc.far = 1600; sc.updateProjectionMatrix(); }
+    this.sunLight.target.position.copy(center);
+    this.sunLight.position.copy(center).addScaledVector(sunDir, 700);
+    this.sunLight.target.updateMatrixWorld();
+
+    // Exposure ("auto-exposure feel"): bright when sunlit, opened up in shadow, wide open at night (earthshine).
+    const sunScreen = this.project(sunDir, cam);
+    const w = this.view.clientWidth, h = this.view.clientHeight;
+    const sunInFrame = !!sunScreen && sunScreen.x > -0.15 * w && sunScreen.x < 1.15 * w && sunScreen.y > -0.15 * h && sunScreen.y < 1.15 * h;
+    const target2 = night ? 5.5 : sunK > 0 ? (sunInFrame && r.sun.visible ? 0.85 : 1.0) : 3.2;
+    if (this.exposure < 0 || REDUCED) this.exposure = target2;
+    else {
+      this.exposure += (target2 - this.exposure) * (1 - Math.exp(-Math.min(0.1, (now - this.last) / 1000 + 0.016) * 3));
+      if (Math.abs(target2 - this.exposure) > 0.01) this.dirty = true;
+    }
+    this.renderer.toneMappingExposure = this.exposure;
+    const starAlpha = night ? 1 : sunK === 0 ? 0.45 : sunInFrame ? 0 : 0.1;
+    this.sky.update({ sunDir, sunRDeg: r.sun.r, earthDir, earthRDeg: r.earth.r, scale: this.size, starAlpha, glare: sunInFrame ? sunK : 0,
+      cam, sunShown: r.sun.visible, earthShown: r.earth.visible, tSec: this.t, pixelRatio: this.renderer.getPixelRatio() });
     if (this.globe) {
       const s = ctx.ephem.sample(this.t);
       this.globe.update(s.sun, s.earth, this.site.id);
-    }
-    const R = this.renderer;
-    const w = this.view.clientWidth, h = this.view.clientHeight;
-    R.setScissorTest(false);
-    R.setViewport(0, 0, w, h);
-    if (this.cam === 'globe' && this.globe) R.render(this.globe.scene, this.globe.camera);
-    else {
-      R.render(this.scene, cam);
-      const ins = this.insetRect();
-      if (ins && this.globe) {
-        this.insetCam.aspect = 1; this.insetCam.updateProjectionMatrix();
-        R.setScissorTest(true);
-        R.setViewport(ins.x, ins.y, ins.s, ins.s); R.setScissor(ins.x, ins.y, ins.s, ins.s);
-        R.setClearColor(0x05080d, 1); R.clear();
-        R.render(this.globe.scene, this.insetCam);
-        R.setScissorTest(false); R.setClearColor(0x020306, 1);
-        R.setViewport(0, 0, w, h);
+      if (this.globeTween) {
+        const k = clamp((now - this.globeTween.t0) / 1100, 0, 1), e = ease(k);
+        const d = this.globeTween.d0 + (this.globeTween.d1 - this.globeTween.d0) * e;
+        this.globe.camera.position.setLength(d);
+        this.globeCtl?.update();
+        if (k >= 1) this.globeTween = null;
       }
-      this.view.style.setProperty('--inset', ins ? `${ins.s + 12}px` : '0px');
     }
+    if (this.cam === 'globe' && this.globe) {
+      this.renderer.toneMappingExposure = 1;
+      this.post.render(this.globe.scene, this.globe.camera);
+    } else this.post.render(this.scene, cam);
     this.placeLabels(r, cam, sunDir, earthDir);
-        this.drawCompass(r);
+    this.drawCompass(r);
   }
 
+  // ---------------------------------------------------------------- HUD
   private set(f: string, v: string, html = false) {
     const e = this.root.querySelector(`[data-f="${f}"]`);
     if (!e || this.textCache.get(e) === v) return;
@@ -646,45 +798,41 @@ class Simulator {
   private updateHud(r: Readout) {
     const [a, b] = this.stays();
     const start = this.ab === 'b' && b ? b.t0 : a.t0;
-    const inStay = this.t >= start && this.t <= start + this.ctx.state.stay * DAY;
-    this.set('utc', fmtUtc(this.t).replace('T', ' ').replace('Z', ''));
-    this.set('met', `${fmtMet(this.t - start)} since landing`);
-    this.set('stay', `${this.ab === 'b' ? 'SLIPPED' : 'BASELINE'} · day ${((this.t - start) / DAY).toFixed(1)} of ${this.ctx.state.stay}${inStay ? '' : ' (outside stay)'}`);
-    this.set('view', this.cam === 'lander' ? `mast cam · heading ${this.yaw.toFixed(0).padStart(3, '0')}° (${compass(this.yaw)}) · pitch ${fmtEl(this.pitch)}` : this.cam === 'orbit' ? 'orbit · drag, wheel to zoom' : 'globe · drag, click a site');
-    this.set('pstate', r.power.state);
-    this.set('ppct', `${r.power.pct.toFixed(0)}% of Sun disc above terrain${r.power.note ? ' · ' + r.power.note : ''}`);
-    (this.q<HTMLElement>('[data-f="pbar"]')).style.width = `${r.power.pct}%`;
-    this.set('saz', fmtAz(r.sun.az)); this.set('sel', fmtEl(r.sun.el)); this.set('sh', `${fmtEl(r.sun.horizonEl)} @ ${r.sun.az.toFixed(1)}°`);
-    this.set('cstate', r.comm.state);
-    this.set('cpct', `${(r.earth.frac * 100).toFixed(0)}% of Earth disc above terrain · Earth ${(r.earthLitFrac * 100).toFixed(0)}% lit`);
-    (this.q<HTMLElement>('[data-f="cbar"]')).style.width = `${r.earth.frac * 100}%`;
-    this.set('eaz', fmtAz(r.earth.az)); this.set('eel', fmtEl(r.earth.el)); this.set('eh', `${fmtEl(r.earth.horizonEl)} @ ${r.earth.az.toFixed(1)}°`);
-    this.hudSys.dataset.power = r.power.state.split(' ')[0];
-    this.hudSys.dataset.comm = r.comm.state.split(' ')[0];
-    this.set('csun', this.causeHtml('Sun', r.sun, r), true);
-    this.set('cearth', this.causeHtml('Earth', r.earth, r), true);
-    this.q<HTMLElement>('[data-f="csun"]').dataset.blocked = String(!!r.sun.blocker);
-    this.q<HTMLElement>('[data-f="cearth"]').dataset.blocked = String(!!r.earth.blocker);
-    const sizeTxt = `BODY SIZE ×${this.size}${this.size === 1 ? ' (true size)' : ' (enlarged)'}`;
-    if (this.textCache.get(this.hudSize) !== sizeTxt) { this.textCache.set(this.hudSize, sizeTxt); this.hudSize.textContent = sizeTxt; }
+    const stayDays = this.ctx.state.stay;
+    const dayN = (this.t - start) / DAY;
+    this.set('utc', fmtUtc(this.t).slice(0, 16).replace('T', ' '));
+    this.set('met', fmtMet(this.t - start));
+    this.set('stay', `${this.ab === 'b' ? 'Slipped' : 'Baseline'} stay · ${dayN < 0 ? 'before landing' : dayN > stayDays ? 'after the stay' : `day ${Math.min(stayDays, Math.floor(dayN) + 1)} of ${stayDays}`}`);
+    const pw = powerWord(r), cw = commWord(r);
+    const card = (k: 'power' | 'comm', word: { word: string; tone: string }, body: BodyReadout, frac: number, more: [string, string][]) => {
+      const c = this.q<HTMLElement>(`.card-${k}`);
+      if (c.dataset.tone !== word.tone) c.dataset.tone = word.tone;
+      this.set(`${k}-state`, word.word);
+      this.q<HTMLElement>(`[data-f="${k}-bar"]`).style.transform = `scaleX(${clamp(frac, 0, 1)})`;
+      this.set(`${k}-az`, `${body.az.toFixed(1)}°`);
+      this.set(`${k}-el`, deg2(body.el));
+      this.set(`${k}-clr`, deg2(body.el - body.horizonEl));
+      this.set(`${k}-more`, more.map(([dt, dd]) => `<dt>${dt}</dt><dd class="num">${esc(dd)}</dd>`).join(''), true);
+    };
+    card('power', pw, r.sun, r.power.pct / 100, [
+      ['Disc above skyline', `${(r.sun.frac * 100).toFixed(0)}%`],
+      ['Power (disc in view)', `${r.power.pct.toFixed(0)}%`],
+      [`Skyline at ${r.sun.az.toFixed(1)}°`, deg2(r.sun.horizonEl)],
+      ['Sun radius', `${r.sun.r.toFixed(3)}°`],
+      ...(r.power.note ? [['Note', r.power.note] as [string, string]] : []),
+    ]);
+    card('comm', cw, r.earth, r.earth.frac, [
+      ['Disc above skyline', `${(r.earth.frac * 100).toFixed(0)}%`],
+      [`Skyline at ${r.earth.az.toFixed(1)}°`, deg2(r.earth.horizonEl)],
+      ['Earth lit (phase)', `${(r.earthLitFrac * 100).toFixed(0)}%`],
+      ['Earth radius', `${r.earth.r.toFixed(3)}°`],
+    ]);
+    const c = causeLine(r, this.local);
+    if (this.cause.dataset.tone !== c.tone) this.cause.dataset.tone = c.tone;
+    this.set('cause', c.parts.map((p) => `<span class="cp" data-tone="${p.tone}">${p.html}</span>`).join(' '), true);
     const scrub = this.q<HTMLInputElement>('#sim-scrub');
     if (document.activeElement !== scrub) scrub.value = String(this.t);
     scrub.setAttribute('aria-valuetext', `${fmtUtc(this.t).slice(0, 16).replace('T', ' ')} UTC, ${fmtMet(this.t - start)} since ${this.ab === 'b' ? 'slipped' : 'baseline'} landing`);
-  }
-
-  private causeHtml(name: string, b: BodyReadout, r: Readout): string {
-    const cls = name === 'Sun' ? 'c-sun' : 'c-earth';
-    if (b.blocker) {
-      const k = b.blocker;
-      return `<span class="${cls} tagb">${name.toUpperCase()} BLOCKED</span> by <strong>${esc(k.name)}</strong> · az ${k.az.toFixed(1)}° (${compass(k.az)})`
-        + (k.distKm != null ? ` · ${k.distKm < 10 ? k.distKm.toFixed(1) : k.distKm.toFixed(0)} km away` : '')
-        + ` · ridge ${fmtEl(k.horizonEl)} vs ${name} ${fmtEl(k.bodyEl)}`;
-    }
-    if (b.visible) {
-      const extra = name === 'Sun' && r.obs.eclipsePartial ? ' · Earth is covering part of the Sun' : '';
-      return `<span class="${cls} tagb ok">${name.toUpperCase()} IN VIEW</span> clear line of sight · ${fmtEl(b.el - b.horizonEl)} above the local skyline${extra}`;
-    }
-    return `<span class="${cls} tagb dim">${name.toUpperCase()} DOWN</span> below the horizon — ${name === 'Sun' ? 'lunar night' : "the Moon's libration"} (orbital, not terrain)`;
   }
 
   private announce(force: boolean) {
@@ -692,105 +840,164 @@ class Simulator {
     if (!r) return;
     const now = performance.now();
     if (!force && now - this.lastLive < 1000) return;
-    const blk = (b: BodyReadout) => (b.blocker ? ` blocked by ${b.blocker.name} at azimuth ${b.blocker.az.toFixed(0)} degrees` : '');
-    const states = `Power ${r.power.state}, ${r.power.pct.toFixed(0)} percent${blk(r.sun)}. Comm ${r.comm.state}${blk(r.earth)}.`;
+    const c = causeLine(r, this.local);
+    const states = `Power ${powerWord(r).word}, ${r.power.pct.toFixed(0)} percent. Comm ${commWord(r).word}. ${c.text}`;
     // While playing only state changes are announced; when paused or stepping, the time too.
-    const txt = this.playing ? states
-      : `${fmtUtc(this.t).slice(0, 16).replace('T', ' ')} UTC. ${states} Sun azimuth ${r.sun.az.toFixed(1)}, elevation ${r.sun.el.toFixed(1)}. Earth azimuth ${r.earth.az.toFixed(1)}, elevation ${r.earth.el.toFixed(1)}.`;
+    const txt = this.playing ? `Power ${powerWord(r).word}. Comm ${commWord(r).word}.`
+      : `${fmtUtc(this.t).slice(0, 16).replace('T', ' ')} UTC. ${states}`;
     this.lastLive = now;
     if (txt !== this.liveText) { this.liveText = txt; this.live.textContent = txt; }
   }
 
-  private project(dir: THREE.Vector3, cam: THREE.Camera): { x: number; y: number } | null {
-    const p = dir.clone().multiplyScalar(SKY_R).add(cam.position).project(cam);
+  private project(dir: THREE.Vector3, cam: THREE.Camera, dist = SKY_R): { x: number; y: number } | null {
+    const p = dir.clone().multiplyScalar(dist).add(cam.position).project(cam);
     if (p.z > 1 || p.z < -1) return null;
     const w = this.view.clientWidth, h = this.view.clientHeight;
     return { x: ((p.x + 1) / 2) * w, y: ((1 - p.y) / 2) * h };
   }
+  private projectPoint(v: THREE.Vector3, cam: THREE.Camera): { x: number; y: number } | null {
+    const p = v.clone().project(cam);
+    if (p.z > 1 || p.z < -1) return null;
+    return { x: ((p.x + 1) / 2) * this.view.clientWidth, y: ((1 - p.y) / 2) * this.view.clientHeight };
+  }
 
-  private placeLabels(r: Readout, cam: THREE.Camera, sunDir: THREE.Vector3, earthDir: THREE.Vector3) {
+  private putTag(key: string, p: { x: number; y: number } | null, html: string, cls: string, extra: Record<string, string> = {}) {
+    const t = this.tags[key];
     const w = this.view.clientWidth, h = this.view.clientHeight;
-    const put = (lbl: HTMLElement, p: { x: number; y: number } | null, text: string, hidden: boolean) => {
-      if (!p || p.x < -40 || p.x > w + 40 || p.y < -20 || p.y > h + 20) { lbl.style.display = 'none'; return; }
-      lbl.style.display = '';
-      lbl.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`;
-      lbl.classList.toggle('hidden-body', hidden);
-      if (this.textCache.get(lbl) !== text) { this.textCache.set(lbl, text); lbl.textContent = text; }
-    };
+    if (!p || p.x < -20 || p.x > w + 20 || p.y < -20 || p.y > h + 20) { if (!t.hidden) t.hidden = true; return; }
+    t.hidden = false;
+    t.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`;
+    if (t.dataset.cls !== cls) { t.dataset.cls = cls; t.className = `mk mk-${key.replace(/\d$/, '')} ${cls}`; }
+    for (const [k, v] of Object.entries(extra)) t.style.setProperty(k, v);
+    const span = t.firstElementChild as HTMLElement;
+    if (this.textCache.get(span) !== html) { this.textCache.set(span, html); span.innerHTML = html; }
+  }
+
+  private placeLabels(r: Readout, cam: THREE.PerspectiveCamera, sunDir: THREE.Vector3, earthDir: THREE.Vector3) {
+    const w = this.view.clientWidth, h = this.view.clientHeight;
     if (this.cam === 'globe' && this.globe) {
       const g = this.globe;
-      const sp = new THREE.Vector3(...g.markers.find((m) => m.userData.siteId === this.site.id)!.position.toArray()).project(g.camera);
-      const facing = g.camera.position.clone().dot(g.markers.find((m) => m.userData.siteId === this.site.id)!.position) > 0;
-      put(this.lblSite, facing ? { x: ((sp.x + 1) / 2) * w, y: ((1 - sp.y) / 2) * h } : null, this.site.name, false);
-      const s = this.ctx.ephem.sample(this.t);
-      const tip = (v: [number, number, number], len: number) => {
-        const d = new THREE.Vector3(v[0], v[2], -v[1]).normalize().multiplyScalar(1.05 + len).project(g.camera);
-        return { x: ((d.x + 1) / 2) * w, y: ((1 - d.y) / 2) * h };
-      };
-      put(this.lblEarth, tip(s.earth, 0.36), 'to Earth', false);
-      put(this.lblSun, tip(s.sun, 0.3), 'to Sun', false);
+      for (const k of ['sun', 'earth', 'ridge0', 'ridge1']) this.tags[k].hidden = true;
+      this.putTag('gEarth', this.projectPoint(g.arrowTip(0), g.camera), 'To Earth', '');
+      this.putTag('gSun', this.projectPoint(g.arrowTip(1), g.camera), 'To Sun', '');
+      const camPos = g.camera.position;
+      this.pinsEl.hidden = false;
+      this.pinsEl.querySelectorAll<HTMLButtonElement>('.pin').forEach((b) => {
+        const pin = g.pins.find((x) => x.id === b.dataset.site)!;
+        const facing = camPos.clone().sub(pin.pos).dot(pin.pos) > 0.02;
+        const p = facing ? this.projectPoint(pin.pos, g.camera) : null;
+        const show = !!p && p.x > 0 && p.x < w && p.y > 0 && p.y < h;
+        if (b.hidden === show) b.hidden = !show;
+        if (show) b.style.transform = `translate(${Math.round(p!.x)}px, ${Math.round(p!.y)}px)`;
+      });
       return;
     }
-    this.lblSite.style.display = 'none';
-    const name = (b: BodyReadout, n: string) => (b.blocker ? `${n} — behind ${b.blocker.name}` : b.visible ? n : `${n} (below horizon)`);
-    put(this.lblSun, this.project(sunDir, cam), name(r.sun, 'SUN'), !r.sun.visible);
-    put(this.lblEarth, this.project(earthDir, cam), name(r.earth, 'EARTH'), !r.earth.visible);
+    this.pinsEl.hidden = true;
+    this.tags.gEarth.hidden = this.tags.gSun.hidden = true;
+    // Body markers: the true position, with a ring of the drawn disc size; hidden bodies get a dashed ring.
+    const f = h / 2 / Math.tan((cam.fov * Math.PI) / 360);
+    const discPx = (rDeg: number) => Math.max(5, f * Math.tan((rDeg * this.size * Math.PI) / 180));
+    const body = (key: 'sun' | 'earth', b: BodyReadout, dir: THREE.Vector3, name: string) => {
+      const state = b.blocker ? 'blocked' : b.visible ? 'clear' : 'down';
+      const label = b.blocker ? `${name} · hidden` : b.visible ? name : `${name} · below horizon`;
+      this.putTag(key, this.project(dir, cam), esc(label), `st-${state}`, { '--r': `${discPx(b.r).toFixed(1)}px` });
+    };
+    body('sun', r.sun, sunDir, 'Sun');
+    body('earth', r.earth, earthDir, 'Earth');
+    // Blocking ridge: label with a leader line, anchored on the crest at the body's azimuth.
+    const ridge = (k: 0 | 1, b: BodyReadout, other: BodyReadout, name: string) => {
+      const key = `ridge${k}`;
+      if (!b.blocker || !this.terrain) { this.tags[key].hidden = true; return; }
+      if (k === 1 && other.blocker && Math.abs(wrap180(other.blocker.az - b.blocker.az)) < 6) { this.tags[key].hidden = true; return; }
+      const both = k === 0 && other.blocker && Math.abs(wrap180(other.blocker.az - b.blocker.az)) < 6;
+      const who = blockerName(b.blocker, this.local);
+      const d = distText(b.blocker.distKm);
+      const html = `<b>${esc(who.charAt(0).toUpperCase() + who.slice(1))}</b><small>blocks ${both ? 'Sun and Earth' : name}${d ? ` · <span class="num">${esc(d.replace(' km', ''))}</span> km` : ''} · <span class="num">${az3(b.blocker.az)}</span> ${compass(b.blocker.az)}</small>`;
+      this.putTag(key, this.projectPoint(this.terrain.crest(b.blocker.az), cam), html, '');
+    };
+    ridge(0, r.sun, r.earth, 'Sun');
+    ridge(1, r.earth, r.sun, 'Earth');
   }
 
   private drawCompass(r: Readout) {
     const c = this.compassC;
-    if (this.cam !== 'lander') { c.style.display = 'none'; return; }
-    c.style.display = '';
+    const show = this.cam === 'lander' && this.showCompass && !!this.renderer;
+    if (c.hidden === show) c.hidden = !show;
+    this.view.classList.toggle('has-compass', show);
+    if (!show) return;
     const g = c.getContext('2d');
     if (!g) return;
-    const k = c.width / Math.max(1, this.view.clientWidth);
-    const W = c.width, H = c.height;
+    const W = c.width, H = c.height, k = W / Math.max(1, this.view.clientWidth);
     g.clearRect(0, 0, W, H);
-    g.fillStyle = 'rgba(4,8,14,0.72)'; g.fillRect(0, 0, W, H);
+    const grd = g.createLinearGradient(0, 0, 0, H);
+    grd.addColorStop(0, 'rgba(0,0,0,0.55)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, W, H);
+    const cam = this.camView;
     const xOf = (az: number) => {
-      const p = this.project(new THREE.Vector3(...dirFromAzEl(az, this.pitch)), this.camLander);
+      const p = this.project(new THREE.Vector3(...dirFromAzEl(az, this.pitch)), cam);
       return p ? p.x * k : null;
     };
-    g.font = `${11 * k}px ui-monospace, Menlo, Consolas, monospace`;
-    g.textAlign = 'center';
     const names: Record<number, string> = { 0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SW', 270: 'W', 315: 'NW' };
+    g.textAlign = 'center';
+    g.textBaseline = 'alphabetic';
+    const mid = W / 2, fade = (x: number) => Math.max(0, 1 - Math.pow(Math.abs(x - mid) / (W * 0.5), 3));
     for (let az = 0; az < 360; az += 5) {
-      const d = ((az - this.yaw + 540) % 360) - 180;
-      if (Math.abs(d) > 75) continue;
+      if (Math.abs(wrap180(az - this.yaw)) > 80) continue;
       const x = xOf(az);
       if (x == null || x < 0 || x > W) continue;
+      const a = fade(x);
       const major = az % 15 === 0;
-      g.strokeStyle = 'rgba(200,215,230,0.6)'; g.lineWidth = k;
-      g.beginPath(); g.moveTo(x, H); g.lineTo(x, H - (major ? 9 : 5) * k); g.stroke();
-      if (major) {
-        g.fillStyle = names[az] ? '#f0e442' : 'rgba(220,230,240,0.85)';
-        g.fillText(names[az] ?? String(az), x, 12 * k);
+      g.fillStyle = `rgba(230,236,242,${(major ? 0.7 : 0.35) * a})`;
+      g.fillRect(Math.round(x), H - (major ? 12 : 7) * k, Math.max(1, k), (major ? 8 : 4) * k);
+      if (major && Math.abs(x - mid) > 34 * k) {
+        g.font = `${names[az] ? 600 : 400} ${11 * k}px Inter, system-ui, sans-serif`;
+        g.fillStyle = `rgba(230,236,242,${(names[az] ? 0.95 : 0.6) * a})`;
+        g.fillText(names[az] ?? String(az), x, 17 * k);
       }
     }
-    const mark = (b: BodyReadout, color: string, label: string) => {
-      const d = ((b.az - this.yaw + 540) % 360) - 180;
-      let x = Math.abs(d) <= 75 ? xOf(b.az) : null;
-      let edge = false;
-      if (x == null || x < 0 || x > W) { x = d < 0 ? 10 * k : W - 10 * k; edge = true; }
-      g.fillStyle = color;
-      g.beginPath(); g.moveTo(x, H - 1 * k); g.lineTo(x - 6 * k, H - 11 * k); g.lineTo(x + 6 * k, H - 11 * k); g.closePath();
-      if (b.visible) g.fill(); else { g.strokeStyle = color; g.lineWidth = 1.5 * k; g.stroke(); }
-      g.fillText(edge ? (d < 0 ? `◂ ${label} ${b.az.toFixed(0)}°` : `${label} ${b.az.toFixed(0)}° ▸`) : `${label} ${b.az.toFixed(0)}°`, x + (edge ? (d < 0 ? 40 : -40) * k : 0), H - 14 * k);
+    const mark = (b: BodyReadout, color: string) => {
+      const d = wrap180(b.az - this.yaw);
+      let x = Math.abs(d) <= 80 ? xOf(b.az) : null;
+      const off = x == null || x < 8 * k || x > W - 8 * k;
+      if (off) x = d < 0 ? 10 * k : W - 10 * k;
+      const y = H - 16 * k;
+      g.lineWidth = 1.5 * k;
+      g.strokeStyle = color; g.fillStyle = color;
+      if (off) {
+        g.beginPath();
+        const s = d < 0 ? -1 : 1;
+        g.moveTo(x! + s * 5 * k, y); g.lineTo(x! - s * 2 * k, y - 4 * k); g.lineTo(x! - s * 2 * k, y + 4 * k); g.closePath(); g.fill();
+      } else {
+        g.beginPath(); g.arc(x!, y, 4 * k, 0, Math.PI * 2);
+        if (b.visible) g.fill(); else g.stroke();
+      }
     };
-    mark(r.sun, '#e69f00', 'SUN');
-    mark(r.earth, '#56b4e9', 'EARTH');
-    // Centre index (where the camera points).
-    g.fillStyle = '#f0e442';
-    g.fillRect(W / 2 - k, 14 * k, 2 * k, 8 * k);
+    mark(r.sun, '#e69f00');
+    mark(r.earth, '#56b4e9');
+    // heading readout
+    const hd = `${String(Math.round(this.yaw) % 360).padStart(3, '0')}° ${compass(this.yaw)}`;
+    g.font = `500 ${12 * k}px "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, "DejaVu Sans Mono", monospace`;
+    const tw = g.measureText(hd).width + 14 * k;
+    g.fillStyle = 'rgba(12,16,22,0.8)';
+    g.strokeStyle = 'rgba(255,255,255,0.18)'; g.lineWidth = k;
+    g.beginPath(); g.roundRect(mid - tw / 2, 4 * k, tw, 18 * k, 4 * k); g.fill(); g.stroke();
+    g.fillStyle = '#f2f5f8';
+    g.fillText(hd, mid, 17 * k);
+    g.fillRect(mid - 0.5 * k, 24 * k, k, 10 * k);
   }
 
   dispose() {
     cancelAnimationFrame(this.raf); this.raf = 0;
     document.removeEventListener('keydown', this.onKey);
+    document.removeEventListener('pointerdown', this.onDocDown);
+    document.removeEventListener('fullscreenchange', this.onFs);
     this.resizeObs?.disconnect(); this.interObs?.disconnect();
     this.terrain?.dispose(); this.lander?.dispose(); this.sky?.dispose(); this.globe?.dispose();
     this.orbit?.dispose(); this.globeCtl?.dispose();
     this.sunLight.shadow.map?.dispose();
+    this.post?.dispose();
+    disposeLanderEnv();
+    disposeTextures();
     this.renderer?.dispose();
     this.root.remove();
   }
@@ -810,7 +1017,7 @@ export function mountSim(slot: HTMLElement | null, ctx: SimContext): void {
   }
 }
 
-/** Tear everything down (WebGL context, geometries, listeners). */
+/** Tear everything down (WebGL context, geometries, listeners, cached textures). */
 export function unmountSim(): void {
   sim?.dispose();
   sim = null;
