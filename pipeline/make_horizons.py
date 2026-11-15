@@ -201,8 +201,17 @@ def nullable(arr, digits):
     return [None if not np.isfinite(v) else round(float(v), digits) for v in arr]
 
 
+def sphere_dip_deg(site, mast_m=None):
+    """Geometric dip of the horizon for an observer on a smooth sphere: -acos(R / (R + h)).
+    R = 1737.4 km + site elevation, h = mast height. About -0.0869 deg for 2 m. Same rule as the
+    app's custom-site code, so a catalogue site and a typed-in site agree."""
+    r_km = C.MOON_R_KM + C.site_elev_km(site)
+    h_km = (MAST_M if mast_m is None else mast_m) / 1000.0
+    return -float(np.degrees(np.arccos(r_km / (r_km + h_km))))
+
+
 def sphere_doc(site):
-    zeros = [0.0] * 720
+    zeros = [round(sphere_dip_deg(site), 4)] * 720
     return {"schema_version": 1, "site_id": site["id"], "mast_m": MAST_M, "az_step_deg": 0.5,
             "elev_deg": zeros, "elev_lo_deg": zeros, "elev_hi_deg": zeros,
             "occluder": {"dist_m": [None] * 720, "lat": [None] * 720,
@@ -417,7 +426,7 @@ def main():
         else:
             doc = sphere_doc(site)
             reports[site["id"]] = {"site_id": site["id"], "sphere": True}
-            print(f"{site['id']:17s} sphere: flat 0 deg horizon, null occluders")
+            print(f"{site['id']:17s} sphere: flat horizon at the 2 m dip ({doc["elev_deg"][0]} deg), null occluders")
         C.write_json(out, doc)
     C.write_json(C.REPORTS / "horizons.json", {"sites": reports, "mast_m": MAST_M,
                  "max_range_km": MAX_RANGE_KM, "band_method": BAND_METHOD}, indent=1)

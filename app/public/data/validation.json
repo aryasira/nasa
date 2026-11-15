@@ -1,0 +1,290 @@
+{
+ "schema_version": 1,
+ "horizons_check": {
+  "source": "NASA JPL Horizons API, apparent airless azimuth and elevation for an observer on the lunar surface",
+  "n_fixtures": 160,
+  "n_epochs": 60,
+  "n_sites": 7,
+  "site_ids": [
+   "apollo11",
+   "apollo12",
+   "chandrayaan3",
+   "change6",
+   "im1",
+   "im2",
+   "slim"
+  ],
+  "bodies": [
+   "earth",
+   "sun"
+  ],
+  "tol_deg": 0.01,
+  "passed": true,
+  "n_failures": 0,
+  "max_az_gap_deg": 0.0001,
+  "max_el_gap_deg": 0.00069,
+  "max_earth_parallax_deg": 0.2767,
+  "sun_diameter_deg": [
+   0.5231,
+   0.5437
+  ],
+  "max_gap_as_fraction_of_sun_diameter": {
+   "one_over": 750,
+   "exact_ratio": 758.1,
+   "text": "about 1/750 of the Sun's width"
+  },
+  "run_git_sha": "883519165917d8cd22bef4827266bfeef98bf362",
+  "fixtures_git_sha": "00efaf4d31268b5bb586f7bde0bc2377bbe39264"
+ },
+ "benchmark": {
+  "site_id": "connecting_ridge",
+  "span_utc": [
+   "2023-01-01T00:00:00Z",
+   "2030-12-31T23:00:00Z"
+  ],
+  "years": 8.0,
+  "step_s": 3600,
+  "mast_m": 2,
+  "ours_limb_pct": 91.25,
+  "ours_limb_band_pct": [
+   88.18,
+   93.09
+  ],
+  "ours_centre_pct": 86.56,
+  "published": {
+   "pct": 92.27,
+   "height_above_ground_m": 2,
+   "source": "Glaeser et al. 2014, Icarus 243, 78-90, doi:10.1016/j.icarus.2014.08.013",
+   "method": "19-year run on a 20 m/pixel LOLA terrain model"
+  },
+  "published_inside_our_band": true,
+  "differences": "Different time span and newer DEM: ours is the 5 m PGDA 78 site model inside the 80 m PGDA 90 grid over the ephemeris span; the paper used a 20 m/pixel model over 19 years. A plausibility check, not a numeric validation."
+ },
+ "lead_lines": [
+  {
+   "site_id": "im1",
+   "which": "baseline",
+   "start_utc": "2024-01-19T23:24:00Z",
+   "stay_days": 7,
+   "sunlit_h": 155.5,
+   "sunlit_h_range": [
+    148.8,
+    157.0
+   ],
+   "both_visible_h": 155.5,
+   "both_visible_h_range": [
+    148.8,
+    157.0
+   ],
+   "text": "sunlit hours for the 7-day IM-1 Odysseus (near Malapert A) stay from 2024-01-19 23:24 UTC (baseline): 155.5 h, range 148.8 to 157.0 h across the terrain error band"
+  },
+  {
+   "site_id": "im1",
+   "which": "+10 d",
+   "start_utc": "2024-01-29T23:24:00Z",
+   "stay_days": 7,
+   "sunlit_h": 82.0,
+   "sunlit_h_range": [
+    81.7,
+    82.3
+   ],
+   "both_visible_h": 82.0,
+   "both_visible_h_range": [
+    81.7,
+    82.3
+   ],
+   "text": "sunlit hours for the 7-day IM-1 Odysseus (near Malapert A) stay from 2024-01-29 23:24 UTC (+10 d): 82.0 h, range 81.7 to 82.3 h across the terrain error band"
+  },
+  {
+   "site_id": "im2",
+   "which": "baseline",
+   "start_utc": "2025-03-06T17:29:00Z",
+   "stay_days": 10,
+   "sunlit_h": 240.0,
+   "sunlit_h_range": [
+    240.0,
+    240.0
+   ],
+   "both_visible_h": 240.0,
+   "both_visible_h_range": [
+    240.0,
+    240.0
+   ],
+   "text": "sunlit hours for the 10-day IM-2 Athena (Mons Mouton) stay from 2025-03-06 17:29 UTC (baseline): 240.0 h, range 240.0 to 240.0 h across the terrain error band"
+  },
+  {
+   "site_id": "im2",
+   "which": "+7 d",
+   "start_utc": "2025-03-13T17:29:00Z",
+   "stay_days": 10,
+   "sunlit_h": 149.5,
+   "sunlit_h_range": [
+    149.3,
+    149.7
+   ],
+   "both_visible_h": 149.5,
+   "both_visible_h_range": [
+    149.3,
+    149.7
+   ],
+   "text": "sunlit hours for the 10-day IM-2 Athena (Mons Mouton) stay from 2025-03-13 17:29 UTC (+7 d): 149.5 h, range 149.3 to 149.7 h across the terrain error band"
+  },
+  {
+   "site_id": "connecting_ridge",
+   "which": "baseline",
+   "start_utc": "2025-03-06T17:30:00Z",
+   "stay_days": 10,
+   "sunlit_h": 240.0,
+   "sunlit_h_range": [
+    240.0,
+    240.0
+   ],
+   "both_visible_h": 208.8,
+   "both_visible_h_range": [
+    208.8,
+    208.8
+   ],
+   "text": "sunlit hours for the 10-day Connecting Ridge (Shackleton\u2013de Gerlache) stay from 2025-03-06 17:30 UTC (baseline): 240.0 h, range 240.0 to 240.0 h across the terrain error band"
+  },
+  {
+   "site_id": "connecting_ridge",
+   "which": "+7 d",
+   "start_utc": "2025-03-13T17:30:00Z",
+   "stay_days": 10,
+   "sunlit_h": 240.0,
+   "sunlit_h_range": [
+    240.0,
+    240.0
+   ],
+   "both_visible_h": 40.8,
+   "both_visible_h_range": [
+    40.8,
+    40.8
+   ],
+   "text": "sunlit hours for the 10-day Connecting Ridge (Shackleton\u2013de Gerlache) stay from 2025-03-13 17:30 UTC (+7 d): 240.0 h, range 240.0 to 240.0 h across the terrain error band"
+  }
+ ],
+ "bands": {
+  "method": "envelope: terrain raised by its published per-pixel height error and the observer lowered by the error at the site (upper edge), and the reverse (lower edge). Grid-spacing error is not included.",
+  "sites": {
+   "im1": {
+    "sigma_m": 0.38,
+    "site_sigma_m": 0.773,
+    "full_width_at_peak_deg": 0.3382,
+    "median_full_width_deg": 0.112,
+    "max_full_width_deg": 1.3344,
+    "flag_wide": false
+   },
+   "im2": {
+    "sigma_m": 0.16,
+    "site_sigma_m": 0.136,
+    "full_width_at_peak_deg": 0.002,
+    "median_full_width_deg": 0.0032,
+    "max_full_width_deg": 0.1686,
+    "flag_wide": false
+   },
+   "chandrayaan3": {
+    "sigma_m": 0.462,
+    "site_sigma_m": 0.152,
+    "full_width_at_peak_deg": 0.0052,
+    "median_full_width_deg": 0.0034,
+    "max_full_width_deg": 0.2318,
+    "flag_wide": false
+   },
+   "connecting_ridge": {
+    "sigma_m": 0.198,
+    "site_sigma_m": 0.375,
+    "full_width_at_peak_deg": 0.1986,
+    "median_full_width_deg": 0.2438,
+    "max_full_width_deg": 1.5788,
+    "flag_wide": false
+   },
+   "shackleton_sr1": {
+    "sigma_m": 0.124,
+    "site_sigma_m": 0.105,
+    "full_width_at_peak_deg": 0.0026,
+    "median_full_width_deg": 0.0044,
+    "max_full_width_deg": 0.3536,
+    "flag_wide": false
+   },
+   "shackleton_sr2": {
+    "sigma_m": 0.118,
+    "site_sigma_m": 0.109,
+    "full_width_at_peak_deg": 0.0036,
+    "median_full_width_deg": 0.0104,
+    "max_full_width_deg": 0.6568,
+    "flag_wide": false
+   }
+  }
+ },
+ "im1_near_field": {
+  "status": "not run"
+ },
+ "products": {
+  "kernels": [
+   {
+    "name": "naif0012.tls",
+    "bytes": 5257,
+    "sha256": "678e32bdb5a744117a467cd9601cd6b373f0e9bc9bbde1371d5eee39600a039b",
+    "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls"
+   },
+   {
+    "name": "pck00011.tpc",
+    "bytes": 131226,
+    "sha256": "3dff7b1dbeceaa01f25467767d3fa25816051c85d162d1edf04acb310ee28bb1",
+    "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc"
+   },
+   {
+    "name": "moon_pa_de440_200625.bpc",
+    "bytes": 12863488,
+    "sha256": "60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f",
+    "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/moon_pa_de440_200625.bpc"
+   },
+   {
+    "name": "moon_de440_250416.tf",
+    "bytes": 19478,
+    "sha256": "a47c71e9c9f33796bdafb2c9d69a7ee447b6016ecad80f71cd6f3e479f9cf768",
+    "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/satellites/moon_de440_250416.tf"
+   },
+   {
+    "name": "de440s.bsp",
+    "bytes": 32726016,
+    "sha256": "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2",
+    "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp"
+   }
+  ],
+  "spice": "CSPICE_N0067 via spiceypy 8.4.0",
+  "terrain_files": [
+   "LDEM_60S_240MPP_ADJ.TIF",
+   "LDEM_60S_240MPP_ADJ_ERR.TIF",
+   "LDEM_80S_40MPP_ADJ.TIF",
+   "LDEM_80S_40MPP_ADJ_ERR.TIF",
+   "LDEM_80S_80MPP_ADJ.TIF",
+   "LDEM_80S_80MPP_ADJ_ERR.TIF",
+   "Site01_final_adj_5mpp_surf.tif",
+   "Site01_final_adj_5mpp_toterr.tif"
+  ],
+  "terrain_sources": [
+   {
+    "name": "NASA GSFC PGDA product 90, LOLA south polar DEMs",
+    "cite": "Barker et al. 2023, Planet. Sci. J. 4, 183, doi:10.3847/PSJ/acf3e1",
+    "url": "https://pgda.gsfc.nasa.gov/products/90"
+   },
+   {
+    "name": "NASA GSFC PGDA product 78, LOLA 5 m site DEMs",
+    "cite": "Barker et al. 2021, Planet. Space Sci. 203, 105119",
+    "url": "https://pgda.gsfc.nasa.gov/products/78"
+   }
+  ],
+  "ephemeris_check": {
+   "name": "NASA JPL Horizons API",
+   "url": "https://ssd.jpl.nasa.gov/api/horizons.api"
+  }
+ },
+ "meta": {
+  "ai_generated": true,
+  "generated_by": "pipeline/make_validation.py",
+  "git_sha": "4677a0925cbfce9c5ac9e86100abbe7991a0df96",
+  "mock": false
+ }
+}

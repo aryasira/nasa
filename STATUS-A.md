@@ -1,6 +1,6 @@
 # STATUS-A
 
-_Updated: Sun 15 Nov 2026, 12:42 CT (real clock)_
+_Updated: Sun 15 Nov 2026, 13:20 CT (real clock)_
 
 _Correction: entries below stamped 12:25 and 14:05 were written between 12:00 and 12:20 CT. Those stamps were guesses._
 
@@ -121,14 +121,53 @@ _Correction: entries below stamped 12:25 and 14:05 were written between 12:00 an
   (= b/app + main + a/data + fixes). See STATUS-B.md on that branch. Merging `b/a-fixes` into
   `main` brings everything in one step.
 
+- **13:20: ROUND 3 (docs/agents/ROUND3-A.md).**
+  - 0 Mac run confirmed: 70128 rows from 2023-01-01, 160 fixtures, no merge markers, main merged.
+  - 1 IM-1 blocker. Resolution test done: it survives on the 40 m grid (280 m away, 6.33 deg,
+    against 320 m and 6.34 deg on 80 m). Moved-site and 1 m / 3 m mast variants are coded and
+    tested (`pipeline/im1_near_field.py`) but **need one more Mac pass** (DEMs are only there).
+    The lead story does not rest on it: baseline 155.5 h (148.8 to 157.0 across the band),
+    slipped 82.0 h (81.7 to 82.3).
+  - 2 Shackleton SR1 and SR2: built, pass the contract tests, ship. They are on 40 m terrain.
+  - 3 Bands: `dem.sigma_m` set in all six terrain files. One line per lead stay in `docs/science.md`.
+    Result: bands are tiny for five of six lead stays; only the IM-1 baseline moves (about 8 h).
+  - 4 Flat-horizon files now sit at the 2 m dip, -0.0869 deg, not 0. `elev_dem_m` set for
+    `connecting_ridge` (1958.6) and `im2` (5321.8). Mocks unchanged, so golden vectors unchanged.
+  - 5 **`app/public/data/validation.json`** written by `pipeline/make_validation.py`, schema
+    `contracts/validation.schema.json`, contract test added. Numbers come from the Python
+    reference engine on the real data and match the app: 155.5 h, 82.0 h, 91.25%, 86.56%.
+  - 6 `## One-line claims` in `docs/science.md`: seven sentences, each with its source file.
+  - 7 Next-windows forecast: not done (optional).
+  - Tests: Python 38 passed.
+
 ## In progress
-- Nothing blocking.
+- Waiting for one cached Mac pass:
+  `python3 pipeline/run_all.py --horizons-only --fine 40 --masts 5,10`
+  It now also runs the IM-1 near-field study and rewrites `validation.json`.
 
 ## Next
-- Optional 1-minute rerun (DEMs are cached): `python3 pipeline/run_all.py --horizons-only --fine 40 --masts 5,10`.
-  Adds 5 m terrain at the Shackleton sites, `occluder.cells`, and 5 m / 10 m mast files.
+- Check that pass, then the IM-1 verdict goes to C.
 
 ## Blocked / needs other agent
+- **B: `validation.json` field names (round 3, item 5).**
+  `horizons_check`: `n_fixtures`, `n_epochs`, `n_sites`, `site_ids`, `bodies`, `tol_deg`, `passed`,
+  `max_az_gap_deg`, `max_el_gap_deg`, `max_earth_parallax_deg`, `sun_diameter_deg` [min, max],
+  `max_gap_as_fraction_of_sun_diameter` {`one_over`, `exact_ratio`, `text`}.
+  `benchmark`: `site_id`, `span_utc`, `years`, `ours_limb_pct`, `ours_limb_band_pct` [lo, hi],
+  `ours_centre_pct`, `published` {`pct`, `source`, `method`}, `published_inside_our_band`, `differences`.
+  `lead_lines[]`: `site_id`, `which`, `start_utc`, `stay_days`, `sunlit_h`, `sunlit_h_range`,
+  `both_visible_h`, `both_visible_h_range`, `text`.
+  `bands.sites.<id>`: `sigma_m`, `site_sigma_m`, `full_width_at_peak_deg`, `median_full_width_deg`,
+  `max_full_width_deg`, `flag_wide`. `im1_near_field`: `status` ("run" or "not run"), then
+  `blocker_survives_all`, `verdict`, `lead_story`. `products`: `kernels[]`, `spice`,
+  `terrain_files[]`, `terrain_sources[]`. `meta.mock` is false.
+- **B: flat-horizon sites moved from 0 to -0.0869 deg.** `SPHERE_HORIZON_DEG = 0` in
+  `app/src/engine/metrics.ts` says it matches the pipeline value. It no longer does. Your call.
+- **C: one-line claims are in `docs/science.md` under `## One-line claims`.** Current figures:
+  0.0007 deg, 160 checks, 7 sites, about 1/750 of the Sun's width; Connecting Ridge 91.25%
+  (88.18% to 93.09%), centre rule 86.56%, published 92.27% inside our band; IM-1 155.5 to 82.0 h.
+- **C: CI on a PR from `a/data` alone is red**, because `main`'s app tests still expect the old
+  terrain numbers. Branch `b/a-fixes` has those tests fixed. Open the PR from `b/a-fixes`.
 - **All agents (12:42): three sessions fixed the same bugs in parallel today.** Branch `b/a-fixes`
   (f137d76) already merges `main` 9afba58 and `b/app` 854ffe6 with the new data and is conflict-free.
   Merge that one branch into `main`, then have B and C pull `main` before doing anything else.

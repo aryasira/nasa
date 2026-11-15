@@ -544,6 +544,46 @@
    "fine": "40",
    "seconds": 7.2,
    "note": "In this run the 40 m grid was read ahead of the Site04 5 m tile, so the 5 m tile set no sample. Fixed in the pipeline; these files describe what was actually used."
+  },
+  "apollo14": {
+   "site_id": "apollo14",
+   "sphere": true
+  },
+  "apollo15": {
+   "site_id": "apollo15",
+   "sphere": true
+  },
+  "apollo16": {
+   "site_id": "apollo16",
+   "sphere": true
+  },
+  "apollo17": {
+   "site_id": "apollo17",
+   "sphere": true
+  },
+  "surveyor7": {
+   "site_id": "surveyor7",
+   "sphere": true
+  },
+  "luna17": {
+   "site_id": "luna17",
+   "sphere": true
+  },
+  "luna24": {
+   "site_id": "luna24",
+   "sphere": true
+  },
+  "change3": {
+   "site_id": "change3",
+   "sphere": true
+  },
+  "change4": {
+   "site_id": "change4",
+   "sphere": true
+  },
+  "change5": {
+   "site_id": "change5",
+   "sphere": true
   }
  },
  "mast_m": 2.0,
@@ -552,7 +592,7 @@
  "meta": {
   "ai_generated": true,
   "generated_by": "pipeline/horizons",
-  "git_sha": "00efaf4d31268b5bb586f7bde0bc2377bbe39264",
+  "git_sha": "4677a0925cbfce9c5ac9e86100abbe7991a0df96",
   "mock": false
  }
 }

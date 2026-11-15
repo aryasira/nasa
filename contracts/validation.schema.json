@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "validation.schema.json",
+  "title": "Validation scorecard (app/public/data/validation.json)",
+  "description": "AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. Written by pipeline/make_validation.py. Owner: Agent A. Added Sun 15 Nov (round 3).",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "horizons_check",
+    "benchmark",
+    "lead_lines",
+    "bands",
+    "im1_near_field",
+    "products",
+    "meta"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "horizons_check": {
+      "type": "object",
+      "required": [
+        "n_fixtures",
+        "n_epochs",
+        "n_sites",
+        "bodies",
+        "tol_deg",
+        "passed",
+        "max_az_gap_deg",
+        "max_el_gap_deg",
+        "sun_diameter_deg",
+        "max_gap_as_fraction_of_sun_diameter"
+      ],
+      "properties": {
+        "n_fixtures": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "n_epochs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "n_sites": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "bodies": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "sun",
+              "earth"
+            ]
+          }
+        },
+        "tol_deg": {
+          "type": "number"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "max_az_gap_deg": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_el_gap_deg": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sun_diameter_deg": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "max_gap_as_fraction_of_sun_diameter": {
+          "type": "object",
+          "required": [
+            "one_over",
+            "exact_ratio",
+            "text"
+          ],
+          "properties": {
+            "one_over": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "exact_ratio": {
+              "type": "number"
+            },
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "benchmark": {
+      "type": "object",
+      "required": [
+        "site_id",
+        "span_utc",
+        "years",
+        "ours_limb_pct",
+        "ours_limb_band_pct",
+        "ours_centre_pct",
+        "published",
+        "published_inside_our_band",
+        "differences"
+      ],
+      "properties": {
+        "site_id": {
+          "type": "string"
+        },
+        "span_utc": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "years": {
+          "type": "number"
+        },
+        "ours_limb_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "ours_limb_band_pct": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "ours_centre_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "published": {
+          "type": "object",
+          "required": [
+            "pct",
+            "source"
+          ],
+          "properties": {
+            "pct": {
+              "type": "number"
+            },
+            "source": {
+              "type": "string"
+            }
+          }
+        },
+        "published_inside_our_band": {
+          "type": "boolean"
+        },
+        "differences": {
+          "type": "string"
+        }
+      }
+    },
+    "lead_lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "site_id",
+          "which",
+          "start_utc",
+          "stay_days",
+          "sunlit_h",
+          "sunlit_h_range",
+          "both_visible_h",
+          "both_visible_h_range",
+          "text"
+        ],
+        "properties": {
+          "site_id": {
+            "type": "string"
+          },
+          "which": {
+            "type": "string"
+          },
+          "start_utc": {
+            "type": "string"
+          },
+          "stay_days": {
+            "type": "number"
+          },
+          "sunlit_h": {
+            "type": "number"
+          },
+          "sunlit_h_range": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "both_visible_h": {
+            "type": "number"
+          },
+          "both_visible_h_range": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "bands": {
+      "type": "object",
+      "required": [
+        "sites"
+      ],
+      "properties": {
+        "method": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sites": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "sigma_m",
+              "full_width_at_peak_deg",
+              "median_full_width_deg",
+              "flag_wide"
+            ]
+          }
+        }
+      }
+    },
+    "im1_near_field": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "run",
+            "not run"
+          ]
+        },
+        "blocker_survives_all": {
+          "type": "boolean"
+        },
+        "verdict": {
+          "type": "string"
+        }
+      }
+    },
+    "products": {
+      "type": "object",
+      "required": [
+        "kernels",
+        "terrain_files",
+        "terrain_sources"
+      ]
+    },
+    "meta": {
+      "type": "object",
+      "required": [
+        "ai_generated",
+        "generated_by",
+        "git_sha",
+        "mock"
+      ],
+      "properties": {
+        "ai_generated": {
+          "const": true
+        },
+        "mock": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
