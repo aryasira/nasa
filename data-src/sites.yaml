@@ -118,6 +118,28 @@ sites:
     terrain: lola
     validation_use: none
     story: "Illuminated 92.27% of the time at 2 m (Gläser 2014)."
+  - id: shackleton_sr1
+    name: "Shackleton rim SR1"
+    kind: candidate
+    lat: -89.7742     # Gläser 2014, 2 m above ground; longitude read as east-positive 0-360
+    lon_e: 203.4952
+    elev_m: null
+    frame: MOON_ME
+    source: { org: "Gläser et al. 2014, Icarus 243:78-90", url: "https://elib.dlr.de/94240", quote: "SR1 at 89.7742°S, 203.4952°E; SR2 at 89.6871°S, 197.0983°E" }
+    name_status: informal
+    terrain: lola
+    validation_use: none
+  - id: shackleton_sr2
+    name: "Shackleton rim SR2"
+    kind: candidate
+    lat: -89.6871
+    lon_e: 197.0983
+    elev_m: null
+    frame: MOON_ME
+    source: { org: "Gläser et al. 2014, Icarus 243:78-90", url: "https://elib.dlr.de/94240" }
+    name_status: informal
+    terrain: lola
+    validation_use: none
 meta:
   ai_generated: true
   generated_by: data-src/sites.yaml (hand-curated)

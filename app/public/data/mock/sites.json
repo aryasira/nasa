@@ -178,6 +178,39 @@
       "terrain": "lola",
       "validation_use": "none",
       "story": "Illuminated 92.27% of the time at 2 m (Gl\u00e4ser 2014)."
+    },
+    {
+      "id": "shackleton_sr1",
+      "name": "Shackleton rim SR1",
+      "kind": "candidate",
+      "lat": -89.7742,
+      "lon_e": 203.4952,
+      "elev_m": null,
+      "frame": "MOON_ME",
+      "source": {
+        "org": "Gl\u00e4ser et al. 2014, Icarus 243:78-90",
+        "url": "https://elib.dlr.de/94240",
+        "quote": "SR1 at 89.7742\u00b0S, 203.4952\u00b0E; SR2 at 89.6871\u00b0S, 197.0983\u00b0E"
+      },
+      "name_status": "informal",
+      "terrain": "lola",
+      "validation_use": "none"
+    },
+    {
+      "id": "shackleton_sr2",
+      "name": "Shackleton rim SR2",
+      "kind": "candidate",
+      "lat": -89.6871,
+      "lon_e": 197.0983,
+      "elev_m": null,
+      "frame": "MOON_ME",
+      "source": {
+        "org": "Gl\u00e4ser et al. 2014, Icarus 243:78-90",
+        "url": "https://elib.dlr.de/94240"
+      },
+      "name_status": "informal",
+      "terrain": "lola",
+      "validation_use": "none"
     }
   ],
   "meta": {
