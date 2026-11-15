@@ -221,8 +221,10 @@ IDs, curated by Agent C) plus two informal summits, "Connecting Ridge" and "Peak
 Shackleton", each placed at the highest pixel of its PGDA 78 site DEM. An occluder gets a
 feature's id when it lies within 1.1 times the feature's radius of the feature's centre
 (the margin lets a crater rim carry the crater's name). When several features contain it,
-the smallest wins. Occluders outside every feature stay null and must be shown as unnamed
-terrain. A name says which mapped feature the blocking terrain belongs to, not which part
+the smallest wins. A feature that contains the site itself is skipped: at a site on Mons
+Mouton nearly every direction would otherwise read "Mons Mouton", which names the ground
+underfoot, not an obstacle. Those ids are listed in `site_used.stands_on`. Occluders outside
+every remaining feature stay null and must be shown as unnamed terrain. A name says which mapped feature the blocking terrain belongs to, not which part
 of it.
 
 ## 7. Earlier checks with the same ray-marcher (run by the human on 14 Nov 2026)

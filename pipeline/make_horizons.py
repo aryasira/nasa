@@ -142,15 +142,32 @@ def features_doc(feats=None):
             "features": load_features() if feats is None else feats}
 
 
-def match_features(lat, lon, feats):
+def gc_km(lat1, lon1, lat2, lon2):
+    a1, o1, a2, o2 = (np.radians(v) for v in (lat1, lon1, lat2, lon2))
+    cosd = np.sin(a1) * np.sin(a2) + np.cos(a1) * np.cos(a2) * np.cos(o1 - o2)
+    return C.MOON_R_KM * np.arccos(np.clip(cosd, -1, 1))
+
+
+def features_under_site(site_lat, site_lon, feats):
+    """Ids of the features the site itself stands on (same rule as matching)."""
+    return sorted(f["id"] for f in feats if f.get("radius_km")
+                  and gc_km(site_lat, site_lon, f["lat"], f["lon_e"]) <= RADIUS_MARGIN * f["radius_km"])
+
+
+def match_features(lat, lon, feats, site=None):
     """Feature id for each occluder cell, or None.
 
     A cell matches every feature whose centre is within RADIUS_MARGIN x
     radius_km (great-circle). Of those, the smallest feature wins, so a
-    summit inside a large mons keeps its own name."""
+    summit inside a large mons keeps its own name.
+
+    site = (lat, lon_e): features that contain the site are skipped. Naming
+    the ground the lander stands on in most directions says nothing about
+    what blocks the view. Such terrain stays unnamed (local terrain)."""
     out = [None] * len(lat)
     ok = np.isfinite(lat)
-    usable = [f for f in feats if f.get("radius_km")]
+    under = set(features_under_site(site[0], site[1], feats)) if site else set()
+    usable = [f for f in feats if f.get("radius_km") and f["id"] not in under]
     if not ok.any() or not usable:
         return out
     la, lo = np.radians(lat[ok]), np.radians(lon[ok])
@@ -226,7 +243,9 @@ def lola_doc(site, dirs, feats, fine=None, bands=True):
     sigma = (round(float(np.nanmedian(occ_sig)), 3)
              if has_band and np.isfinite(occ_sig).any() else None)
     half = (h["elev_hi_deg"] - h["elev_lo_deg"]) / 2.0
-    feature_id = match_features(h["occ_lat"], h["occ_lon_e"], feats)
+    feature_id = match_features(h["occ_lat"], h["occ_lon_e"], feats,
+                                site=(point["lat"], point["lon_e"]))
+    under = features_under_site(point["lat"], point["lon_e"], feats)
     used = [d["file"] for d in h["dems"]]
     doc = {
         "schema_version": 1, "site_id": site["id"], "mast_m": MAST_M, "az_step_deg": 0.5,
@@ -243,6 +262,7 @@ def lola_doc(site, dirs, feats, fine=None, bands=True):
                       "elev_dem_from": h["site_height_from"],
                       "elev_catalog_m": site.get("elev_m"),
                       "point_from": site.get("_from", "app/public/data/sites.json"),
+                      "stands_on": under,
                       "differs_from_catalog": site["id"] in OVERRIDE},
         "meta": C.meta("pipeline/make_horizons.py"),
     }
@@ -260,7 +280,7 @@ def lola_doc(site, dirs, feats, fine=None, bands=True):
         "elev_max_at_az_deg": float(h["az_deg"][int(e.argmax())]),
         "null_occluder_share": round(float(np.mean(~np.isfinite(h["occ_dist_m"]))), 3),
         "named_share": round(sum(f is not None for f in feature_id) / 720.0, 3),
-        "names_seen": sorted({f for f in feature_id if f}),
+        "names_seen": sorted({f for f in feature_id if f}), "stands_on": under,
         "coverage_min_km": round(float(h["coverage_km"].min()), 1),
         "occluder_dist_km_median": (None if not np.isfinite(h["occ_dist_m"]).any()
                                     else round(float(np.nanmedian(h["occ_dist_m"])) / 1000, 2)),
@@ -280,12 +300,41 @@ def lola_doc(site, dirs, feats, fine=None, bands=True):
     return doc, report
 
 
+def rematch(feats):
+    """Re-label the occluders of existing horizon files from their stored
+    occluder positions. Needs no DEM. Heights and angles are not touched."""
+    rep_doc = C.read_report("horizons.json") or {"sites": {}}
+    for path in sorted((C.DATA / "horizon").glob("*.json")):
+        doc = C.json.loads(path.read_text(encoding="utf-8"))
+        if doc["dem"]["product"] == "sphere" or "site_used" not in doc:
+            continue
+        o, su = doc["occluder"], doc["site_used"]
+        lat = np.array([np.nan if v is None else v for v in o["lat"]], dtype="float64")
+        lon = np.array([np.nan if v is None else v for v in o["lon_e"]], dtype="float64")
+        before = sum(f is not None for f in o["feature_id"])
+        o["feature_id"] = match_features(lat, lon, feats, site=(su["lat"], su["lon_e"]))
+        su["stands_on"] = features_under_site(su["lat"], su["lon_e"], feats)
+        doc["meta"]["relabelled_by"] = "pipeline/make_horizons.py --rematch at " + C.git_sha()
+        C.write_json(path, doc)
+        after = sum(f is not None for f in o["feature_id"])
+        r = rep_doc["sites"].get(doc["site_id"])
+        if r:
+            r["named_share"] = round(after / 720.0, 3)
+            r["names_seen"] = sorted({f for f in o["feature_id"] if f})
+            r["stands_on"] = su["stands_on"]
+        print(f"{doc['site_id']:17s} named azimuths {before} -> {after}, stands on {su['stands_on']}, "
+              f"names now {sorted({f for f in o['feature_id'] if f})}")
+    C.write_json(C.REPORTS / "horizons.json", rep_doc, indent=1)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dem-dir", action="append", default=[],
                     help="folder that already holds the DEM files; repeatable")
     ap.add_argument("--only", action="append", default=[], help="site id; repeatable")
     ap.add_argument("--fine", choices=sorted(FINE), help="finer near-field grid for im1 and im2 (large download)")
+    ap.add_argument("--rematch", action="store_true",
+                    help="only re-label occluders in existing horizon files (no DEM needed)")
     ap.add_argument("--no-bands", action="store_true", help="skip the error maps and the uncertainty band")
     args = ap.parse_args()
     dirs = args.dem_dir + ([os.environ["LOLA_DEM_DIR"]] if os.environ.get("LOLA_DEM_DIR") else []) + [C.CACHE]
@@ -294,6 +343,9 @@ def main():
     C.write_json(C.DATA / "features.json", features_doc(feats), indent=1)
     print(f"features.json: {len(feats)} features, "
           f"{sum(f['name_status'] == 'iau' for f in feats)} with IAU Gazetteer IDs")
+    if args.rematch:
+        rematch(feats)
+        return
     reports = (C.read_report("horizons.json") or {"sites": {}})["sites"]
     failed = []
     sites = C.load_sites()

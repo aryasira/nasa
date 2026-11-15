@@ -112,9 +112,9 @@ DEM sources:
 | Site | Point used (lat, lon E) | DEM height (m) | Catalogue (m) | Horizon min..max (deg) | Peak azimuth | Null occluders | Named | Coverage min (km) |
 |---|---|---:|---:|---|---:|---:|---:|---:|
 | im1 | -80.13, 1.44 | 2591.95 | 2579 | -0.244..11.053 | 152.0 | 0% | 0% | 216.8 |
-| im2 | -84.7906, 29.1957 | 5321.5 | None | -1.47..4.063 | 117.5 | 0% | 100% | 218.5 |
+| im2 | -84.7906, 29.1957 | 5321.5 | None | -1.47..4.063 | 117.5 | 0% | 7% | 218.5 |
 | chandrayaan3 | -69.3741, 32.32 | 529.72 | 532 | 0.379..2.451 | 350.0 | 0% | 0% | 210.2 |
-| connecting_ridge | -89.4399, 222.8524 | 1958.58 | None | -2.744..-0.516 | 184.5 | 0% | 82% | 218.9 |
+| connecting_ridge | -89.4399, 222.8524 | 1958.58 | None | -2.744..-0.516 | 184.5 | 0% | 19% | 218.9 |
 
 ## 5. Uncertainty bands
 
@@ -127,8 +127,10 @@ IDs, curated by Agent C) plus two informal summits, "Connecting Ridge" and "Peak
 Shackleton", each placed at the highest pixel of its PGDA 78 site DEM. An occluder gets a
 feature's id when it lies within 1.1 times the feature's radius of the feature's centre
 (the margin lets a crater rim carry the crater's name). When several features contain it,
-the smallest wins. Occluders outside every feature stay null and must be shown as unnamed
-terrain. A name says which mapped feature the blocking terrain belongs to, not which part
+the smallest wins. A feature that contains the site itself is skipped: at a site on Mons
+Mouton nearly every direction would otherwise read "Mons Mouton", which names the ground
+underfoot, not an obstacle. Those ids are listed in `site_used.stands_on`. Occluders outside
+every remaining feature stay null and must be shown as unnamed terrain. A name says which mapped feature the blocking terrain belongs to, not which part
 of it.
 
 ## 7. Earlier checks with the same ray-marcher (run by the human on 14 Nov 2026)

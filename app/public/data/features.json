@@ -3,7 +3,7 @@
  "meta": {
   "ai_generated": true,
   "generated_by": "pipeline/make_horizons.py",
-  "git_sha": "bd11f8f38917bffbbce4888ea10f802cfac73039",
+  "git_sha": "71a3431c08f5d4db35a044f99979a89cf730a985",
   "mock": false
  },
  "features": [

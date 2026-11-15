@@ -1,6 +1,6 @@
 # STATUS-A
 
-_Updated: Sat 14 Nov 2026, 23:55 CT_
+_Updated: Sun 15 Nov 2026, 00:05 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
 
@@ -73,6 +73,11 @@ _Updated: Sat 14 Nov 2026, 23:55 CT_
   - Tests: 32 total. 31 pass. **1 fails until the Mac run:** `tests/contracts::test_ephem[data]`,
     because the committed real `ephem.bin` still starts in 2024.
 
+- 00:05: occluder naming no longer uses a feature that contains the site. Committed files are
+  relabelled (`make_horizons.py --rematch`, no DEM needed) and the Mac run uses the same rule.
+  im2: named directions 720 to 49 (Malapert, Nobile). connecting_ridge: 591 to 138
+  (de Gerlache, Mons Malapert, Mons Mouton). The skipped ids are in `site_used.stands_on`.
+
 ## In progress
 - Waiting for the Mac run. Task 4 values (DEM heights) come from it.
 
@@ -80,6 +85,9 @@ _Updated: Sat 14 Nov 2026, 23:55 CT_
 - After the run: check residuals, band widths, new sites; fill task 4; final validation report.
 
 ## Blocked / needs other agent
+- **B:** `site_used.stands_on` lists the features the site stands on (im2: `mons_mouton`). Use it
+  for a "site is on Mons Mouton" label if wanted. Occluders on that ground are now null, so they
+  read as unnamed local terrain.
 - **Human / C: do not merge `a/data` into `main` before the Mac run.** The contract says 2023 but the
   real `ephem.bin` is still 2024 until then. One contract test is red in between.
 - **B:** after the Mac run the fixture count is 160, not 140, and the ephemeris has 70128 rows.

@@ -179,9 +179,16 @@ def test_horizon_files_meet_the_contract(tmp_path, monkeypatch):
     check(mh.sphere_doc({"id": "s"}), "horizon.schema.json")
     check(mh.features_doc(feats), "features.schema.json")
     i = int(np.argmax(doc["elev_deg"]))
-    # the smallest feature that contains the occluder wins
+    # the smallest feature that contains the occluder wins; big_mons (50 km)
+    # contains the site itself, so it is never used as an occluder name
     assert doc["occluder"]["feature_id"][i] == "test_peak"
-    assert set(rep["names_seen"]) == {"big_mons", "test_peak"}
+    assert set(rep["names_seen"]) == {"test_peak"} and doc["site_used"]["stands_on"] == ["big_mons"]
+    assert None in doc["occluder"]["feature_id"]
+    lat = np.array([plat, plat]); lon = np.array([plon % 360, plon % 360])
+    assert mh.match_features(lat, lon, feats) == ["test_peak"] * 2            # no site given
+    only_big = [feats[0]]
+    assert mh.match_features(lat, lon, only_big) == ["big_mons"] * 2
+    assert mh.match_features(lat, lon, only_big, site=(LAT, LON)) == [None, None]
     assert doc["site_used"]["differs_from_catalog"] is False
     assert doc["meta"]["ai_generated"] is True and doc["dem"]["sigma_m"] is None
     assert "band" not in doc and rep["band"].startswith("no band")
