@@ -284,3 +284,6 @@ function render(d: Data, s: State) {
     app.innerHTML = `<div class="error" role="alert">${esc((e as Error).message)}. If the real data is not built yet, open <a href="?data=mock">the mock data</a>.</div>`;
   }
 })();
+
+// Offline reload support (service worker owned by Agent C; not on localhost).
+if ('serviceWorker' in navigator && location.hostname !== 'localhost') navigator.serviceWorker.register('./sw.js').catch(() => {});
