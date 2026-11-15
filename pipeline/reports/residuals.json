@@ -105,5 +105,11 @@
   "tol_deg": 0.01,
   "max_earth_parallax_deg": 0.2767,
   "parallax_upper_bound_deg": 0.2793,
-  "passed": true
+  "passed": true,
+  "meta": {
+    "ai_generated": true,
+    "generated_by": "pipeline/check_vs_horizons.py",
+    "git_sha": "bd11f8f38917bffbbce4888ea10f802cfac73039",
+    "mock": false
+  }
 }

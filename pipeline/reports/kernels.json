@@ -30,5 +30,11 @@
       "bytes": 32726016,
       "sha256": "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2"
     }
-  ]
+  ],
+  "meta": {
+    "ai_generated": true,
+    "generated_by": "pipeline/get_kernels.py",
+    "git_sha": "bd11f8f38917bffbbce4888ea10f802cfac73039",
+    "mock": false
+  }
 }

@@ -54,8 +54,11 @@ def load_sites():
     return json.loads((DATA / "sites.json").read_text(encoding="utf-8"))["sites"]
 
 
-def write_json(path, doc, indent=None):
+def write_json(path, doc, indent=None, generated_by=None):
     path.parent.mkdir(parents=True, exist_ok=True)
+    if isinstance(doc, dict) and "meta" not in doc:
+        # Team rule: every JSON output carries a meta block.
+        doc = dict(doc, meta=meta(generated_by or "pipeline/" + path.stem))
     path.write_text(json.dumps(doc, indent=indent) + "\n", encoding="utf-8")
 
 

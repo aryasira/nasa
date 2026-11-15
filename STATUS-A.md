@@ -1,6 +1,6 @@
 # STATUS-A
 
-_Updated: Sat 14 Nov 2026, 15:10 CT_
+_Updated: Sat 14 Nov 2026, 19:25 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
 
@@ -43,6 +43,10 @@ _Updated: Sat 14 Nov 2026, 15:10 CT_
   - `docs/horizons-flags.md` (verbatim legend from a live Horizons reply) and `docs/science.md`.
   - Tests: 28 passing (`python -m pytest -q tests pipeline/tests`).
 
+- 19:25 recheck: tests 28 passing, residual check PASS, all nine horizons valid, no secrets,
+  no banned claims. Fixed one gap: `pipeline/reports/*.json` had no `meta` block. `write_json`
+  now adds it; the five existing reports are stamped with the commit that produced them.
+
 ## In progress
 - Uncertainty bands from the DEM error maps (currently lo = hi = elev, `sigma_m: null`).
 
@@ -52,6 +56,8 @@ _Updated: Sat 14 Nov 2026, 15:10 CT_
   on the 80 m grid, so the 11.05 deg peak is sensitive to grid size).
 
 ## Blocked / needs other agent
+- **Human:** `main` is still the scaffold commit 84dcbb4 at 19:25 CT. The 17:00 merge did not
+  happen. `a/data` (and `b/app`, `c/work`) are waiting to be merged.
 - **Human:** this cloud workspace gets HTTP 403 from naif.jpl.nasa.gov, ssd.jpl.nasa.gov,
   pgda.gsfc.nasa.gov and imbrium.mit.edu. Every download and every Horizons query must run
   on a local machine: `pip install -r pipeline/requirements.txt`, then `python pipeline/run_all.py`.

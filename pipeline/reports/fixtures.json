@@ -114,5 +114,11 @@
     }
   ],
   "n_fixtures": 140,
-  "tol_deg": 0.01
+  "tol_deg": 0.01,
+  "meta": {
+    "ai_generated": true,
+    "generated_by": "pipeline/fetch_horizons.py",
+    "git_sha": "bd11f8f38917bffbbce4888ea10f802cfac73039",
+    "mock": false
+  }
 }
