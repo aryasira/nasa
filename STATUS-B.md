@@ -4,6 +4,12 @@ _Updated: Sun 15 Nov 2026, 12:58 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
 
+## Data refresh (Sun 13:05 CT)
+Merged `origin/main` (f8509b0) with Agent A's new data. The verdict strip reads every number from the engine, so
+the IM-1 example now shows **155.5 → 82.0 h** on its own (was 155.3 with the earlier horizon). No figure is
+hard-coded in the app; the "after" screenshots in `docs/design/` were retaken on the new data. Older notes
+further down this file that say 155.3 describe the earlier data. 47 tests pass.
+
 ## Round 3: visual redesign below the simulator (Sun, PR #7 opened about 12:50 CT)
 Times in the two sections below were estimates written during the work; the real clock was earlier than stated.
 UI only. No engine maths, data or contract changes. Direction and references: `docs/design.md`.
