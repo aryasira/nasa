@@ -281,3 +281,18 @@ details.more dt.fn { grid-column: 1 / -1; font-size: 11px; color: var(--ink-3); 
 .sim-zoom button:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
 @media (max-width: 640px) { .sim-zoom { left: 10px; bottom: 10px; } .sim-zoom button { width: 34px; height: 34px; } }
 @media print { .sim-zoom { display: none; } }
+
+/* Story replay caption + button */
+.sim-story { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); z-index: 4; pointer-events: none; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 22px; background: rgba(6, 8, 11, 0.72); border: 1px solid rgba(255, 255, 255, 0.14); backdrop-filter: blur(6px); max-width: 90%; }
+.sim-story[hidden] { display: none; }
+.sim-story .k { font: 600 12px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: #a3aebb; }
+.sim-story .v { font: 500 clamp(26px, 4.2vw, 48px)/1.05 var(--sans); letter-spacing: -0.02em; color: #fff; white-space: nowrap; }
+.sim-story .v.num, .sim-story .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.sim-story .v small { font: 500 0.36em/1 var(--sans); letter-spacing: 0; color: #cfd6df; margin-left: 6px; }
+.sim-story .neg { color: #ff8a66; }
+.sim-story .k2 { font: 500 15px/1.3 var(--sans); color: #e8edf3; margin-top: 4px; }
+.sim.in-story .sim-status, .sim.in-story .sim-cause { opacity: 0.25; transition: opacity 0.3s; }
+.chip-story { border-color: rgba(240, 228, 66, 0.55) !important; color: #f0e442 !important; }
+.sim.in-story .chip-story { background: rgba(240, 228, 66, 0.14); }
+@media print { .sim-story { display: none; } }
