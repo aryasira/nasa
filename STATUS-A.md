@@ -1,6 +1,6 @@
 # STATUS-A
 
-_Updated: Sun 15 Nov 2026, 12:25 CT_
+_Updated: Sun 15 Nov 2026, 14:05 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
 
@@ -112,6 +112,12 @@ _Updated: Sun 15 Nov 2026, 12:25 CT_
     horizons are 40 m terrain. Their `dem` metadata now says so. The order is fixed in the pipeline.
   - The run did not use `--masts`, and it started before the confidence fields were pushed, so
     there are no mast files and no `occluder.cells` yet.
+
+- 14:05: Connecting Ridge long-run sunlight on the new data: 91.25% over 2023 to 2030, 88.18% to
+  93.09% across the terrain band. Published 92.27% (Glaeser 2014) lies inside the band. In `docs/science.md`.
+- 14:05: at the human's request this session also did B and C items on branch **`b/a-fixes`**
+  (= b/app + main + a/data + fixes). See STATUS-B.md on that branch. Merging `b/a-fixes` into
+  `main` brings everything in one step.
 
 ## In progress
 - Nothing blocking.

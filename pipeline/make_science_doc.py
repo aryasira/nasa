@@ -35,15 +35,16 @@ def validation_report():
     if eph:
         out.append(f"- Ephemeris rows: {eph['rows']} (hourly). Span and ranges: section 2.")
     out += ["", "### B. Long-run sunlight at Connecting Ridge against a published value", "",
-            "- Ours: sunlit 91.2 percent of the time (2 m mast, limb rule), computed by the app's engine "
-            "(Agent B, `STATUS-B.md`, Sat 14 Nov) from this pipeline's `ephem.bin` and "
-            "`horizon/connecting_ridge.json` over the ephemeris span as it was then, 2024 to 2030.",
+            "- Ours: sunlit 91.25 percent of the time (2 m mast, limb rule, hourly samples) over the whole "
+            "ephemeris, 2023 to 2030, 8.0 years. Across the terrain error band: 88.18 to 93.09 percent. "
+            "Computed on 15 Nov with the app's engine (`app/src/engine`) from this pipeline's `ephem.bin` "
+            "and `horizon/connecting_ridge.json` (commit 8835191).",
             "- Published: 92.27 percent at 2 m above ground (Glaeser et al. 2014, Icarus 243, 78-90, "
             "doi:10.1016/j.icarus.2014.08.013), from a 19-year run on a 20 m/pixel LOLA terrain model.",
             "- The two are not the same experiment: **different time span and newer DEM** (ours is "
             "the 5 m PGDA 78 site model inside the 80 m PGDA 90 grid), and our point is the paper's "
             "site as listed in `data-src/sites.yaml`. Agreement to about one percentage point is a "
-            "plausibility check, not a numeric validation.", ""]
+            "plausibility check, not a numeric validation. The published value lies inside our band.", ""]
     out += ["### C. Uncertainty bands", ""]
     rows = [(k, v) for k, v in (hor or {"sites": {}})["sites"].items() if not v.get("sphere")]
     done = [(k, v) for k, v in rows if v.get("sigma_m") is not None]
