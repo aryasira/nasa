@@ -22,6 +22,10 @@ import { makeSunUniforms } from './regolith';
 import { disposeTextures } from './textures';
 import { CAMS, CONSOLE_HTML, ICON, OVERLAY_HTML, STATUS_HTML } from './ui';
 import './sim.css';
+// --- FEATURE (C): countdowns and geometry-only power factors, see src/features/
+import { CountdownCache, countdownText, type CountdownText } from '../features/countdown';
+import { powerGeometry } from '../features/power';
+import { SPHERE_NOTE } from '../features/custom';
 
 export interface SimState { site: string; t: string; stay: number; slip: number; mode: Mode }
 export interface SimContext {
@@ -114,6 +118,9 @@ class Simulator {
   private lastUrl = 0;
   private liveText = '';
   private textCache = new WeakMap<Element, string>();
+  private cd = new CountdownCache();
+  private cdText: { sun: CountdownText | null; earth: CountdownText | null } = { sun: null, earth: null };
+  private globeSig = '';
   // DOM
   private stage = el('div', 'sim-stage');
   private view = el('div', 'sim-view');
@@ -354,11 +361,18 @@ class Simulator {
     if (ctx.state.slip === 0 && this.ab === 'b') this.ab = 'a';
     this.feats = featureIndex(ctx.features);
     this.local = featuresContaining(site, ctx.features);
-    const key = `${site.id}|${ctx.mock}`;
+    const key = `${site.id}|${site.lat}|${site.lon_e}|${site.elev_m}|${ctx.mock}`;
     const siteChanged = key !== this.siteKey;
     this.site = site; this.hz = hz; this.frameF = siteFrame(site);
     if (siteChanged) { this.siteKey = key; this.buildSite(); }
-    if (!this.globe && this.renderer) { this.globe = new Globe(ctx.sites); this.setupGlobeControls(); }
+    const sig = ctx.sites.map((s) => `${s.id}:${s.lat}:${s.lon_e}`).join('|');
+    if (this.globe && sig !== this.globeSig) { this.globe.dispose(); this.globe = null; this.globeCtl?.dispose(); this.globeCtl = null; }
+    if (!this.globe && this.renderer) {
+      this.globe = new Globe([...ctx.sites]); this.globeSig = sig; this.setupGlobeControls();
+      const w = Math.max(1, this.view.clientWidth), h = Math.max(1, this.view.clientHeight);
+      this.globe.camera.aspect = w / h; this.globe.camera.updateProjectionMatrix(); this.globe.setPixelRatio(this.renderer.getPixelRatio());
+    }
+    if (siteChanged) this.cd.clear();
     // Keep mission-elapsed time across re-renders; first mount honours ?simt=.
     const [a] = this.stays();
     if (this.pendingSimT != null) {
@@ -375,10 +389,10 @@ class Simulator {
     this.buildPins();
     const sphere = hz.dem.product === 'sphere';
     this.set('note', sphere
-      ? 'No terrain model for this site: flat (smooth-sphere) horizon. Sun and Earth positions are computed; ground, Earth pattern and stars are illustrative.'
+      ? `${SPHERE_NOTE} Sun and Earth positions are computed; ground, Earth pattern and stars are illustrative.`
       : 'Skyline from the LOLA horizon profile (exact elevation angles); ground detail, rocks, Earth pattern and stars are illustrative.');
     this.set('about', [
-      sphere ? 'This site has no terrain model, so the horizon is a smooth sphere (flat skyline).'
+      sphere ? `${SPHERE_NOTE} The skyline is flat, at the geometric dip of the horizon seen from the mast.`
         : 'The skyline is the LOLA horizon profile: seen from the mast, each of the 720 azimuth samples sits at its exact elevation angle. Ridge distances are smoothed and clamped to 0.3–20 km for drawing only.',
       'Sun and Earth positions, disc fractions, the status cards and the line under the view come from the validated engine (JPL ephemeris, topocentric Earth).',
       'Illustrative only: craters, rocks and ground texture in front of the skyline (kept below the line of sight), far-terrain shading, the lander design, Earth’s surface pattern and the star field.',
@@ -799,6 +813,7 @@ class Simulator {
     const [a, b] = this.stays();
     const start = this.ab === 'b' && b ? b.t0 : a.t0;
     const stayDays = this.ctx.state.stay;
+    const ctx0 = this.ctx;
     const dayN = (this.t - start) / DAY;
     this.set('utc', fmtUtc(this.t).slice(0, 16).replace('T', ' '));
     this.set('met', fmtMet(this.t - start));
@@ -812,14 +827,30 @@ class Simulator {
       this.set(`${k}-az`, `${body.az.toFixed(1)}°`);
       this.set(`${k}-el`, deg2(body.el));
       this.set(`${k}-clr`, deg2(body.el - body.horizonEl));
-      this.set(`${k}-more`, more.map(([dt, dd]) => `<dt>${dt}</dt><dd class="num">${esc(dd)}</dd>`).join(''), true);
+      this.set(`${k}-more`, more.map(([dt, dd]) => (dt === '*' ? `<dt class="fn">* ${esc(dd)}</dt>` : `<dt>${dt}</dt><dd class="num">${esc(dd)}</dd>`)).join(''), true);
     };
+    // --- FEATURE (C): countdown to the next sunset/sunrise and Earthset/Earthrise (engine visibility, cached)
+    const stayEnd = start + stayDays * DAY;
+    for (const k of ['sun', 'earth'] as const) {
+      try {
+        const c = this.cd.get(this.siteKey, ctx0.ephem, this.frameF, this.hz.elev_deg, this.t, k, ctx0.state.mode);
+        this.cdText[k] = countdownText(c, this.t, stayEnd, r[k].aboveFlat);
+      } catch { this.cdText[k] = null; }
+      this.set(`${k === 'sun' ? 'power' : 'comm'}-cd`, this.cdText[k]?.label ?? '');
+    }
+    const pg = powerGeometry(r.sun.el, r.sun.horizonEl, r.sun.frac);
+    const pct = (x: number) => `${(x * 100).toFixed(0)}%`;
     card('power', pw, r.sun, r.power.pct / 100, [
-      ['Disc above skyline', `${(r.sun.frac * 100).toFixed(0)}%`],
+      ['Elevation above horizontal', deg2(pg.sunEl)],
+      ['Clearance above terrain', deg2(pg.clearance)],
+      ['Sun disc visible', pct(pg.discFrac)],
+      ['Sun-tracking panel*', pct(pg.tracking)],
+      ['Fixed flat panel*', pct(pg.horizontal)],
       ['Power (disc in view)', `${r.power.pct.toFixed(0)}%`],
       [`Skyline at ${r.sun.az.toFixed(1)}°`, deg2(r.sun.horizonEl)],
       ['Sun radius', `${r.sun.r.toFixed(3)}°`],
       ...(r.power.note ? [['Note', r.power.note] as [string, string]] : []),
+      ['*', 'Relative panel output: geometric factor, not a power model (flat panel = disc × sin elevation).'],
     ]);
     card('comm', cw, r.earth, r.earth.frac, [
       ['Disc above skyline', `${(r.earth.frac * 100).toFixed(0)}%`],
@@ -841,7 +872,8 @@ class Simulator {
     const now = performance.now();
     if (!force && now - this.lastLive < 1000) return;
     const c = causeLine(r, this.local);
-    const states = `Power ${powerWord(r).word}, ${r.power.pct.toFixed(0)} percent. Comm ${commWord(r).word}. ${c.text}`;
+    const cdl = [this.cdText.sun?.long, this.cdText.earth?.long].filter(Boolean).join(' ');
+    const states = `Power ${powerWord(r).word}, ${r.power.pct.toFixed(0)} percent. Comm ${commWord(r).word}. ${c.text} ${cdl}`;
     // While playing only state changes are announced; when paused or stepping, the time too.
     const txt = this.playing ? `Power ${powerWord(r).word}. Comm ${commWord(r).word}.`
       : `${fmtUtc(this.t).slice(0, 16).replace('T', ' ')} UTC. ${states}`;
@@ -883,7 +915,8 @@ class Simulator {
       const camPos = g.camera.position;
       this.pinsEl.hidden = false;
       this.pinsEl.querySelectorAll<HTMLButtonElement>('.pin').forEach((b) => {
-        const pin = g.pins.find((x) => x.id === b.dataset.site)!;
+        const pin = g.pins.find((x) => x.id === b.dataset.site);
+        if (!pin) { b.hidden = true; return; }
         const facing = camPos.clone().sub(pin.pos).dot(pin.pos) > 0.02;
         const p = facing ? this.projectPoint(pin.pos, g.camera) : null;
         const show = !!p && p.x > 0 && p.x < w && p.y > 0 && p.y < h;
@@ -986,6 +1019,23 @@ class Simulator {
     g.fillRect(mid - 0.5 * k, 24 * k, k, 10 * k);
   }
 
+  // --- FEATURE (C): external view control for the guided tour (src/features/explain.ts)
+  setView(v: { cam?: Cam; t?: number; look?: 'sun' | 'earth'; ab?: AB }) {
+    if (!this.ctx) return;
+    this.setPlaying(false);
+    if (v.ab) this.setAB(v.ab);
+    if (v.t != null) {
+      const sp = this.span();
+      this.t = clamp(v.t, sp.t0, sp.t1);
+      try { this.ro = readout(this.ctx.ephem, this.frameF, this.hz, this.feats, this.t, this.ctx.state.mode); } catch { /* keep */ }
+    }
+    if (v.cam && this.renderer) this.setCam(v.cam);
+    if (v.look && this.renderer) this.look(v.look);
+    this.dirty = true;
+    this.writeUrl(true);
+    this.announce(true);
+  }
+
   dispose() {
     cancelAnimationFrame(this.raf); this.raf = 0;
     document.removeEventListener('keydown', this.onKey);
@@ -1015,6 +1065,11 @@ export function mountSim(slot: HTMLElement | null, ctx: SimContext): void {
     console.warn('simulator failed to mount', e);
     slot.innerHTML = `<p class="sim-fallback" role="note">The 3D simulator could not start (${esc(String((e as Error).message))}). The mission brief below still works.</p>`;
   }
+}
+
+/** Set camera / time / pointing from outside (guided tour). No-op before the simulator mounts. */
+export function simView(v: { cam?: Cam; t?: number; look?: 'sun' | 'earth'; ab?: AB }): void {
+  sim?.setView(v);
 }
 
 /** Tear everything down (WebGL context, geometries, listeners, cached textures). */
