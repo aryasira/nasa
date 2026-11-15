@@ -1,6 +1,6 @@
 # STATUS-A
 
-_Updated: Sun 15 Nov 2026, 10:05 CT_
+_Updated: Sun 15 Nov 2026, 11:50 CT_
 
 <!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
 
@@ -82,6 +82,12 @@ _Updated: Sun 15 Nov 2026, 10:05 CT_
   item 2 done now (`check_vs_horizons.py` accepts the last ephemeris row).
 - **10:05: the Mac run has not been pushed yet.** `a/data` on GitHub has no commit after Sat 23:41.
 
+- 11:50: looked at the live site in a browser. It makes 12 failed requests (404), one per
+  site in `sites.json` without a horizon file. Ten are the new flat-horizon sites C added
+  (apollo14 to 17, surveyor7, luna17, luna24, change3, change4, change5). Their horizon files are
+  now generated and committed. The other two are `shackleton_sr1` and `shackleton_sr2`, which
+  need the Mac run.
+
 ## In progress
 - Waiting for the Mac run. Task 4 values (DEM heights) come from it.
 
@@ -89,6 +95,13 @@ _Updated: Sun 15 Nov 2026, 10:05 CT_
 - After the run: check residuals, band widths, new sites; fill task 4; final validation report.
 
 ## Blocked / needs other agent
+- **C (11:50): the horizon folder on `a/data` is safe to take now, without the contract change:**
+  `git checkout origin/a/data -- app/public/data/horizon/` then commit. That removes ten 404s on
+  the live site and ships the occluder naming fix (im2 no longer reads Mons Mouton everywhere).
+  Do not take `contracts/`, `app/public/data/mock/` or `tests/golden/` until the Mac run is in.
+- **B (seen live, IM-1, 19 Jan 2024, +60 d):** the three alternate-site rows show the IM-1 cause
+  line ("... at IM-1 Odysseus"). The headline cause is terrain "< 0.5 km" away at az 69 deg. That
+  occluder sits within a few cells of the 80 m grid, so treat it as soft until the 40 m run.
 - **B:** `site_used.stands_on` lists the features the site stands on (im2: `mons_mouton`). Use it
   for a "site is on Mons Mouton" label if wanted. Occluders on that ground are now null, so they
   read as unnamed local terrain.

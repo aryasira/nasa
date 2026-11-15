@@ -224,15 +224,55 @@
    "stands_on": [
     "connecting_ridge_summit"
    ]
+  },
+  "apollo14": {
+   "site_id": "apollo14",
+   "sphere": true
+  },
+  "apollo15": {
+   "site_id": "apollo15",
+   "sphere": true
+  },
+  "apollo16": {
+   "site_id": "apollo16",
+   "sphere": true
+  },
+  "apollo17": {
+   "site_id": "apollo17",
+   "sphere": true
+  },
+  "surveyor7": {
+   "site_id": "surveyor7",
+   "sphere": true
+  },
+  "luna17": {
+   "site_id": "luna17",
+   "sphere": true
+  },
+  "luna24": {
+   "site_id": "luna24",
+   "sphere": true
+  },
+  "change3": {
+   "site_id": "change3",
+   "sphere": true
+  },
+  "change4": {
+   "site_id": "change4",
+   "sphere": true
+  },
+  "change5": {
+   "site_id": "change5",
+   "sphere": true
   }
  },
  "mast_m": 2.0,
  "max_range_km": 220.0,
- "sigma_note": "pending: lo = hi = elev",
+ "band_method": "envelope: terrain raised by its published per-pixel height error and the observer lowered by the error at the site (upper edge), and the reverse (lower edge). Grid-spacing error is not included.",
  "meta": {
   "ai_generated": true,
-  "generated_by": "pipeline/make_horizons.py",
-  "git_sha": "bd11f8f38917bffbbce4888ea10f802cfac73039",
+  "generated_by": "pipeline/horizons",
+  "git_sha": "75ce0b30d6424735f49939fb74b38fb149037e1a",
   "mock": false
  }
 }
