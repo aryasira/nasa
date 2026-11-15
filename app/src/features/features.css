@@ -94,7 +94,8 @@ table.cmp td.best { color: #b9f0dc; text-decoration: underline; text-decoration-
   .feat-explain, .xp-note, .dates-ctl, .cmp-pick, #dates-status { display: none !important; }
   .sortb { color: #000; }
   table.cmp { min-width: 0; font-size: 9pt; }
-  table.cmp td.best { color: #000; }
+  table.cmp td.best, table.cmp td.hz { color: #000; }
+  .dates-chart .g { stroke: #ccc; }
   .dates-chart svg text { fill: #000; }
   .sphere-note { color: #000; background: none; }
   .sphere-inline { color: #000; }
@@ -106,3 +107,5 @@ table.cmp td.hz { font-size: .88rem; color: var(--ink-2); }
 .dates-chart.narrow .ln-sun { stroke-width: 3; }
 .dates-chart.narrow .ln-both { stroke-width: 1.8; }
 table.cmp th[scope="row"] { min-width: 150px; white-space: normal; }
+/* long product / kernel names in the brief's definition lists must not widen the page on phones */
+dl dd { min-width: 0; overflow-wrap: anywhere; }
