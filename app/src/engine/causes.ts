@@ -141,8 +141,8 @@ function gcKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
 export function siteIsOn(hz: HorizonFile, f: Feature): boolean {
   const su = (hz as HorizonFile & { site_used?: { lat: number; lon_e: number; stands_on?: string | string[] | null } }).site_used;
   if (!su) return false;
-  // The pipeline writes a list of feature ids; older files had one id or nothing.
-  if (su.stands_on != null) return Array.isArray(su.stands_on) ? su.stands_on.includes(f.id) : su.stands_on === f.id;
+  if (Array.isArray(su.stands_on)) return su.stands_on.includes(f.id);
+  if (su.stands_on != null) return su.stands_on === f.id;
   return f.radius_km != null && gcKm(su.lat, su.lon_e, f.lat, f.lon_e) <= f.radius_km;
 }
 
