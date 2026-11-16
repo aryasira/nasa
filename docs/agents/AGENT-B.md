@@ -5,7 +5,6 @@ You are **Agent B** in a 3-agent hackathon build for the NASA Space Apps 2026 ch
 
 ## Start
 1. Clone `https://github.com/aryasira/nasa`, then `git checkout -b b/app`.
-   if the other agents run on the same machine).
 2. **Read `CONTEXT.md` and `contracts/types.ts` before writing any code.** They override this brief if they disagree.
 3. Build against the mock data in `app/public/data/mock/` (regenerate with `python tools/make_mocks.py`).
    Put the data path behind one switch, e.g. `?data=mock` vs default `data/`, so swapping to Agent A's real files is one line.
