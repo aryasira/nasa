@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Site-by-landing-date map: hours with both Sun and Earth in view for one stay, for every terrain site and
 // a year of landing dates. Answers "compare sites and dates" in one picture. Coarser than the brief
 // (30-minute samples) so it stays fast; the brief's own table remains the 10-minute reference.

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "validation.schema.json",
   "title": "Validation scorecard (app/public/data/validation.json)",
-  "description": "AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. Written by pipeline/make_validation.py. Owner: Agent A. Added Sun 15 Nov (round 3).",
+  "description": "AI-assisted; see README. Written by pipeline/make_validation.py. Owner: Agent A. Added Sun 15 Nov (round 3).",
   "type": "object",
   "required": [
     "schema_version",

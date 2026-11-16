@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Earth link margin, CSV/JSON export and the site-by-date map, on the real data.
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

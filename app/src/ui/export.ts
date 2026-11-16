@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Download the options table as CSV or JSON, so the numbers can be reused outside the page.
 import type { SlipOptionEx } from '../engine/slip';
 

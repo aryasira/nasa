@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Ephemeris loader and sampler. Implements docs/engine-spec.md section 2.
 import type { EphemHeader } from '@contracts/types';
 import { EPHEM } from '@contracts/types';

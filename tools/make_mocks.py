@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Generate MOCK data in app/public/data/mock/ so Agent B can build before Agent A's real data lands.
 Shapes follow contracts/ exactly. Values are SYNTHETIC (meta.mock = true) — never show them as results.
 Usage: python3 tools/make_mocks.py

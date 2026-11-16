@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Checks for the challenge-coverage features against the validated engine (real data in public/data).
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

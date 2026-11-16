@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Procedural textures for the simulator, generated once per page and cached (no network assets).
 // Each getter returns the same texture on every call; disposeTextures() frees them all.
 import * as THREE from 'three';

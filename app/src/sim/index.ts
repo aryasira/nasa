@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // 3D mission simulator (hero of the page). Mounted by a small hook in main.ts; state (site, baseline date,
 // stay, slip, mode) stays in main.ts's permalink state, the sim only adds view parameters
 // (cam, simt, ab, size, compass, q) to the query string. All Sun/Earth numbers come from the engine's observe().

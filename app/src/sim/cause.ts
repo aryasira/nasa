@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Plain-English cause line for the simulator (pure, no DOM, no three.js). It only words the engine's
 // readout (astro.readout → observe/horizonAt/discFraction); it never computes a new number.
 import type { FeaturesFile, Site } from '@contracts/types';

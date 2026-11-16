@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // TypeScript mirror of contracts/*.json — schema_version 1, frozen Sat 14 Nov 2026 17:00 CT.
 // Agent B imports these. Do not edit without a human OK and a schema_version bump.
 

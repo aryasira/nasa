@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Cross-checks the TypeScript engine against Agent C's Python reference (golden vectors, MOCK data),
 // against JPL Horizons (Agent A's real fixtures), and checks the cause-line decomposition.
 import { readFileSync, existsSync } from 'node:fs';

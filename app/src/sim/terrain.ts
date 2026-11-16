@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // 3D terrain around the lander, built from the site's 720-sample horizon profile.
 // Polar mesh: one column per horizon azimuth sample, geometric ring spacing (dense at the lander, sparse at the
 // ridge). The crest vertex of each column sits at (smoothed, clamped) occluder distance D and height

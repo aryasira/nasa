@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Slip Impact Brief: UI. All state lives in the query string (permalink).
 import { setLinkMargin } from './engine/visibility';
 import { download, exportRows, toCsv, toJson, type ExportRow, type ExportScenario } from './ui/export';
@@ -291,7 +291,7 @@ function render(d: Data, s: State) {
       <p>Data: NASA/NAIF SPICE kernels (DE440), NASA JPL Horizons, LRO LOLA topography (NASA GSFC PGDA), LROC landing-site coordinates, USGS/IAU Gazetteer of Planetary Nomenclature.</p>
     </details></section>
   </main>
-  <footer><p>Built for NASA Space Apps 2026 by team Space City Ad Lunam, with AI assistance (Anthropic Claude) for research, code, tests and documentation, reviewed by the team. NASA does not endorse this project.</p></footer>`;
+  <footer><p>Built for NASA Space Apps 2026 by team Space City Ad Lunam, with AI assistance, reviewed by the team. NASA does not endorse this project.</p></footer>`;
 
   const f = document.getElementById('f') as HTMLFormElement;
   f.addEventListener('change', () => {

@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Custom coordinates and smooth-sphere horizons (pure, no DOM).
 // A site without a terrain model gets a flat 720-point horizon at the true geometric dip of the horizon seen from
 // a 2 m mast on an airless sphere: dip = −acos(R / (R + h)), R = 1737.4 km + site elevation.

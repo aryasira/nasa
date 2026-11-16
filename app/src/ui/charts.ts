@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // SVG charts: visibility timeline and 360-degree horizon panorama. Colour + pattern + label (colour-blind safe).
 import type { HorizonFile } from '@contracts/types';
 import { STEP_S, type Scan } from '../engine/metrics';

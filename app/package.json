@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. Owner: Agent B.",
+  "description": "AI-assisted; see README. Owner: Agent B.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

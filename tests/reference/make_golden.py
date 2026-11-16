@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Write tests/golden/engine_vectors.json from the MOCK data using engine_ref.py (docs/engine-spec.md).
 
 Usage: python3 tests/reference/make_golden.py [data_dir]

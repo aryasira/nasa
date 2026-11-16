@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Plain-language mode: short explanations and a 5-step guided tour. Every site-specific number in the tour is
 // computed here from the engine (scanWindow, windowMetrics, observe, ephemeris samples); the only constants are
 // general facts (1.54° lunar axial tilt to the ecliptic, ≈29.5-day lunar day).

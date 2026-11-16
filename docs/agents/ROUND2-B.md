@@ -1,6 +1,6 @@
 # Agent B — round 2 (paste into your existing Agent B session)
 
-> AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+> AI-assisted; see README.
 
 Round 1 is merged into `main` — great work. Start with:
 `git fetch origin && git checkout b/app && git merge origin/main`, then re-read `CONTEXT.md` and `docs/agents/PLAN.md`.

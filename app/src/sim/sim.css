@@ -1,4 +1,4 @@
-/* AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. */
+/* AI-assisted; see README. */
 /* Mission simulator (flight-ops console) + a light restyle of the page so the brief feels like the same product.
    Loaded after style.css. One accent system: Sun #e69f00, Earth #56b4e9, both #009e73, red only for "blocked". */
 :root {

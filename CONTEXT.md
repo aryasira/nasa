@@ -1,6 +1,6 @@
 # CONTEXT.md — read this first (every agent, every session)
 
-> AI-ASSISTED: this file was drafted with Claude (Anthropic) and reviewed by the human team.
+> AI-assisted; see README.
 
 ## 1. Mission
 Team **Space City Ad Lunam** (Houston Local Event), NASA Space Apps 2026, challenge **Lunar Landing Site Navigator**.

@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Round 3 brief markup: verdict strip, ranked option bars, validation badges, small icons.
 // Presentation only: every number comes from the engine results passed in.
 import type { CauseLine, HorizonFile, Site } from '@contracts/types';

@@ -1,4 +1,4 @@
-> AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+> AI-assisted; see README.
 
 # Engine spec (schema_version 1)
 

@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Cause-line and slip correctness on the real data (REVIEW.md, "For Agent B" items 1-10).
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

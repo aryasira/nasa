@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 # Site catalogue source of truth. Owner: Agent C. Built into app/public/data/sites.json by tools/build_sites.py.
 # Coordinates in MOON_ME, east-positive longitude [0,360). Elevation in metres relative to the 1737.4 km sphere.
 # RULE: no site enters without a source URL. Values marked TODO must be filled from a primary source, not guessed.

@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Post-processing: HDR scene → restrained bloom (only the Sun disc is bright enough) → ACES tone mapping + sRGB.
 // Multisampled half-float target for antialiasing. Bloom can be switched off when frames are slow.
 import * as THREE from 'three';

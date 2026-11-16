@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Material patches for an airless body.
 //  * Regolith: Lommel-Seeliger reflectance (no limb darkening, so the ground stays bright toward the horizon)
 //    with a phase falloff and an opposition surge; no specular; multi-scale procedural detail normals and albedo.

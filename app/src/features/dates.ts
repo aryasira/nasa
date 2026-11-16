@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Landing-date explorer (pure, no DOM): for every landing date over the next 13 lunar months, the sunlit,
 // Earth-in-view and both-in-view hours of a stay starting then. One long engine scan (scanWindow, 10-minute grid
 // aligned with the baseline) is computed in chunks; each stay is then a difference of prefix sums, which gives

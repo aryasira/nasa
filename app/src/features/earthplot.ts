@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Earth's height above the local skyline through one month. Near the pole Earth never rises high;
 // it drifts up and down a few degrees as the Moon wobbles (libration), and that drift decides the
 // direct-to-Earth link. This plot shows the drift without needing the word.

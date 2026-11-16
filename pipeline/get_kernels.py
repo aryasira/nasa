@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Download the five NAIF SPICE kernels named in contracts/ephem.header.json.
 
 Saves them in pipeline/kernels/ (git-ignored) and records each file's URL,

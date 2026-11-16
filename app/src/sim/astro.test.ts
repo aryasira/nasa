@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Checks that the simulator's HUD numbers are the engine's numbers, that scene directions follow the
 // engine's azimuth convention, and that the 3D skyline reproduces elev_deg exactly from the mast.
 import { readFileSync } from 'node:fs';

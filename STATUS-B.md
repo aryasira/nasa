@@ -2,7 +2,7 @@
 
 _Updated: Sun 15 Nov 2026, 12:58 CT_
 
-<!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
+<!-- AI-assisted; see README. -->
 
 ## Data refresh (Sun 13:05 CT)
 Merged `origin/main` (f8509b0) with Agent A's new data. The verdict strip reads every number from the engine, so

@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Pure terrain height model for the 3D view (no three.js, so it runs under Vitest).
 // The LOLA skyline is exact: at every horizon azimuth sample the crest vertex sits at elev_deg seen from the mast.
 // Everything between the lander and that crest is ILLUSTRATIVE (craters, undulation, ridged relief), and is

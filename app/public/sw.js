@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. Owner: Agent C.
+// AI-assisted; see README. Owner: Agent C.
 // Offline support: network first, cache as fallback, so a fresh deploy is never hidden by an old cache.
 const CACHE = 'slip-impact-brief-v1';
 self.addEventListener('install', () => self.skipWaiting());

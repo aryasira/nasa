@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 # Seed list of named features for cause lines. Owner: Agent C. Agent A turns this into app/public/data/features.json.
 # Source: USGS/IAU Gazetteer of Planetary Nomenclature, feature pages opened 14 Nov 2026.
 # lon_e is east-positive 0-360 (converted from the Gazetteer's +-180 where needed). radius_km = diameter / 2.

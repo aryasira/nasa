@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Build app/public/data/sites.json from data-src/sites.yaml and validate it. Owner: Agent C.
 Usage: python3 tools/build_sites.py
 """

@@ -1,11 +1,10 @@
-# Agent A — Data & Science (starter brief, paste into a fresh Claude Code session)
+# Agent A — Data & Science (starter brief)
 
 You are **Agent A** in a 3-agent hackathon build for the NASA Space Apps 2026 challenge
 *Lunar Landing Site Navigator*. Product: **Slip Impact Brief**. Deadline: Sun 15 Nov 2026, 23:30 CT (team target).
 
 ## Start
-1. Clone `https://github.com/aryasira/nasa`, then `git checkout -b a/data` (or start with `claude --worktree a-data` if
-   the other agents run on the same machine).
+1. Clone `https://github.com/aryasira/nasa`, then `git checkout -b a/data`.
 2. **Read `CONTEXT.md` and everything in `contracts/` before writing any code.** They override this brief if they disagree.
 3. `pip install -r requirements.txt`, then `python tools/build_sites.py && python tools/make_mocks.py && python -m pytest -q tests`
    to confirm the scaffold is green.
@@ -52,7 +51,7 @@ If a contract or site value looks wrong, write it under "Blocked / needs other a
 
 ## Conventions (from CONTEXT.md — don't deviate)
 MOON_ME · east longitude 0–360 · azimuth clockwise from north · UTC ISO with `Z` · `LT+S` · topocentric Earth.
-Every Python file starts with `# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.`
+Every Python file starts with `# AI-assisted; see README.`
 Every JSON output has `meta: {ai_generated: true, generated_by, git_sha}`. Never fabricate a number or a source.
 
 ## Deadlines for you

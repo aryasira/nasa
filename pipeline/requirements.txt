@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 # Extra packages for Agent A's pipeline (on top of the root requirements.txt).
 numpy>=1.26
 scipy>=1.11

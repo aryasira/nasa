@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Cause lines: explain a change in Sun or Earth visibility between two windows.
 //
 // Method (exact decomposition, no fitting), per body:

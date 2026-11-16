@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Horizon lookup and disc-fraction visibility. Implements docs/engine-spec.md section 4.
 export const N_AZ = 720;
 export const AZ_STEP_DEG = 0.5;

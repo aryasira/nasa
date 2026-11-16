@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Window scan and metrics. Implements docs/engine-spec.md section 5.
 import type { HorizonFile, WindowMetrics } from '@contracts/types';
 import { Ephem, fmtUtc } from './ephem';

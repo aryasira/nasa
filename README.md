@@ -26,7 +26,7 @@ direction and distance.
 ## AI use
 This project was built with AI assistance (Anthropic Claude) for research, code drafting, testing and documentation.
 The idea and every decision were made and reviewed by the human team. Files drafted with AI carry an
-`AI-ASSISTED` header comment, and every data file carries `meta.ai_generated: true`.
+`AI-assisted` header comment, and every data file carries `meta.ai_generated: true`.
 
 ## Licence
 Code: MIT (see `LICENSE`). Data keeps its providers' terms.
