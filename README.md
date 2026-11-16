@@ -10,11 +10,12 @@ direction and distance.
 
 ## Implemented
 - [x] Hourly Sun/Earth ephemeris in the Moon's mean-Earth frame (SPICE, DE440)
-- [x] Terrain horizons with occluder attribution from LOLA for IM-1, IM-2, Chandrayaan-3 and Connecting Ridge
+- [x] Terrain horizons with occluder attribution from LOLA for IM-1, IM-2, Chandrayaan-3, Connecting Ridge and two Shackleton rim sites
 - [x] Sunlight / Earth-visibility metrics per site and date
 - [x] Slip comparison with cause lines (orbital, terrain, site height)
 - [x] Validation against JPL Horizons: 160 points at 7 LRO-located landing sites, all within 0.01°
-- [ ] Uncertainty bands from LOLA terrain error (code ready, data run pending)
+- [x] Uncertainty bands from the published LOLA height-error maps, on all six terrain sites
+- [x] Validation scorecard (`app/public/data/validation.json`) and long-run check against Gläser et al. 2014
 
 ## Data and tools (NASA and partners)
 - NASA/NAIF SPICE kernels (DE440, lunar PA/ME frames) — https://naif.jpl.nasa.gov

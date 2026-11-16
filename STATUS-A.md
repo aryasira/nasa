@@ -1,6 +1,6 @@
 # STATUS-A
 
-_Updated: Sun 15 Nov 2026, 13:20 CT (real clock)_
+_Updated: Sun 15 Nov 2026, 18:15 CT_
 
 _Correction: entries below stamped 12:25 and 14:05 were written between 12:00 and 12:20 CT. Those stamps were guesses._
 
@@ -139,6 +139,18 @@ _Correction: entries below stamped 12:25 and 14:05 were written between 12:00 an
   - 6 `## One-line claims` in `docs/science.md`: seven sentences, each with its source file.
   - 7 Next-windows forecast: not done (optional).
   - Tests: Python 38 passed.
+
+- **18:15 FINAL CHECK on `main` d899705.** Python 38 passed, app 47 passed, build ok, CI green,
+  live site loads with no console errors, 21 sites all have horizon files, no merge markers,
+  no secrets, no kernels or DEMs in the repo.
+  - **Changed number:** the largest Horizons gap is now **0.0009 deg (about 1/550 of the Sun's
+    width)**, not 0.0007 deg (1/750). Cause: `sites.yaml` gained DEM heights for im2 and the ridge
+    sites, while the Horizons fixtures were fetched at altitude 0 for those sites. Still far inside
+    the 0.01 deg tolerance. The live page already says "within 0.001 deg, 160 checks", which is right.
+    `docs/science.md`, the residual report and CONTEXT.md sentence 3 now say 0.0009.
+  - **Never run:** the cached Mac pass. So there is no IM-1 moved-site or mast study, no
+    `occluder.cells`, no mast files, and the Shackleton sites stay on 40 m terrain.
+    `validation.json` says `im1_near_field.status: "not run"`. That is the honest state.
 
 ## In progress
 - Waiting for one cached Mac pass:

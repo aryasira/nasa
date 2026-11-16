@@ -33,7 +33,7 @@
    "exact_ratio": 562.5,
    "text": "about 1/550 of the Sun's width"
   },
-  "run_git_sha": "989f03726faa8689ba41155a93e09309e7d612c2",
+  "run_git_sha": "d899705ac53621897bb80093c0f2f1a0fb1cc6a9",
   "fixtures_git_sha": "00efaf4d31268b5bb586f7bde0bc2377bbe39264"
  },
  "benchmark": {
@@ -284,7 +284,7 @@
  "meta": {
   "ai_generated": true,
   "generated_by": "pipeline/make_validation.py",
-  "git_sha": "f42045ac194aada0385cdd657b7b3de31bd8dcbf",
+  "git_sha": "d899705ac53621897bb80093c0f2f1a0fb1cc6a9",
   "mock": false
  }
 }
