@@ -4,8 +4,7 @@ You are **Agent A** in a 3-agent hackathon build for the NASA Space Apps 2026 ch
 *Lunar Landing Site Navigator*. Product: **Slip Impact Brief**. Deadline: Sun 15 Nov 2026, 23:30 CT (team target).
 
 ## Start
-1. Clone `https://github.com/aryasira/nasa`, then `git checkout -b a/data`
-   the other agents run on the same machine).
+1. Clone `https://github.com/aryasira/nasa`, then `git checkout -b a/data`.
 2. **Read `CONTEXT.md` and everything in `contracts/` before writing any code.** They override this brief if they disagree.
 3. `pip install -r requirements.txt`, then `python tools/build_sites.py && python tools/make_mocks.py && python -m pytest -q tests`
    to confirm the scaffold is green.
