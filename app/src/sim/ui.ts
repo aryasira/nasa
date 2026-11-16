@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Static markup for the simulator console and overlays (no logic). Icons are simple inline SVG strokes.
 
 const svg = (d: string, w = 18) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${d}</svg>`;

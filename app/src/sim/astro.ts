@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Pure helpers for the 3D simulator (no three.js import, so they run under Vitest in Node).
 // Every number shown in the HUD comes from the validated engine (observe, horizonAt, discFraction);
 // this file only classifies those numbers and maps directions into scene coordinates.

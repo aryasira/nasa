@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // "Moon globe": a procedurally shaded Moon (illustrative maria/highlands and craters, not a map) lit from the
 // ephemeris sub-solar direction (the Sun unit vector is already in MOON_ME), so the terminator is real.
 // Site pins are HTML buttons placed by index.ts (keyboard focus, hover labels); this file gives their positions.

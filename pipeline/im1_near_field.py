@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Is the terrain that blocks the Sun near azimuth 60 to 80 deg at IM-1 real, or a grid artifact?
 
 The IM-1 cause lines keep naming terrain a few hundred metres away in that sector. This script

@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // A generic lander built from primitives with PBR materials (not a model of any real spacecraft, no branding).
 // The solar array turns to face the Sun and the high-gain dish points at Earth (directions from the engine).
 // A small procedural environment map is used for reflections only (diffuse image lighting is switched off in

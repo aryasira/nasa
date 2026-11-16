@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Run Agent A's whole pipeline and pack the outputs into one zip.
 
 Steps (each keeps going if an earlier one failed, where that makes sense):

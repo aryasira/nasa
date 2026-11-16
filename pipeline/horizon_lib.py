@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Terrain horizon by ray marching, with occluder attribution.
 
 For each azimuth a great-circle ray leaves the observer. At each sample the

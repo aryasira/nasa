@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Fetch JPL Horizons truth values for the validation fixtures.
 
 For every site with validation_use == "numeric" it asks Horizons for the

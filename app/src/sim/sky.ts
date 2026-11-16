@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Sky objects: the Sun (HDR disc for bloom + subtle lens glare), a procedural Earth, and an illustrative star
 // field with a faint Milky Way band. Space is black: no fog, no sky colour.
 // Directions and angular sizes come from the engine (az, el, sunR, earthR). Everything is in the OPAQUE pass (even

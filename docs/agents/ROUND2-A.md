@@ -1,6 +1,6 @@
 # Agent A — round 2 (paste into your existing Agent A session)
 
-> AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+> AI-assisted; see README.
 
 Round 1 is merged into `main`. Thank you — all 140 Horizons fixtures pass. Start with:
 `git fetch origin && git checkout a/data && git merge origin/main`, then re-read `CONTEXT.md` (lead sentences changed:

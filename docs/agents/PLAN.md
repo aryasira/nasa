@@ -1,6 +1,6 @@
 # Plan to submission — Sat 14 Nov 23:30 → Sun 15 Nov 23:30 CT
 
-> AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+> AI-assisted; see README.
 
 ## How to look at the app
 - **Live (once deployed):** https://aryasira.github.io/nasa/ — needs the repo public, Settings → Pages → Source

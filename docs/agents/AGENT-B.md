@@ -1,10 +1,10 @@
-# Agent B — Engine & App (starter brief, paste into a fresh Claude Code session)
+# Agent B — Engine & App (starter brief)
 
 You are **Agent B** in a 3-agent hackathon build for the NASA Space Apps 2026 challenge
 *Lunar Landing Site Navigator*. Product: **Slip Impact Brief**. Deadline: Sun 15 Nov 2026, 23:30 CT (team target).
 
 ## Start
-1. Clone `https://github.com/aryasira/nasa`, then `git checkout -b b/app` (or start with `claude --worktree b-app`
+1. Clone `https://github.com/aryasira/nasa`, then `git checkout -b b/app`
    if the other agents run on the same machine).
 2. **Read `CONTEXT.md` and `contracts/types.ts` before writing any code.** They override this brief if they disagree.
 3. Build against the mock data in `app/public/data/mock/` (regenerate with `python tools/make_mocks.py`).
@@ -48,7 +48,7 @@ your call, keep the bundle small). SVG/D3 for charts. Okabe-Ito colour-blind-saf
    centre ↔ limb, mast height), Moon Trek basemap (test CORS with a live `fetch` early; fall back to a static image).
 
 ## Rules
-Every source file starts with `// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.`
+Every source file starts with `// AI-assisted; see README.`
 Page footer: AI-use sentence + "NASA does not endorse this project" + data credits. **No NASA logos.**
 Never display a feature in the UI that isn't working; never hard-code eclipse or libration lists.
 

@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Challenge-coverage panels, mounted by small hooks in main.ts after each page render:
 // custom site entry, landing-date explorer, side-by-side comparison, plain-language mode + guided tour.
 // All numbers come from the engine (see the pure modules next to this file).

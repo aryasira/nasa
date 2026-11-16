@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Geometry-only power factors for the Power card (pure). Not a power model: no panel efficiency, temperature,
 // dust, tilt, lander attitude or eclipse dimming.
 const D2R = Math.PI / 180;

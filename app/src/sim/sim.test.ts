@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Simulator overhaul checks: the illustrative ground never rises above the mast's line of sight (so the LOLA
 // silhouette stays exact), and the cause line / status words only word the engine's readout.
 import { readFileSync } from 'node:fs';

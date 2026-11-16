@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Slip ranking: baseline vs slipped date vs next date that recovers the baseline vs alternate sites.
 import type { CauseLine, FeaturesFile, HorizonFile, Site, SlipOption, WindowMetrics } from '@contracts/types';
 import { Ephem, fmtUtc } from './ephem';

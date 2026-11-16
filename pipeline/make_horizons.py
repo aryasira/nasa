@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Write app/public/data/horizon/<site_id>.json and features.json.
 
 Sites with terrain "lola" get a ray-marched horizon from NASA LOLA DEMs:

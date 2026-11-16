@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Write app/public/data/ephem.bin and ephem.header.json with SPICE.
 
 Hourly Sun and Earth vectors as seen from the Moon's centre, in the

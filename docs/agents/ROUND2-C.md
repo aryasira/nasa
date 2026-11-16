@@ -1,6 +1,6 @@
 # Agent C — round 2 (Integration, QA & Story; this session)
 
-> AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+> AI-assisted; see README.
 
 Start: `git fetch origin && git checkout c/work && git merge origin/main`.
 

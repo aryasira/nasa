@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Self-check: ephem.bin against the JPL Horizons fixtures.
 
 Recomputes topocentric azimuth and elevation the way the app must:

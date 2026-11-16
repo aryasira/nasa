@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Contract tests. Validates every data file in app/public/data (real) and app/public/data/mock.
 Run: python3 -m pytest -q tests
 """

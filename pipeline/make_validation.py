@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Build app/public/data/validation.json: the validation scorecard the page's trust badges read.
 
 Every number is computed here from the pipeline's own outputs. Nothing is typed in, except the

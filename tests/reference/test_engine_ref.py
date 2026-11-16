@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Tests for the reference engine (docs/engine-spec.md) on MOCK data.
 Run: python3 -m pytest -q tests
 """

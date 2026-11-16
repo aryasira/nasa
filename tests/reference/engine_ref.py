@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Independent Python reference implementation of docs/engine-spec.md.
 
 Purpose: cross-check Agent B's TypeScript engine (app/src/engine) via golden vectors

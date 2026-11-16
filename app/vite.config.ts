@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 import { defineConfig } from 'vitest/config';
 import { fileURLToPath } from 'node:url';
 

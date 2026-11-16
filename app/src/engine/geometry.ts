@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Site vector, local East-North-Up frame, azimuth/elevation. Implements docs/engine-spec.md section 3.
 import type { Site } from '@contracts/types';
 import type { Ephem } from './ephem';

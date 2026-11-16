@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Side-by-side site comparison (pure, no DOM). Every number is the engine's windowMetrics for the same landing
 // date and stay; the only extra is the highest Sun elevation on the same 10-minute grid.
 import type { HorizonFile, Site, WindowMetrics } from '@contracts/types';

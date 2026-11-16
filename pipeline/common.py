@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Shared helpers for Agent A's pipeline (paths, metadata, geometry, downloads).
 
 Conventions (CONTEXT.md section 5): MOON_ME body-fixed frame, east longitude

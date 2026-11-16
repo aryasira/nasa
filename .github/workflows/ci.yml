@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. Owner: Agent C.
+# AI-assisted; see README. Owner: Agent C.
 name: ci
 on:
   push:

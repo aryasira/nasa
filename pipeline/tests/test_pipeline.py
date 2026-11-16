@@ -1,4 +1,4 @@
-# AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+# AI-assisted; see README.
 """Self-tests for Agent A's pipeline on synthetic inputs (no network).
 
 Run:  python -m pytest -q pipeline/tests

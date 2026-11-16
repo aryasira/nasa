@@ -1,6 +1,6 @@
 # REVIEW.md — Agent C review of a/data + b/app (Sat 14 Nov, 23:40 CT)
 
-> AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+> AI-assisted; see README.
 
 Fresh-context review of `c/work` (= main + C's fixes). Tests: Python 17 passed, Vitest 8 passed.
 Geometry, ephemeris, metrics, pipeline maths, compliance and security were checked and are **sound**.

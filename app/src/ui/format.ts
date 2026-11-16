@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Number formatting for the brief, including terrain-uncertainty bands: "82.0 h (78–85)".
 import type { WindowMetrics } from '@contracts/types';
 

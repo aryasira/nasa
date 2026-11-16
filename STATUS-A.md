@@ -4,7 +4,7 @@ _Updated: Sun 15 Nov 2026, 13:20 CT (real clock)_
 
 _Correction: entries below stamped 12:25 and 14:05 were written between 12:00 and 12:20 CT. Those stamps were guesses._
 
-<!-- AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team. -->
+<!-- AI-assisted; see README. -->
 
 ## Done
 - Read CONTEXT.md and contracts v1. Scaffold tests green (`python -m pytest -q tests`).

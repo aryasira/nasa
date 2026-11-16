@@ -1,6 +1,6 @@
 # Design direction: "chart sheet" (round 3, everything below the simulator)
 
-> AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+> AI-assisted; see README.
 
 **One direction:** the brief reads like a printed flight-dynamics chart sheet, not a stack of cards.
 

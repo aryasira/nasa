@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Countdown to the next sunset / sunrise / Earthset / Earthrise against the local terrain horizon.
 // Pure (no DOM). Uses only the validated engine: observe → horizonAt → discFraction → isVisible.
 import type { Ephem } from '../engine/ephem';

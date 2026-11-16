@@ -1,4 +1,4 @@
-// AI-ASSISTED: drafted with Claude (Anthropic), reviewed by the human team.
+// AI-assisted; see README.
 // Feature state that lives in the permalink next to main.ts's own keys: lat, lon, elev, name (custom site),
 // cmp (compared sites), explain. Read once at import (main.ts rewrites the query string on every render).
 import { checkCustom, type CustomInput } from './custom';
